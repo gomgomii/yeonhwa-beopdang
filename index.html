@@ -1085,20 +1085,24 @@ renderer.domElement.addEventListener('pointerup',function(e){
   if(lanternFocus){lanternFocus=null;closeSheet();return;}
   var hl=ray.intersectObjects(lanternGroup.children,true);if(hl.length){var lo=hl[0].object;while(lo.parent&&lo.parent!==lanternGroup)lo=lo.parent;var li=lanternGroup.children.indexOf(lo),L=savedLanterns[li];if(L){lanternFocus={m:lo};chime();showLearn('연등 가까이 보기','<div class="vow-card" style="background:linear-gradient(160deg,'+lcolors[L.c][2]+',#7a4b1e)"><div class="ic">🏮</div><div class="t">'+L.w+'</div><div class="v">'+(L.to?L.to+'를 위해 · ':'')+L.g+'</div></div><div class="note" style="margin-top:8px">닫거나 화면을 누르면 제자리로 돌아와요.</div>');return;}}
   if(ray.intersectObject(altar).length){openSpot('taeng');return;}
-  var hit=ray.intersectObjects(yardGround?[floor,yardGround]:[floor]);
+  var hit=ray.intersectObjects([floor].concat(yardGround?[yardGround]:[]).concat(garden.visible&&gardenGround?[gardenGround]:[]));
   if(hit.length){walkTo(hit[0].point.x,hit[0].point.z);}
 });
 // 탭한 곳으로 걸어가기. 법당 안↔마당은 출입문(z 6)을 거쳐 간다. then = 도착하면 할 일
 var routeQ=[],onArrive=null;
 function walkTo(x,z,then){
-  var inY=function(px,pz){return px<-hx&&pz>=YARD.z0;};
-  var fromY=inY(pos.x,pos.z),toY=inY(x,z);
+  function region(px,pz){return px<-hx?(pz>=YARD.z0?'yard':'garden'):'hall';}
+  var from=region(pos.x,pos.z),to=region(x,z);
   routeQ=[];onArrive=then||null;
   var dest=new THREE.Vector3(x,0,z);clampPos(dest); // 벽 너머를 눌렀으면 갈 수 있는 자리까지만
-  if(fromY!==toY){var a=new THREE.Vector3(-hx+.7,0,6.0),b=new THREE.Vector3(-hx-.7,0,6.0);routeQ=fromY?[a]:[b];target=fromY?b:a;routeQ.push(dest);}
-  else target=dest;
-}
-function stopWalk(){target=null;routeQ=[];onArrive=null;turnTo=null;}
+  var dY=[new THREE.Vector3(-hx+.7,0,6.0),new THREE.Vector3(-hx-.7,0,6.0)],dG=[new THREE.Vector3(-hx+.7,0,2.6),new THREE.Vector3(-hx-.7,0,2.6)];
+  var way=[];
+  if(from==='hall'&&to==='yard')way=[dY[0],dY[1]];else if(from==='yard'&&to==='hall')way=[dY[1],dY[0]];
+  else if(from==='hall'&&to==='garden')way=[dG[0],dG[1]];else if(from==='garden'&&to==='hall')way=[dG[1],dG[0]];
+  else if(from==='yard'&&to==='garden')way=[dY[1],dY[0],dG[0],dG[1]];else if(from==='garden'&&to==='yard')way=[dG[1],dG[0],dY[0],dY[1]];
+  if(to==='garden'&&!secretOpen){target=dG[0];return;} // 정원이 안 열렸으면 문 앞까지
+  way.push(dest);target=way.shift();routeQ=way;
+}function stopWalk(){target=null;routeQ=[];onArrive=null;turnTo=null;}
 var turnTo=null,stuckT=0; // 도착 뒤 천천히 돌아설 방향 / 막힌 시간
 function faceRoom(){ // 코앞(1.4m)이 벽이면 방 가운데를 보게. 불단(앞벽) 쪽을 보고 있을 땐 그대로
   if(Math.cos(heading)<-.5&&pos.x>-hx)return;
@@ -2007,34 +2011,84 @@ var doorPanel=new THREE.Mesh(new THREE.BoxGeometry(.08,2.4,1.56),new THREE.MeshS
 var doorLock=new THREE.Mesh(new THREE.SphereGeometry(.06,10,8),new THREE.MeshStandardMaterial({color:0xc9a227,metalness:.7,roughness:.3}));doorLock.position.set(.07,1.15,1.35);door.add(doorLock);
 var doorTex=canvasTex(256,128,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.fillStyle='#8a4fa8';g.font='44px Jua, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('비밀 정원',w/2,46);g.fillStyle='#5b7166';g.font='24px "Gowun Dodum", sans-serif';g.fillText('30일 동안 온 어린이만',w/2,94);});
 var doorSign=new THREE.Mesh(new THREE.PlaneGeometry(.9,.45),new THREE.MeshStandardMaterial({map:doorTex}));doorSign.position.set(-hx+.17,2.95,2.5);doorSign.rotation.y=Math.PI/2;scene.add(doorSign);
-var garden=new THREE.Group();scene.add(garden);
+var garden=new THREE.Group();scene.add(garden);var gardenGround=null,gardenStones=[],gWalked={},gLastStone=-1,gCandleGroup=new THREE.Group(),gTowerGroup=new THREE.Group();
+var GC={x:-9.9,z:2.3}; // 정원 가운데(나무·걷기 길)
 (function(){
   var g=garden;
-  var grass=new THREE.Mesh(new THREE.PlaneGeometry(5.2,5.2),new THREE.MeshStandardMaterial({color:0x5f9a45,roughness:.95}));grass.rotation.x=-Math.PI/2;grass.position.set(-9.6,0.005,2.5);grass.receiveShadow=true;g.add(grass);
-  var path=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.2),new THREE.MeshStandardMaterial({color:0xcdbfa6,roughness:.9}));path.rotation.x=-Math.PI/2;path.position.set(-8.3,0.01,2.5);g.add(path);
-  var wallM=new THREE.MeshStandardMaterial({color:0xe9e2d2,roughness:.9});
-  var back=new THREE.Mesh(new THREE.PlaneGeometry(5.2,3.2),wallM);back.position.set(-12.2,1.6,2.5);back.rotation.y=Math.PI/2;g.add(back);
-  var sideA=new THREE.Mesh(new THREE.PlaneGeometry(5.2,3.2),wallM);sideA.position.set(-9.6,1.6,-.1);g.add(sideA);
-  var sideB=new THREE.Mesh(new THREE.PlaneGeometry(5.2,3.2),wallM);sideB.position.set(-9.6,1.6,4.45);sideB.rotation.y=Math.PI;g.add(sideB);
-  var sky=new THREE.Mesh(new THREE.PlaneGeometry(5.6,5.6),new THREE.MeshBasicMaterial({color:0x1b2a4a}));sky.rotation.x=Math.PI/2;sky.position.set(-9.6,4.2,2.5);g.add(sky);
-  for(var i=0;i<40;i++){var st=new THREE.Mesh(new THREE.SphereGeometry(.015,4,4),new THREE.MeshBasicMaterial({color:0xfff6d0}));st.position.set(-12.1+Math.random()*5,4.15,0+Math.random()*5);g.add(st);}
-  var moon=new THREE.Mesh(new THREE.SphereGeometry(.25,12,10),new THREE.MeshBasicMaterial({color:0xfff2b0}));moon.position.set(-11.3,4.1,1);g.add(moon);
-  // 큰 나무(정원에는 나무가 있어도 된다)
-  var tree=new THREE.Group();tree.position.set(-10.6,0,3.6);
-  var trunk=new THREE.Mesh(new THREE.CylinderGeometry(.14,.22,1.3,10),new THREE.MeshStandardMaterial({color:0x5a3a1e,roughness:.8}));trunk.position.y=.65;trunk.castShadow=true;tree.add(trunk);
-  [[0,1.8,0,.85],[-.55,1.5,.1,.6],[.55,1.55,-.1,.6],[0,1.45,.55,.5],[.05,1.4,-.55,.5]].forEach(function(o){var c=new THREE.Mesh(new THREE.SphereGeometry(o[3],12,10),new THREE.MeshStandardMaterial({color:0x3a7d45,roughness:.85}));c.position.set(o[0],o[1],o[2]);c.castShadow=true;tree.add(c);});
-  for(var j=0;j<8;j++){var a=j/8*Math.PI*2;var fl=new THREE.Mesh(new THREE.SphereGeometry(.04,6,6),new THREE.MeshStandardMaterial({color:0xf7b3c6}));fl.position.set(Math.sin(a)*.7,1.6+Math.cos(a*2)*.25,Math.cos(a)*.7);tree.add(fl);}
+  var grass=new THREE.Mesh(new THREE.PlaneGeometry(5.2,5.2),new THREE.MeshStandardMaterial({color:0x4f8a3e,roughness:.95}));grass.rotation.x=-Math.PI/2;grass.position.set(-9.6,0.005,2.5);grass.receiveShadow=true;g.add(grass);gardenGround=grass;
+  var path=new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.2),new THREE.MeshStandardMaterial({color:0xcdbfa6,roughness:.9}));path.rotation.x=-Math.PI/2;path.position.set(-8.2,0.01,2.5);g.add(path);
+  // 담: 밤빛 벽 + 낮은 산울타리
+  var wallM=new THREE.MeshStandardMaterial({color:0xcfc6b4,roughness:.9}),hedge=new THREE.MeshStandardMaterial({color:0x2f5e34,roughness:.95});
+  var back=new THREE.Mesh(new THREE.PlaneGeometry(5.2,5.4),wallM);back.position.set(-12.2,2.7,2.5);back.rotation.y=Math.PI/2;g.add(back);
+  var sideA=new THREE.Mesh(new THREE.PlaneGeometry(5.2,5.4),wallM);sideA.position.set(-9.6,2.7,-.1);g.add(sideA);
+  var sideB=new THREE.Mesh(new THREE.PlaneGeometry(5.2,5.4),wallM);sideB.position.set(-9.6,2.7,4.45);sideB.rotation.y=Math.PI;g.add(sideB);
+  [[-12.0,2.5,.3,5.0],[-9.6,.1,5.0,.3],[-9.6,4.25,5.0,.3]].forEach(function(h){var hb=new THREE.Mesh(new THREE.BoxGeometry(h[2],.55,h[3]),hedge);hb.position.set(h[0],.27,h[1]);g.add(hb);for(var q=0;q<6;q++){var bl=new THREE.Mesh(new THREE.SphereGeometry(.2+Math.random()*.08,8,6),hedge);bl.position.set(h[0]+(h[2]>1?(q-2.5)*.8:0),.5,h[1]+(h[3]>1?(q-2.5)*.8:0));g.add(bl);}});
+  // 밤하늘·별·달
+  var sky=new THREE.Mesh(new THREE.PlaneGeometry(5.6,5.6),new THREE.MeshBasicMaterial({color:0x152140}));sky.rotation.x=Math.PI/2;sky.position.set(-9.6,5.4,2.5);g.add(sky);
+  for(var i=0;i<70;i++){var st=new THREE.Mesh(new THREE.SphereGeometry(.012+Math.random()*.012,4,4),new THREE.MeshBasicMaterial({color:0xfff6d0}));st.position.set(-12.1+Math.random()*5,5.3-Math.random()*.4,0+Math.random()*5);g.add(st);}
+  var moon=new THREE.Mesh(new THREE.SphereGeometry(.3,14,12),new THREE.MeshBasicMaterial({color:0xfff2b0}));moon.position.set(-11.3,5.0,1);g.add(moon);var halo=new THREE.Mesh(new THREE.SphereGeometry(.5,12,10),new THREE.MeshBasicMaterial({color:0xfff2b0,transparent:true,opacity:.12}));halo.position.copy(moon.position);g.add(halo);
+  // 나무(가운데)
+  var tree=new THREE.Group();tree.position.set(-11.3,0,.9);tree.scale.setScalar(.85); // 나무는 뒤쪽 구석(가운데 두면 시야를 가림)
+  var trunk=new THREE.Mesh(new THREE.CylinderGeometry(.14,.24,1.4,10),new THREE.MeshStandardMaterial({color:0x5a3a1e,roughness:.8}));trunk.position.y=.7;trunk.castShadow=true;tree.add(trunk);
+  [[0,2.0,0,.9],[-.6,1.6,.1,.62],[.6,1.65,-.1,.62],[0,1.55,.6,.52],[.05,1.5,-.6,.52]].forEach(function(o){var c=new THREE.Mesh(new THREE.SphereGeometry(o[3],12,10),new THREE.MeshStandardMaterial({color:0x35744a,roughness:.85}));c.position.set(o[0],o[1],o[2]);c.castShadow=true;tree.add(c);});
+  for(var j=0;j<10;j++){var a=j/10*Math.PI*2;var fl=new THREE.Mesh(new THREE.SphereGeometry(.045,6,6),new THREE.MeshStandardMaterial({color:0xf7b3c6,emissive:0x40101a}));fl.position.set(Math.sin(a)*.75,1.7+Math.cos(a*2)*.3,Math.cos(a)*.75);tree.add(fl);}
   g.add(tree);
+  // 걷기 명상 길: 나무 둘레 디딤돌 8개(돌 하나에 숨 하나)
+  for(var k=0;k<8;k++){var a2=k/8*Math.PI*2;var sx=GC.x+Math.cos(a2)*1.45,sz=GC.z+Math.sin(a2)*1.45;var stone=new THREE.Mesh(new THREE.CylinderGeometry(.26,.28,.05,10),new THREE.MeshStandardMaterial({color:0xb8b0a2,roughness:.95}));stone.position.set(sx,.03,sz);stone.rotation.y=Math.random();g.add(stone);gardenStones.push({x:sx,z:sz,m:stone});}
+  // 기도터(뒤쪽): 돌 상 + 촛대 일곱
+  var pt=new THREE.Mesh(new THREE.BoxGeometry(1.6,.5,.5),new THREE.MeshStandardMaterial({color:0x9a948a,roughness:.9}));pt.position.set(-11.6,.25,2.5);pt.rotation.y=Math.PI/2;g.add(pt);
+  var ptop=new THREE.Mesh(new THREE.BoxGeometry(1.8,.06,.6),new THREE.MeshStandardMaterial({color:0xb5aea2,roughness:.85}));ptop.position.set(-11.6,.53,2.5);ptop.rotation.y=Math.PI/2;g.add(ptop);
+  var bud=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),new THREE.MeshStandardMaterial({color:0xe9e2d2,roughness:.6}));bud.position.set(-11.75,.75,2.5);bud.scale.set(.7,1.2,.7);g.add(bud);
+  g.add(gCandleGroup);
+  var psign=label('기도터','누군가를 위해 불 밝히기','#8a4fa8');psign.position.set(-11.4,2.0,2.5);psign.scale.set(1.2,.47,1);g.add(psign);
+  // 마음 돌탑(앞쪽 구석)
+  var tb=new THREE.Mesh(new THREE.CylinderGeometry(.42,.46,.08,12),new THREE.MeshStandardMaterial({color:0x8f8a80,roughness:.95}));tb.position.set(-8.4,.04,4.0);g.add(tb);gTowerGroup.position.set(-8.4,.08,4.0);g.add(gTowerGroup);
+  var tsign=label('마음 돌탑','하루에 돌 하나','#2d7356');tsign.position.set(-8.4,1.9,4.0);tsign.scale.set(1.0,.39,1);g.add(tsign);
+  // 놀이터 구석(앞쪽): 목탁 리듬
+  var ps=label('놀이터','목탁 리듬 놀이','#d9486f');ps.position.set(-8.3,1.6,.8);ps.scale.set(1.0,.39,1);g.add(ps);
+  var mat2=new THREE.Mesh(new THREE.CylinderGeometry(.7,.7,.04,20),new THREE.MeshStandardMaterial({color:0xd9b27a,roughness:.9}));mat2.position.set(-8.3,.02,.8);g.add(mat2);
   [[-8.2,.7],[-8.2,4.3]].forEach(function(p){g.add(buildDeco({t:'stoneLantern',x:p[0],z:p[1],r:0,c:0}));});
-  g.add(buildDeco({t:'basin',x:-11.2,z:1.2,r:0,c:6}));g.add(buildDeco({t:'flowers',x:-9.2,z:.8,r:0,c:5}));g.add(buildDeco({t:'flowers',x:-11.4,z:4.3,r:0,c:3}));g.add(buildDeco({t:'tower',x:-9.3,z:4.4,r:0,c:0}));
-  var bench=new THREE.Mesh(new THREE.BoxGeometry(1.2,.1,.4),new THREE.MeshStandardMaterial({color:0x8f8a80}));bench.position.set(-9.8,.42,1.1);g.add(bench);[-.5,.5].forEach(function(x){var leg=new THREE.Mesh(new THREE.BoxGeometry(.16,.4,.3),new THREE.MeshStandardMaterial({color:0x8f8a80}));leg.position.set(-9.8+x,.2,1.1);g.add(leg);});
-  var gl=new THREE.PointLight(0xfff0c8,.8,9);gl.position.set(-9.6,3.4,2.5);g.add(gl);
-  var ffGeo=new THREE.BufferGeometry(),ffPos=new Float32Array(90);for(var k=0;k<30;k++){ffPos[k*3]=-12+Math.random()*4.8;ffPos[k*3+1]=.4+Math.random()*2.2;ffPos[k*3+2]=.2+Math.random()*4.6;}
+  g.add(buildDeco({t:'basin',x:GC.x,z:GC.z,r:0,c:6}));g.add(buildDeco({t:'flowers',x:-9.0,z:3.9,r:0,c:5}));g.add(buildDeco({t:'flowers',x:-11.4,z:4.0,r:0,c:3}));g.add(buildDeco({t:'flowers',x:-10.2,z:4.1,r:0,c:2})); // 가운데는 낮은 수반, 그 둘레가 걷기 길
+  var bench=new THREE.Mesh(new THREE.BoxGeometry(1.2,.1,.4),new THREE.MeshStandardMaterial({color:0x8f8a80}));bench.position.set(-9.8,.42,.55);g.add(bench);[-.5,.5].forEach(function(x){var leg=new THREE.Mesh(new THREE.BoxGeometry(.16,.4,.3),new THREE.MeshStandardMaterial({color:0x8f8a80}));leg.position.set(-9.8+x,.2,.55);g.add(leg);});
+  var gl=new THREE.PointLight(0xfff0c8,.7,9);gl.position.set(-9.6,3.6,2.5);g.add(gl);var pl2=new THREE.PointLight(0xffc27a,.6,4);pl2.position.set(-11.3,1.4,2.5);g.add(pl2);garden.userData.prayLight=pl2;
+  var ffGeo=new THREE.BufferGeometry(),ffPos=new Float32Array(90);for(var k2=0;k2<30;k2++){ffPos[k2*3]=-12+Math.random()*4.8;ffPos[k2*3+1]=.4+Math.random()*2.2;ffPos[k2*3+2]=.2+Math.random()*4.6;}
   ffGeo.setAttribute('position',new THREE.BufferAttribute(ffPos,3));var ff=new THREE.Points(ffGeo,new THREE.PointsMaterial({color:0xd9ff7a,size:.09,transparent:true,opacity:.9}));ff.userData.base=ffPos.slice();g.add(ff);garden.userData.ff=ff;
   var outM=new THREE.MeshStandardMaterial({color:0xe9e2d2,roughness:.9});
-  [[.85,1.6,1.7,3.2],[4.15,1.6,1.7,3.2],[2.5,2.85,1.6,.7]].forEach(function(o){var pl=new THREE.Mesh(new THREE.PlaneGeometry(o[2],o[3]),outM);pl.position.set(-hx-.03,o[1],o[0]);pl.rotation.y=-Math.PI/2;g.add(pl);}); // 정원에서 본 법당 바깥벽(문 둘레)
-  var sign=label('비밀 정원','조용히 쉬어 가는 곳','#8a4fa8');sign.position.set(-9.6,2.6,2.5);sign.scale.set(1.3,.51,1);g.add(sign);
+  [[.85,2.7,1.7,5.4],[4.15,2.7,1.7,5.4],[2.5,3.95,1.6,2.9]].forEach(function(o){var pl=new THREE.Mesh(new THREE.PlaneGeometry(o[2],o[3]),outM);pl.position.set(-hx-.03,o[1],o[0]);pl.rotation.y=-Math.PI/2;g.add(pl);}); // 정원에서 본 법당 바깥벽(문 둘레), 하늘까지
+  var sign=label('비밀 정원','나만의 쉼터 · 기도터 · 놀이터','#8a4fa8');sign.position.set(-9.6,3.0,2.5);sign.scale.set(1.4,.55,1);g.add(sign);
 })();
+// 기도터 촛불(이 기기): {to, c, d}
+var gCandles=store.get('gcandles',[]);
+function renderGCandles(){while(gCandleGroup.children.length)gCandleGroup.remove(gCandleGroup.children[0]);var cols=[0xffd27a,0xf7a8c0,0xfff8e6];
+  gCandles.slice(-7).forEach(function(c,i){var n=Math.min(7,gCandles.length),x=-11.6,z=2.5+(i-(n-1)/2)*.22;var hold=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,.04,10),brass);hold.position.set(x,.58,z);gCandleGroup.add(hold);var cd=new THREE.Mesh(new THREE.CylinderGeometry(.022,.025,.16,10),candleMat);cd.position.set(x,.68,z);gCandleGroup.add(cd);var fl=new THREE.Mesh(new THREE.SphereGeometry(.022,8,8),new THREE.MeshBasicMaterial({color:cols[c.c%3]}));fl.position.set(x,.79,z);fl.scale.set(.8,1.6,.8);fl.userData.flame=true;gCandleGroup.add(fl);
+    if(c.to){var tg=label(c.to,'',c.c%3===2?'#8a4fa8':'#'+cols[c.c%3].toString(16));tg.position.set(x-.1,.95,z);tg.scale.set(.32,.13,1);gCandleGroup.add(tg);}});
+  if(garden.userData.prayLight)garden.userData.prayLight.intensity=.3+Math.min(7,gCandles.length)*.12;}
+renderGCandles();
+function openPray(){sBody.innerHTML='';sTitle.textContent='기도터';currentSpot='pray';
+  var who='',col=0,PRAY_FOR=['나','우리 가족','친구','선생님','아픈 사람','모든 생명'];
+  var box=el('<div class="box" style="background:#f6f0ff"><h3>누구를 위해 불을 밝힐까요?</h3><div class="note">마음은 시간과 공간을 넘어요. 여기서 밝힌 불은 그 사람 마음에 닿아요.</div><div class="choices" style="margin-top:8px"></div><input class="in" maxlength="8" placeholder="직접 쓰기 (8자)" style="margin-top:8px"><div class="choices" style="margin-top:8px"><button class="choice" data-c="0" aria-pressed="true">🕯 금빛</button><button class="choice" data-c="1">🌸 분홍</button><button class="choice" data-c="2">🤍 하양</button></div></div>');
+  var ch=box.querySelector('.choices'),inp=box.querySelector('input');PRAY_FOR.forEach(function(p){var b=el(chip(p,false));b.addEventListener('click',function(){who=p;inp.value='';[].forEach.call(ch.children,function(x){x.setAttribute('aria-pressed',x===b)});});ch.appendChild(b);});
+  inp.addEventListener('input',function(){who=inp.value.trim();[].forEach.call(ch.children,function(x){x.setAttribute('aria-pressed','false')});});
+  [].forEach.call(box.querySelectorAll('[data-c]'),function(b){b.addEventListener('click',function(){col=+b.dataset.c;[].forEach.call(box.querySelectorAll('[data-c]'),function(x){x.setAttribute('aria-pressed',x===b)});});});
+  var go=el('<button class="btn pink" style="margin-top:10px">🙏 불 밝히기</button>');go.addEventListener('click',function(){if(!who){toast('누구를 위한 불인지 골라 주세요');return;}gCandles.push({to:who,c:col,d:todayKey});if(gCandles.length>21)gCandles.shift();store.set('gcandles',gCandles);renderGCandles();hapAnim=4;chime();bell();questEvent('mind');closeSheet();toast(who+'를 위해 불을 밝혔어요. '+who+'가 평안하기를.');});
+  box.appendChild(go);sBody.appendChild(box);
+  if(gCandles.length){var lst=el('<div class="box"><h3>지금 켜져 있는 불 '+Math.min(7,gCandles.length)+'</h3><div class="note">'+gCandles.slice(-7).map(function(c){return '🕯 '+c.to+' ('+c.d.slice(5)+')';}).join(' · ')+'</div></div>');sBody.appendChild(lst);}
+  sBody.appendChild(el('<div class="note" style="margin-top:8px">기도는 바라는 마음을 또렷이 하는 일이에요. 불을 밝힌 뒤 그 사람에게 말 한마디를 건네 보세요.</div>'));
+  sheet.classList.add('on');sheet.setAttribute('aria-hidden','false');sheetOpen=true;for(var k in keys)keys[k]=0;}
+// 마음 돌탑(이 기기): 날짜 배열, 하루 하나
+var gStones=store.get('gstones',[]);
+function renderGTower(){while(gTowerGroup.children.length)gTowerGroup.remove(gTowerGroup.children[0]);var y=0;gStones.forEach(function(d,i){var r=.2-(i%9)*.014,h=.07+(i%3)*.01;var s=new THREE.Mesh(new THREE.SphereGeometry(r,10,7),new THREE.MeshStandardMaterial({color:[0x9a9488,0xa8a096,0x8c867c][i%3],roughness:.95}));s.scale.set(1,h/r,1);s.position.set(Math.sin(i*1.7)*.02,y+h,Math.cos(i*1.3)*.02);y+=h*1.7;gTowerGroup.add(s);});}
+renderGTower();
+function openTower(){sBody.innerHTML='';sTitle.textContent='마음 돌탑';currentSpot='tower';var today=gStones.indexOf(todayKey)>-1;
+  sBody.appendChild(el('<div class="box"><h3>돌 '+gStones.length+'개</h3><div class="note">하루에 돌 하나. 올리기 전에 숨을 한 번 길게 쉬어요. 돌탑은 오래 쌓는 마음이에요. 급하면 무너져요.</div></div>'));
+  if(today)sBody.appendChild(el('<div class="box" style="background:#f3faf5"><b>오늘 돌은 올렸어요.</b> 내일 또 하나.</div>'));
+  else{var b=el('<button class="btn pink">🪨 숨 한 번 쉬고 돌 올리기</button>');b.addEventListener('click',function(){gStones.push(todayKey);store.set('gstones',gStones);renderGTower();moktak();closeSheet();toast('돌 하나. 숨 하나. 지금 '+gStones.length+'개예요');questEvent('mind');});sBody.appendChild(b);}
+  sheet.classList.add('on');sheet.setAttribute('aria-hidden','false');sheetOpen=true;for(var k in keys)keys[k]=0;}
+var gWalkDays=store.get('gwalk',[]);
+function gardenWalk(){if(!garden.visible)return;var best=-1,bd=.5;gardenStones.forEach(function(s,i){var d=Math.hypot(pos.x-s.x,pos.z-s.z);if(d<bd){bd=d;best=i;}});
+  if(best<0||best===gLastStone)return;gLastStone=best;if(gWalked[best])return;gWalked[best]=true;var n=Object.keys(gWalked).length;chime();
+  if(n>=8){gWalked={};if(gWalkDays.indexOf(todayKey)<0){gWalkDays.push(todayKey);store.set('gwalk',gWalkDays);}toast('한 바퀴. 숨 여덟 번. 마음이 조금 느려졌나요?');questEvent('mind');}
+  else toast((n%2?'들이쉬고… ':'내쉬고… ')+n+' / 8');}
 function paintSecret(){secretOpen=visitDays()>=SECRET_DAYS;doorLock.material.color.set(secretOpen?0x9fd3b5:0xc9a227);}
 function gardenSeen(){return secretOpen&&(pos.x<-hx+2.8&&pos.z>.3&&pos.z<4.7);}
 paintSecret();
@@ -2060,21 +2114,63 @@ var SAMUL=[
  {k:'plate',n:'운판 (雲板)',s:sndPlate,m:'구름 모양 쇠판이에요. 하늘을 나는 새와 허공의 생명을 위해 쳐요. 네 가지 사물은 "모든 생명이 괴로움에서 벗어나길" 바라는 마음이에요.'}
 ];
 if(isAdult)SAMUL.forEach(function(x,i){x.m=SAMUL_ADULT[i];});
-var samulGroup=new THREE.Group();scene.add(samulGroup);
+var samulGroup=new THREE.Group();scene.add(samulGroup);var samulRigs=[];
 (function(){
-  var wood=new THREE.MeshStandardMaterial({color:0x5a3a1e,roughness:.75}),brz=new THREE.MeshStandardMaterial({color:0x7d6a36,metalness:.75,roughness:.3});
-  function wrap(g,i,x,z){g.position.set(x,0,z);g.traverse(function(o){o.userData.samul=i;});samulGroup.add(g);return g;}
-  var b=buildDeco({t:'bigBell',x:0,z:0,r:Math.PI/2,c:0});b.scale.setScalar(1.25);wrap(b,0,-14.5,5.3);
-  var dr=new THREE.Group();[-1,1].forEach(function(k){var leg=new THREE.Mesh(new THREE.CylinderGeometry(.05,.06,1.4,8),wood);leg.position.set(0,.7,k*.55);dr.add(leg);});var beam=new THREE.Mesh(new THREE.BoxGeometry(.1,.08,1.3),wood);beam.position.set(0,1.4,0);dr.add(beam);
-  var drum=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.55,20),new THREE.MeshStandardMaterial({color:0xb5462f,roughness:.7}));drum.rotation.z=Math.PI/2;drum.position.y=.85;dr.add(drum);[-1,1].forEach(function(k){var skin2=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,.57,20),new THREE.MeshStandardMaterial({color:0xf2e6c8}));skin2.rotation.z=Math.PI/2;skin2.position.y=.85;dr.add(skin2);});wrap(dr,1,-12.7,5.3);
-  var fg=new THREE.Group();var br=new THREE.Mesh(new THREE.BoxGeometry(.6,.08,.08),wood);br.position.set(.3,2.5,0);fg.add(br);[-.18,.18].forEach(function(z){var cord=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.5,4),wood);cord.position.set(.5,2.2,z);fg.add(cord);});
-  var fish=new THREE.Mesh(new THREE.SphereGeometry(.3,14,10),new THREE.MeshStandardMaterial({color:0x8a5a2b,roughness:.6}));fish.scale.set(.5,.55,2);fish.position.set(.5,1.9,0);fg.add(fish);var tail=new THREE.Mesh(new THREE.ConeGeometry(.16,.3,6),new THREE.MeshStandardMaterial({color:0x8a5a2b}));tail.rotation.x=-Math.PI/2;tail.position.set(.5,1.95,-.68);fg.add(tail);
-  var eye=new THREE.Mesh(new THREE.SphereGeometry(.035,6,6),new THREE.MeshBasicMaterial({color:0x222}));eye.position.set(.63,1.98,.45);fg.add(eye);wrap(fg,2,-14.7,7.1);
-  var pg=new THREE.Group();var br2=new THREE.Mesh(new THREE.BoxGeometry(.5,.08,.08),wood);br2.position.set(.25,2.7,0);pg.add(br2);var cord2=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.35,4),wood);cord2.position.set(.45,2.5,0);pg.add(cord2);
-  var plate=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.03,24),brz);plate.rotation.z=Math.PI/2;plate.position.set(.45,2.0,0);pg.add(plate);[[.2,.25],[-.2,.25],[0,.42]].forEach(function(o){var bump=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,.03,16),brz);bump.rotation.z=Math.PI/2;bump.position.set(.45,2.0+o[1],o[0]);pg.add(bump);});wrap(pg,3,-12.9,7.1);
-  // (사물 안내판은 범종각 현판으로)
+  var wood=new THREE.MeshStandardMaterial({color:0x5a3a1e,roughness:.75}),woodL=new THREE.MeshStandardMaterial({color:0x8a5a2b,roughness:.6}),brz=new THREE.MeshStandardMaterial({color:0x6f6238,metalness:.8,roughness:.35}),rope=new THREE.MeshStandardMaterial({color:0xcbb48a,roughness:.9}),red=new THREE.MeshStandardMaterial({color:0xb5462f,roughness:.7});
+  function lat(pts,m,seg){return new THREE.Mesh(new THREE.LatheGeometry(pts.map(function(p){return new THREE.Vector2(p[0],p[1]);}),seg||32),m);}
+  function wrap(g,i,x,z){g.position.set(x,0,z);g.traverse(function(o){o.userData.samul=i;});samulGroup.add(g);samulRigs[i]=g;g.userData.hitT=-1;return g;}
+  function frame(g,w,h){[-1,1].forEach(function(k){var p=new THREE.Mesh(new THREE.CylinderGeometry(.06,.075,h,10),wood);p.position.set(0,h/2,k*w/2);p.castShadow=true;g.add(p);var base=new THREE.Mesh(new THREE.CylinderGeometry(.14,.16,.1,12),new THREE.MeshStandardMaterial({color:0x8c867a,roughness:.9}));base.position.set(0,.05,k*w/2);g.add(base);});var beam=new THREE.Mesh(new THREE.BoxGeometry(.12,.1,w+.3),wood);beam.position.set(0,h,0);g.add(beam);}
+  // 범종: 용뉴·유곽·당좌·하대, 옆에 매단 당목
+  var b=new THREE.Group();frame(b,1.5,2.4);
+  var bell=lat([[0,1.05],[.12,1.05],[.2,1.0],[.3,.95],[.36,.8],[.39,.5],[.4,.2],[.42,.08],[.44,0],[.41,0],[.37,.1],[.36,.45],[.34,.75],[.25,.95],[0,1.0]],brz);bell.position.y=.3;bell.castShadow=true;b.add(bell);
+  var knob=new THREE.Mesh(new THREE.TorusGeometry(.09,.035,8,16),brz);knob.position.y=1.42;knob.rotation.x=Math.PI/2;b.add(knob);var hook=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.85,6),rope);hook.position.y=1.95;b.add(hook);
+  [0,1,2,3].forEach(function(q){var a=q/4*Math.PI*2+Math.PI/4;var yg=new THREE.Mesh(new THREE.BoxGeometry(.16,.16,.02),new THREE.MeshStandardMaterial({color:0x5a4e2a,metalness:.7,roughness:.4}));yg.position.set(Math.cos(a)*.38,1.12,Math.sin(a)*.38);yg.rotation.y=-a+Math.PI/2;bell.add(yg);for(var r=0;r<9;r++){var nip=new THREE.Mesh(new THREE.SphereGeometry(.013,5,4),brz);nip.position.set(-.05+(r%3)*.05,-.05+Math.floor(r/3)*.05,.012);yg.add(nip);}});
+  [.95,.2].forEach(function(yy){var band=new THREE.Mesh(new THREE.TorusGeometry(yy>.5?.32:.42,.012,6,32),new THREE.MeshStandardMaterial({color:0x8a7a40,metalness:.8,roughness:.3}));band.position.y=yy;band.rotation.x=Math.PI/2;bell.add(band);});
+  var dj=new THREE.Mesh(new THREE.CircleGeometry(.07,16),new THREE.MeshStandardMaterial({color:0x9c8a4a,metalness:.8,roughness:.3}));dj.position.set(0,.45,.395);bell.add(dj);
+  var log=new THREE.Group();log.position.set(0,2.3,.95);var lg=new THREE.Mesh(new THREE.CylinderGeometry(.07,.08,1.1,10),woodL);lg.rotation.x=Math.PI/2;lg.position.set(0,-1.55,0);log.add(lg);[-.3,.3].forEach(function(zz){var rp=new THREE.Mesh(new THREE.CylinderGeometry(.01,.01,1.55,4),rope);rp.position.set(0,-.78,zz);log.add(rp);});b.add(log);b.userData.striker=log;b.userData.kind='bell';b.userData.body=bell;
+  wrap(b,0,-14.5,5.3);
+  // 법고: 틀 위 북통(테·못·가죽), 북채
+  var dr=new THREE.Group();frame(dr,1.3,1.55);
+  var body=lat([[.3,0],[.4,.1],[.44,.3],[.44,.6],[.4,.8],[.3,.9],[0,.9],[0,0]],red,28);body.rotation.z=Math.PI/2;body.position.set(.45,.85,0);var dw=new THREE.Group();dw.add(body);
+  [-.45,.45].forEach(function(x){var skin=new THREE.Mesh(new THREE.CircleGeometry(.4,28),new THREE.MeshStandardMaterial({color:0xf2e6c8,roughness:.8,side:THREE.DoubleSide}));skin.position.set(x,.85,0);skin.rotation.y=x>0?Math.PI/2:-Math.PI/2;dw.add(skin);var hoop=new THREE.Mesh(new THREE.TorusGeometry(.41,.025,8,28),wood);hoop.position.set(x*.98,.85,0);hoop.rotation.y=Math.PI/2;dw.add(hoop);for(var n=0;n<16;n++){var a=n/16*Math.PI*2;var tack=new THREE.Mesh(new THREE.SphereGeometry(.014,5,4),brz);tack.position.set(x*.96,.85+Math.cos(a)*.37,Math.sin(a)*.37);dw.add(tack);}});
+  var lotus=new THREE.Mesh(new THREE.CircleGeometry(.12,8),new THREE.MeshStandardMaterial({color:0xe9c84e}));lotus.position.set(.46,.85,0);lotus.rotation.y=Math.PI/2;dw.add(lotus);
+  dw.rotation.y=Math.PI/2;dr.add(dw);
+  var stick=new THREE.Group();stick.position.set(0,1.25,.75);var st=new THREE.Mesh(new THREE.CylinderGeometry(.018,.022,.6,6),woodL);st.position.y=-.3;stick.add(st);var tip=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),woodL);tip.position.y=-.6;stick.add(tip);stick.rotation.x=-.9;dr.add(stick);dr.userData.striker=stick;dr.userData.kind='drum';dr.userData.body=dw;
+  wrap(dr,1,-12.7,5.3);
+  // 목어: 매단 나무 물고기(몸통·꼬리·지느러미·비늘·입), 채
+  var fg=new THREE.Group();var br=new THREE.Mesh(new THREE.BoxGeometry(.7,.08,.08),wood);br.position.set(.35,2.5,0);fg.add(br);var post=new THREE.Mesh(new THREE.CylinderGeometry(.05,.06,2.5,8),wood);post.position.set(0,1.25,0);fg.add(post);
+  var fishG=new THREE.Group();fishG.position.set(.5,2.5,0);
+  [-.25,.25].forEach(function(z){var cord=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.5,4),rope);cord.position.set(0,-.25,z);fishG.add(cord);});
+  var fm=new THREE.MeshStandardMaterial({color:0x9a6a3a,roughness:.55});
+  var fbody=new THREE.Mesh(new THREE.SphereGeometry(.3,18,12),fm);fbody.scale.set(.5,.6,2.1);fbody.position.set(0,-.62,0);fishG.add(fbody);
+  var mouth=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.1,10),new THREE.MeshStandardMaterial({color:0x3a2412}));mouth.rotation.x=Math.PI/2;mouth.position.set(0,-.6,.6);fishG.add(mouth);
+  for(var s=0;s<6;s++){var sc=new THREE.Mesh(new THREE.TorusGeometry(.14-s*.012,.008,5,14),new THREE.MeshStandardMaterial({color:0x6b4421}));sc.position.set(0,-.62,.35-s*.17);sc.scale.set(1,1.2,1);fishG.add(sc);}
+  [[.16,.1],[-.16,-.1]].forEach(function(t){var fin=new THREE.Mesh(new THREE.ConeGeometry(.12,.3,5),fm);fin.rotation.z=t[0]*3;fin.rotation.x=-Math.PI/2;fin.position.set(t[0]*1.4,-.72,-.55);fishG.add(fin);});
+  var dorsal=new THREE.Mesh(new THREE.ConeGeometry(.08,.22,5),fm);dorsal.position.set(0,-.4,-.1);fishG.add(dorsal);
+  var tail=new THREE.Mesh(new THREE.ConeGeometry(.18,.32,6),fm);tail.rotation.x=-Math.PI/2;tail.position.set(0,-.62,-.78);tail.scale.set(.5,1,1.6);fishG.add(tail);
+  [-1,1].forEach(function(k){var eye=new THREE.Mesh(new THREE.SphereGeometry(.035,6,6),new THREE.MeshBasicMaterial({color:0x222222}));eye.position.set(k*.13,-.52,.42);fishG.add(eye);});
+  fg.add(fishG);
+  var fst=new THREE.Group();fst.position.set(.5,.95,.55);var fs=new THREE.Mesh(new THREE.CylinderGeometry(.015,.018,.5,6),woodL);fs.position.y=.25;fst.add(fs);fst.rotation.x=.6;fg.add(fst);fg.userData.striker=fst;fg.userData.kind='fish';fg.userData.body=fishG;
+  wrap(fg,2,-14.7,7.1);
+  // 운판: 구름 모양 쇠판(두 줄로 매달림), 망치
+  var pg=new THREE.Group();var br2=new THREE.Mesh(new THREE.BoxGeometry(.6,.08,.08),wood);br2.position.set(.3,2.7,0);pg.add(br2);var post2=new THREE.Mesh(new THREE.CylinderGeometry(.05,.06,2.7,8),wood);post2.position.set(0,1.35,0);pg.add(post2);
+  var plateG=new THREE.Group();plateG.position.set(.5,2.7,0);
+  [-.16,.16].forEach(function(z){var cord=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.3,4),rope);cord.position.set(0,-.15,z);plateG.add(cord);});
+  var shp=new THREE.Shape();shp.moveTo(-.34,-.1);shp.absarc(-.2,-.1,.14,Math.PI,0,true);shp.absarc(0,-.02,.2,Math.PI,0,true);shp.absarc(.2,-.1,.14,Math.PI,0,true);shp.lineTo(.34,-.25);shp.absarc(.18,-.3,.1,0,Math.PI,true);shp.absarc(0,-.34,.12,0,Math.PI,true);shp.absarc(-.18,-.3,.1,0,Math.PI,true);shp.lineTo(-.34,-.25);shp.lineTo(-.34,-.1);
+  var plate=new THREE.Mesh(new THREE.ExtrudeGeometry(shp,{depth:.025,bevelEnabled:true,bevelSize:.008,bevelThickness:.005}),brz);plate.rotation.y=Math.PI/2;plate.position.set(0,-.35,0);plateG.add(plate);
+  var em=new THREE.Mesh(new THREE.CircleGeometry(.07,14),new THREE.MeshStandardMaterial({color:0x8a7a40,metalness:.8,roughness:.3}));em.position.set(.03,-.6,0);em.rotation.y=Math.PI/2;plateG.add(em);
+  pg.add(plateG);
+  var hm=new THREE.Group();hm.position.set(.5,1.8,.5);var hs=new THREE.Mesh(new THREE.CylinderGeometry(.012,.014,.4,6),woodL);hs.position.y=.2;hm.add(hs);var hh=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.08,8),brz);hh.rotation.x=Math.PI/2;hh.position.y=.42;hm.add(hh);hm.rotation.x=.7;pg.add(hm);pg.userData.striker=hm;pg.userData.kind='plate';pg.userData.body=plateG;
+  wrap(pg,3,-12.9,7.1);
 })();
-function openSamul(i){if(!isOpen('samul')){panelLocked('samul');return;}var s=SAMUL[i];s.s();showLearn(s.n,'<h3>'+s.n+'</h3>'+s.m+'<div class="note" style="margin-top:8px">사물은 아침저녁 예불 때 순서대로 울려요: 법고 → 운판 → 목어 → 범종.</div>');questEvent('learn');}
+function samulHit(i){var g=samulRigs[i];if(g)g.userData.hitT=0;}
+function samulAnim(dt,t){samulRigs.forEach(function(g){if(g.userData.hitT<0)return;var h=g.userData.hitT+=dt,st=g.userData.striker,bd=g.userData.body;var sw=h<.5?Math.sin(h/.5*Math.PI):0;
+  if(g.userData.kind==='bell'){st.rotation.x=-sw*.5;bd.rotation.z=Math.sin(h*28)*.025*Math.max(0,1-h/2.2);}
+  else if(g.userData.kind==='drum'){st.rotation.x=-.9+sw*.9;bd.scale.setScalar(1+Math.sin(h*40)*.015*Math.max(0,1-h/.8));}
+  else if(g.userData.kind==='fish'){st.rotation.x=.6-sw*.7;bd.rotation.z=Math.sin(h*18)*.08*Math.max(0,1-h/1.2);}
+  else{st.rotation.x=.7-sw*.9;bd.rotation.z=Math.sin(h*22)*.1*Math.max(0,1-h/1.5);}
+  if(h>2.4){g.userData.hitT=-1;st.rotation.x=g.userData.kind==='bell'?0:g.userData.kind==='drum'?-.9:g.userData.kind==='fish'?.6:.7;bd.rotation.z=0;bd.scale.setScalar(1);}});}
+function openSamul(i){if(!isOpen('samul')){panelLocked('samul');return;}var s=SAMUL[i];samulHit(i);s.s();showLearn(s.n,'<h3>'+s.n+'</h3>'+s.m+'<div class="note" style="margin-top:8px">사물은 아침저녁 예불 때 순서대로 울려요: 법고 → 운판 → 목어 → 범종.</div>');questEvent('learn');}
 // 밟으면 배우는 자리: 삼귀의 글판(오른쪽 벽 뒤쪽), 부처님 생애 그림책(사경대 옆)
 var OGYE=[
  {n:'불살생',hj:'不殺生',m:'산 것을 죽이거나 해치지 않아요. 벌레도, 꽃도, 친구 마음도요.'},
@@ -2097,6 +2193,11 @@ var LIFE=[
 ];
 if(isAdult)LIFE=LIFE_ADULT;
 var learnSpots=[],ogyeStones=[];
+// 비밀 정원 자리(정원 블록은 위에 있어 여기서 등록)
+learnSpots.push({x:-11.0,z:2.5,r:1.0,lock:'garden',label:'기도터 · 누군가를 위해 불 밝히기',open:openPray});
+learnSpots.push({x:-8.6,z:3.7,r:.9,lock:'garden',label:'마음 돌탑 · 오늘의 돌 하나',open:openTower});
+learnSpots.push({x:-8.3,z:.9,r:.9,lock:'play',label:'놀이터 · 목탁 리듬',open:function(){openSpot('play');}});
+
 (function(){
   var stn=new THREE.MeshStandardMaterial({color:0xb9b1a3,roughness:.9});
   // (오계 돌은 11-05 뺌: 오계는 참회의 자리 「오늘의 약속 카드」·법회 모드·TV에서 배운다)
@@ -2540,6 +2641,7 @@ function loop(){
   knees.forEach(function(k){k.rotation.x+=(tk-k.rotation.x)*kb;});
   hips.forEach(function(h,i){h.rotation.x+=(thx-h.rotation.x)*kb;h.rotation.y+=((i?1:-1)*thy-h.rotation.y)*kb;});
   door.rotation.y+=((secretOpen?-1.9:0)-door.rotation.y)*Math.min(1,dt*1.5);garden.visible=gardenSeen();
+  samulAnim(dt,t);if(garden.visible)gardenWalk();
   if(garden.visible){var ffp=garden.userData.ff,pa=ffp.geometry.attributes.position,bsv=ffp.userData.base;for(var q=0;q<30;q++){pa.array[q*3]=bsv[q*3]+Math.sin(t*.7+q)*.3;pa.array[q*3+1]=bsv[q*3+1]+Math.sin(t*1.3+q*2)*.2;pa.array[q*3+2]=bsv[q*3+2]+Math.cos(t*.9+q)*.3;}pa.needsUpdate=true;ffp.material.opacity=.6+.4*Math.sin(t*3);}
   if(hapAnim>0)hapAnim-=dt;if(mokT>0)mokT-=dt;if(mokHit>0)mokHit-=dt;
   if(mokSeq>0){mokNext-=dt;if(mokNext<=0){mokSeq--;mokNext=.5;mokHit=.42;moktak();}}
@@ -2590,7 +2692,7 @@ function loop(){
   // 벽은 한쪽 면만 그려서 카메라가 벽 밖으로 조금 나가도 안이 보인다. 뒷벽 가까이에서 연이가 화면 아래로 잘리지 않게.
   var inYard=pos.x<-hx+.3&&pos.z>=YARD.z0, inGarden=secretOpen&&pos.x<-hx+.3&&!inYard;
   var hallMinX=cp.z>YARD.z0-.3?-hx+.3:-hx-1.2; // 마당 쪽(z 4.2~)은 벽 밖에 마당이 있어 카메라를 안에 둠
-  cp.x=Math.max(inGarden?-12.6:(inYard?YARD.x0-.4:hallMinX),Math.min(hx+1.2,cp.x));cp.z=Math.max(-hz+.3,Math.min(inYard?YARD.z1+.6:hz+1.6,cp.z));if(inYard)cp.x=Math.min(-hx-.5,cp.x); // 마당에 있으면 카메라도 마당 안에
+  cp.x=Math.max(inGarden?-12.6:(inYard?YARD.x0-.4:hallMinX),Math.min(hx+1.2,cp.x));cp.z=Math.max(-hz+.3,Math.min(inYard?YARD.z1+.6:hz+1.6,cp.z));if(inYard)cp.x=Math.min(-hx-.5,cp.x);if(inGarden)cp.x=Math.min(-hx-.6,cp.x); // 마당·정원에 있으면 카메라도 그 안에(벽이 가리지 않게)
   var lk=new THREE.Vector3(pos.x+fx*2.5,1.2+(lookUp>0?2.6:0),pos.z+fz*2.5);
   if(showOff>0){cp.set(pos.x-fx*2.6,1.5,pos.z-fz*2.6);lk.set(pos.x,.75,pos.z);}
   else if(bowT>=0){var rx=Math.cos(heading),rz=-Math.sin(heading);cp.set(pos.x+rx*2.4+fx*.6,1.15,pos.z+rz*2.4+fz*.6);lk.set(pos.x+fx*.3,.5,pos.z+fz*.3);} // 절은 옆에서
