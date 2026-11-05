@@ -326,6 +326,7 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
     <button class="act" id="aBow"><svg viewBox="0 0 32 32" fill="none" stroke="#2d7356" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="10" r="3.5"/><path d="M12 13 Q20 14 23 22 M6 27h22 M23 22l4 5"/></svg><span>절하기</span><small id="bowCount">0 / 108</small></button>
     <button class="act" id="aMok"><svg viewBox="0 0 32 32" fill="none" stroke="#2d7356" stroke-width="2" stroke-linecap="round"><ellipse cx="14" cy="18" rx="9" ry="7"/><path d="M8 18h10 M21 8l6-4"/></svg><span>목탁</span><small id="mokCount">0번</small></button>
     <button class="act" id="aBell"><svg viewBox="0 0 32 32" fill="none" stroke="#2d7356" stroke-width="2" stroke-linecap="round"><path d="M10 22 V14 a6 6 0 0 1 12 0 V22 M7 22h18 M16 5v3 M16 25v3"/></svg><span>종</span><small>마음 모으기</small></button>
+    <button class="act" id="aMed"><svg viewBox="0 0 32 32" fill="none" stroke="#2d7356" stroke-width="2" stroke-linecap="round"><circle cx="16" cy="9" r="4"/><path d="M16 13v6 M6 24c4-5 16-5 20 0 M9 24l-3 4 M23 24l3 4"/></svg><span>명상</span><small>방석에 앉기</small></button>
   </div>
 </div>
 
@@ -877,7 +878,7 @@ function showWall(i){if(wallIdx===i)return;wallIdx=i;questEvent('wall');drawWall
 function hideWall(){wallIdx=-1;}
 paintStones();
 var signs=[label('소원 연등','연등 달기'),label('뒷벽 게시판','교리 퀴즈·개선안'),label('오늘의 법구경','날마다 한 구절')];signs[2].position.set(-5.9,1.5,-2);signs[2].scale.set(1.1,.43,1);
-signs[0].position.set(-5.2,3.7,.5);signs[0].scale.set(.9,.35,1);
+signs[0].position.set(-5.2,1.7,.5);signs[0].scale.set(.9,.35,1);
 signs[1].position.set(0,5.25,hz-.4);signs[1].scale.set(.9,.35,1);
 var s3=label('사경','따라 쓰기');s3.position.set(5.6,1.5,6);s3.scale.set(.8,.31,1);signs.push(s3);
 var s4=label('연꽃 연못','도장마다 한 송이');s4.position.set(-5.5,1.4,6);s4.scale.set(.9,.35,1);signs.push(s4);
@@ -1083,6 +1084,8 @@ document.getElementById('aHap').addEventListener('click',function(){hapAnim=2;to
 document.getElementById('aBow').addEventListener('click',function(){if(bowT>=0)return;startBow();}); // 절이 끝나야 한 배
 document.getElementById('aMok').addEventListener('click',function(){moks++;showCounts();mokT=6;mokSeq=3;mokNext=0;questEvent('mok');}); // 똑·똑·똑 세 번, 소리는 칠 때마다
 document.getElementById('aBell').addEventListener('click',function(){bell();toast('마음을 모아요');});
+var autoSit=false;
+document.getElementById('aMed').addEventListener('click',function(){if(sitOn)return;if(nearestCushion()){sitHere();return;}var best=null,bd=1e9;cushionPos.forEach(function(c){var dd=Math.hypot(pos.x-c[0],pos.z-c[1]);if(dd<bd){bd=dd;best=c;}});decor.forEach(function(dc){if(dc.t!=='cushion')return;var dd=Math.hypot(pos.x-dc.x,pos.z-dc.z);if(dd<bd){bd=dd;best=[dc.x,dc.z];}});if(!best){toast('방석이 없어요');return;}target=new THREE.Vector3(best[0],0,best[1]);autoSit=true;toast('가까운 방석으로 가요');});
 var sndBtn=document.getElementById('sndBtn');
 function paintSnd(){sndBtn.textContent=soundOn?'🔔 소리':'🔕 소리';sndBtn.setAttribute('aria-pressed',String(soundOn));}
 paintSnd();
@@ -1925,7 +1928,7 @@ var samulGroup=new THREE.Group();scene.add(samulGroup);
   var sg=label('사물 네 가지','눌러서 소리 듣기','#2d7356');sg.position.set(-5.4,3.4,-5.2);sg.scale.set(1.2,.47,1);scene.add(sg);
 })();
 function openSamul(i){if(!isOpen('samul')){panelLocked('samul');return;}var s=SAMUL[i];s.s();showLearn(s.n,'<h3>'+s.n+'</h3>'+s.m+'<div class="note" style="margin-top:8px">사물은 아침저녁 예불 때 순서대로 울려요: 법고 → 운판 → 목어 → 범종.</div>');questEvent('learn');}
-// 밟으면 배우는 자리: 오계 돌 5개(뒷벽 왼쪽), 삼귀의 글판(오른쪽 벽 뒤쪽), 부처님 생애 그림책(사경대 옆)
+// 밟으면 배우는 자리: 삼귀의 글판(오른쪽 벽 뒤쪽), 부처님 생애 그림책(사경대 옆)
 var OGYE=[
  {n:'불살생',hj:'不殺生',m:'산 것을 죽이거나 해치지 않아요. 벌레도, 꽃도, 친구 마음도요.'},
  {n:'불투도',hj:'不偸盜',m:'주지 않은 것을 가지지 않아요. 떨어진 물건은 주인에게, 빌린 건 돌려줘요.'},
@@ -1948,10 +1951,7 @@ if(isAdult)LIFE=LIFE_ADULT;
 var learnSpots=[],ogyeStones=[];
 (function(){
   var stn=new THREE.MeshStandardMaterial({color:0xb9b1a3,roughness:.9});
-  OGYE.forEach(function(o,i){var z=8.1,x=-5.6+i*1.0;var top=canvasTex(256,256,function(g,w,h){g.fillStyle='#ece6db';g.fillRect(0,0,w,h);g.fillStyle='#1f3229';g.font='54px Jua, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(o.n,w/2,h/2-16);g.fillStyle='#8a6a2a';g.font='34px "Gowun Dodum", sans-serif';g.fillText(o.hj,w/2,h/2+40);});
-    var m=new THREE.Mesh(new THREE.CylinderGeometry(.4,.44,.08,24),[stn,new THREE.MeshStandardMaterial({map:top,roughness:.85}),stn]);m.position.set(x,.04,z);m.rotation.y=Math.PI;m.castShadow=true;scene.add(m);ogyeStones.push(m);
-    learnSpots.push({x:x,z:z,r:.6,lock:'ogye',label:o.n+' 돌 · 뜻 보기',open:function(){showLearn('오계 '+(i+1)+' · '+o.n,'<h3>'+o.n+' <span style="color:#8a6a2a;font-size:14px">'+o.hj+'</span></h3>'+o.m+'<div class="note" style="margin-top:8px">오계는 불자가 지키는 다섯 가지 약속이에요. 돌 다섯 개를 다 밟아 보세요.</div>');questEvent('learn');}});});
-  var lb=label('오계 돌 다섯','밟아 보세요','#2d7356');lb.position.set(-3.6,1.5,8.1);lb.scale.set(1.1,.43,1);scene.add(lb);
+  // (오계 돌은 11-05 뺌: 오계는 참회의 자리 「오늘의 약속 카드」·법회 모드·TV에서 배운다)
   // 삼귀의 글판: 오른쪽 벽 뒤쪽. 들어오며·나가며 한 번
   (function(){var tx=canvasTex(640,440,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.strokeStyle='#8a4fa8';g.lineWidth=10;g.strokeRect(12,12,w-24,h-24);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#8a4fa8';g.font='64px Jua, sans-serif';g.fillText('삼귀의 三歸依',w/2,78);g.fillStyle='#1f3229';g.font='44px "Gowun Dodum", sans-serif';['거룩한 부처님께 귀의합니다','거룩한 가르침에 귀의합니다','거룩한 스님들께 귀의합니다'].forEach(function(t,i){g.fillText(t,w/2,170+i*82);});g.fillStyle='#5b7166';g.font='30px "Gowun Dodum", sans-serif';g.fillText('앞에 서서 합장해 보세요',w/2,400);});
     var bd=new THREE.Mesh(new THREE.BoxGeometry(1.75,1.22,.06),new THREE.MeshStandardMaterial({color:0x5a3a1e,roughness:.7}));bd.position.set(hx-.05,2.3,7.0);bd.rotation.y=-Math.PI/2;scene.add(bd);
@@ -2030,7 +2030,7 @@ function openCham(step){
       sBody.appendChild(pouchBtn('잘못을 알고 고치는 사람이 훌륭해요.','참회의 자리'));
       if(gyeP&&gyeP.d!==todayKey&&!gyeP.checked){var rv=el('<div class="box" style="background:#fff5f8"><h3>지난 약속은 어땠어요?</h3><div class="big">'+gyeName(gyeP.k)+'</div><div class="sub">'+gyeP.v+'</div><div class="gcards" style="margin-top:10px"><button class="gcard"><span class="ic">😊</span>잘 지켰어요</button><button class="gcard"><span class="ic">🙂</span>반쯤</button><button class="gcard"><span class="ic">😔</span>못 지켰어요</button></div><div class="note" style="margin-top:6px">솔직하면 돼요. 못 지킨 날도 알아차린 날이에요.</div></div>');
         var bs=rv.querySelectorAll('button');
-        bs[0].addEventListener('click',function(){gyeKept[gyeP.k]=(gyeKept[gyeP.k]||0)+1;gyeP.checked=true;chamSave();paintGye();chime();toast(gyeP.k<5?'오계 돌이 조금 더 빛나요 ('+gyeName(gyeP.k)+' '+gyeKept[gyeP.k]+'일)':'잘했어요. 애쓴 날 '+(kept+1)+'일');paintWho();openCham();});
+        bs[0].addEventListener('click',function(){gyeKept[gyeP.k]=(gyeKept[gyeP.k]||0)+1;gyeP.checked=true;chamSave();paintGye();chime();toast(gyeP.k<5?gyeName(gyeP.k)+' 카드 · 애쓴 날 '+gyeKept[gyeP.k]+'일':'잘했어요. 애쓴 날 '+(kept+1)+'일');paintWho();openCham();});
         bs[1].addEventListener('click',function(){gyeKept[gyeP.k]=(gyeKept[gyeP.k]||0)+1;gyeP.checked=true;chamSave();paintGye();toast('반쯤도 애쓴 거예요. 애쓴 날로 세요.');openCham();});
         bs[2].addEventListener('click',function(){chamSt.k=gyeP.k;gyeP.checked=true;chamSave();toast('괜찮아요. 씻고 다시 시작해요.');openCham('how');});
         sBody.appendChild(rv);}
@@ -2061,7 +2061,7 @@ function openCham(step){
   if(step==='again'||step==='gyeVow'){
     var k=chamSt.k===null?5:chamSt.k,tip=k===5?GYE_OTHER:GYE_TIPS[k];
     showLearn(step==='again'?'참회 ③ 다시 하기로':(isAdult?'오늘의 계 약속':'오늘의 약속 카드'),'',function(){
-      sBody.appendChild(el('<div class="vow-card" style="animation:none"><div class="ic">'+GYE_ICON[k]+'</div><div class="t">'+gyeName(k)+'</div><div class="v">'+(k<5?GYE_TIPS[k].d:'')+'</div></div>'));
+      sBody.appendChild(el('<div class="vow-card" style="animation:none"><div class="ic">'+GYE_ICON[k]+'</div><div class="t">'+gyeName(k)+(k<5?' <span style="font-size:13px;opacity:.8">'+OGYE[k].hj+'</span>':'')+'</div><div class="v">'+(k<5?OGYE[k].m+'<br><span style="opacity:.85;font-size:14px">'+GYE_TIPS[k].d+'</span>':'')+'</div></div>'));
       sBody.appendChild(el('<div class="note" style="margin:12px 0 4px;text-align:center">'+(step==='again'?'앞으로는 이렇게 — 하나 고르면 오늘의 약속이 돼요':'오늘은 이렇게 — 하나만 골라요')+'</div>'));
       tip.v.forEach(function(v){var b=el('<button class="vowbtn">✋ '+v+'</button>');b.addEventListener('click',function(){
         gyeP={d:todayKey,k:k,v:v,checked:false};if(step==='again'){cham.n++;if(cham.days.indexOf(todayKey)<0)cham.days.push(todayKey);}chamSave();openCham('sealed');});sBody.appendChild(b);});
@@ -2071,7 +2071,7 @@ function openCham(step){
     chime();hapAnim=3;paintWho();paintGyeChip();if(typeof questEvent==='function')questEvent('cham');
     showLearn(isAdult?'오늘의 계 약속':'오늘의 약속 카드','',function(){
       sBody.appendChild(el('<div class="vow-card"><div class="stamp">오늘의<br>약속</div><div class="ic">'+GYE_ICON[gyeP.k]+'</div><div class="t">'+gyeName(gyeP.k)+'</div><div class="v">'+gyeP.v+'</div></div>'));
-      sBody.appendChild(el('<div class="note" style="margin-top:12px;text-align:center">'+(isAdult?'내일 법당에 오시면 "어땠어요?" 하고 묻습니다. 애쓴 날이 쌓이면 오계 돌이 빛납니다.':'내일 법당에 오면 "어땠어요?" 하고 물어봐요. 지키려 애쓴 날이 쌓이면 뒷마당 오계 돌이 빛나요.')+'</div>'));
+      sBody.appendChild(el('<div class="note" style="margin-top:12px;text-align:center">'+(isAdult?'내일 법당에 오시면 "어땠어요?" 하고 묻습니다. 애쓴 날이 3일 쌓이면 그 카드에 금빛 테두리가 생깁니다.':'내일 법당에 오면 "어땠어요?" 하고 물어봐요. 지키려 애쓴 날이 3일 쌓이면 그 카드에 금빛 테두리가 생겨요.')+'</div>'));
       var ok=el('<button class="btn pink" style="margin-top:14px;width:100%">🙏 약속했어요</button>');ok.addEventListener('click',function(){closeSheet();toast('오늘의 약속: '+gyeP.v);});sBody.appendChild(ok);
     });return;
   }
@@ -2079,7 +2079,7 @@ function openCham(step){
     showLearn(isAdult?'오늘의 계 약속':'오늘의 약속 카드','',function(){
       if(gyeP&&gyeP.d===todayKey){sBody.appendChild(el('<div class="vow-card" style="animation:none"><div class="stamp" style="animation:none;transform:rotate(-14deg) scale(1)">오늘의<br>약속</div><div class="ic">'+GYE_ICON[gyeP.k]+'</div><div class="t">'+gyeName(gyeP.k)+'</div><div class="v">'+gyeP.v+'</div></div>'));sBody.appendChild(el('<div class="note" style="margin:10px 0;text-align:center">오늘 약속은 정해졌어요. 바꾸고 싶으면 아래에서 다시 골라요.</div>'));}
       else sBody.appendChild(el('<div class="note" style="margin-bottom:10px;text-align:center">'+(isAdult?'오계 중 오늘 지킬 것 하나를 고릅니다. 하루에 하나.':'다섯 장 중에 오늘 지킬 카드 한 장! 하루에 하나만.')+'</div>'));
-      var grid=el('<div class="gcards"></div>');OGYE.forEach(function(o,i){var b=el('<button class="gcard"><span class="ic">'+GYE_ICON[i]+'</span>'+o.n+'<span class="k">'+(gyeKept[i]?'애쓴 날 '+gyeKept[i]:o.hj)+'</span></button>');b.addEventListener('click',function(){chamSt={k:i,how:null};openCham('gyeVow');});grid.appendChild(b);});sBody.appendChild(grid);
+      var grid=el('<div class="gcards"></div>');OGYE.forEach(function(o,i){var b=el('<button class="gcard"'+(gyeKept[i]>=3?' style="box-shadow:0 0 0 3px #ffd060,0 6px 18px rgba(0,0,0,.12)"':'')+'><span class="ic">'+GYE_ICON[i]+'</span>'+o.n+'<span class="k">'+(gyeKept[i]?'애쓴 날 '+gyeKept[i]+(gyeKept[i]>=3?' ✨':''):o.hj)+'</span></button>');b.addEventListener('click',function(){chamSt={k:i,how:null};openCham('gyeVow');});grid.appendChild(b);});sBody.appendChild(grid);
     });return;
   }
 }
@@ -2092,7 +2092,7 @@ if(gyeP&&gyeP.d!==todayKey&&!gyeP.checked&&isOpen('cham'))setTimeout(function(){
 var QUESTS=[
  {k:'offer',n:'불단에 공양 하나 올리기',h:'부처님 앞·공양'},{k:'dhp',n:'오늘의 법구경 읽고 오기',h:'왼쪽 벽 전광판'},{k:'bow',n:'절 세 번 하기',h:'절하기 버튼',need:3},
  {k:'sagyeong',n:'사경 한 줄 쓰기',h:'사경대'},{k:'wall',n:'팔정도 액자 앞 버튼 밟기',h:'오른쪽 벽'},{k:'sit',n:'방석에 앉아 1분 숨 바라보기',h:'아무 방석'},
- {k:'mok',n:'목탁 치기',h:'목탁 버튼'},{k:'learn',n:'사물·오계 돌·천불 중 하나 눌러 보기',h:'왼쪽 벽 앞·뒷벽'},{k:'lantern',n:'소원 연등 달기',h:'소원 연등'},
+ {k:'mok',n:'목탁 치기',h:'목탁 버튼'},{k:'learn',n:'사물·천불·삼귀의 중 하나 눌러 보기',h:'왼쪽 벽 앞·뒷벽'},{k:'lantern',n:'소원 연등 달기',h:'소원 연등'},
  {k:'mind',n:'마음 쉼터 다녀오기',h:'🌿 마음 쉼터'},{k:'imagine',n:'눈 감고 법당 떠올리기',h:'설정·마음 쉼터'},{k:'study',n:'나란다 공부방에서 문제 열기',h:'오른쪽 벽 앞 서안'},{k:'pond',n:'연꽃 연못 보고 오기',h:'연꽃 연못'},{k:'hap',n:'합장 인사 하기',h:'합장 버튼'},{k:'cham',n:'참회의 자리에서 오늘의 계 약속 하기',h:'부처님 앞 오른쪽'}
 ];
 var quest=store.get('quest',null);
@@ -2291,12 +2291,12 @@ var UNLOCKS=[
  {d:5,keys:['deco','vow'],n:'🏠 꾸미기 · 내 원력 족자'},
  {d:7,keys:['quest','pet','dhp'],n:'동자승 심부름 · 동반자 동물 · 오늘의 법구경'},
  {d:10,keys:['play','samul'],n:'놀이터 · 사물 네 가지'},
- {d:15,keys:['ogye','samgwi','life','cham'],n:'오계 돌 · 삼귀의 글판 · 부처님 생애 그림책 · 참회의 자리'},
+ {d:15,keys:['ogye','samgwi','life','cham'],n:'오계 약속 카드 · 삼귀의 글판 · 부처님 생애 그림책 · 참회의 자리'},
  {d:20,keys:['study'],n:'나란다 공부방'},
  {d:30,keys:['garden'],n:'비밀 정원'},
  {d:45,keys:[],n:'???'},{d:60,keys:[],n:'???'},{d:90,keys:[],n:'???'},{d:120,keys:[],n:'???'},{d:150,keys:[],n:'???'},{d:190,keys:[],n:'한 해 회향'}
 ];
-var LOCK_NAME={sagyeong:'사경대',lantern:'소원 연등',deco:'꾸미기',vow:'내 원력 족자',quest:isAdult?'오늘의 정진':'동자승 심부름',pet:'동반자 동물',dhp:'오늘의 법구경',play:'놀이터',samul:'사물 네 가지',ogye:'오계 돌',samgwi:'삼귀의 글판',life:'부처님 생애 그림책',study:isAdult?'경전 공부방':'나란다 공부방',garden:'비밀 정원',cham:'참회의 자리'};
+var LOCK_NAME={sagyeong:'사경대',lantern:'소원 연등',deco:'꾸미기',vow:'내 원력 족자',quest:isAdult?'오늘의 정진':'동자승 심부름',pet:'동반자 동물',dhp:'오늘의 법구경',play:'놀이터',samul:'사물 네 가지',ogye:'오계',samgwi:'삼귀의 글판',life:'부처님 생애 그림책',study:isAdult?'경전 공부방':'나란다 공부방',garden:'비밀 정원',cham:'참회의 자리'};
 function needDay(k){for(var i=0;i<UNLOCKS.length;i++)if(UNLOCKS[i].keys.indexOf(k)>-1)return UNLOCKS[i].d;return 1;}
 function isOpen(k){return visitDays()>=needDay(k);}
 function nextUnlockEntry(){var dd=visitDays();for(var i=0;i<UNLOCKS.length;i++)if(UNLOCKS[i].d>dd)return UNLOCKS[i];return null;}
@@ -2372,7 +2372,7 @@ function loop(){
     var f=(keys.up?1:0)-(keys.down?1:0);
     if(f){pos.x+=Math.sin(heading)*f*3*dt;pos.z+=Math.cos(heading)*f*3*dt;moving=true;}
     if(target){var dx=target.x-pos.x,dz=target.z-pos.z,dist=Math.hypot(dx,dz);
-      if(dist<.08)target=null;else{var want=Math.atan2(dx,dz),diff=((want-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=diff*Math.min(1,8*dt);var sp=Math.min(dist,3*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
+      if(dist<.08){target=null;if(autoSit){autoSit=false;sitHere();}}else{var want=Math.atan2(dx,dz),diff=((want-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=diff*Math.min(1,8*dt);var sp=Math.min(dist,3*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
     clampPos(pos);
   }
   if(showOff>0)showOff-=dt;
