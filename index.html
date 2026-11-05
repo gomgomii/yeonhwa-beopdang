@@ -91,6 +91,17 @@ body.awake .jump,body.gaze .jump,body.gaze .prompt,body.gaze .prompt.on,body.gaz
 .bar{height:10px;border-radius:999px;background:var(--leaf-soft);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--lotus);border-radius:999px}
 .choices{display:flex;flex-wrap:wrap;gap:8px}
+.gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.gcard{border:0;border-radius:18px;padding:14px 6px 10px;background:linear-gradient(160deg,#fff,#f3ecff);box-shadow:0 6px 18px rgba(0,0,0,.12);text-align:center;font-family:var(--font-display);font-size:15px;color:#1f3229;transition:transform .15s;cursor:pointer}
+.gcard:active{transform:scale(.94)}.gcard .ic{font-size:38px;display:block;margin-bottom:4px;line-height:1}.gcard .k{display:block;font-size:11.5px;color:#8a4fa8;font-family:var(--font-body);margin-top:3px}
+.vow-card{border-radius:22px;padding:22px 18px;background:linear-gradient(160deg,#2d7356,#1f4d3a);color:#fff;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.25);position:relative;overflow:hidden;animation:cardIn .55s cubic-bezier(.2,.9,.3,1.2)}
+.vow-card .ic{font-size:54px;line-height:1}.vow-card .t{font-family:var(--font-display);font-size:22px;margin-top:8px}.vow-card .v{font-size:16.5px;margin-top:8px;opacity:.95;line-height:1.5}
+.stamp{position:absolute;right:12px;top:12px;border:4px solid #ffd060;color:#ffd060;border-radius:50%;width:74px;height:74px;display:grid;place-items:center;font-family:var(--font-display);font-size:14px;line-height:1.15;transform:rotate(-14deg) scale(0);animation:stampIn .45s .4s forwards;text-align:center}
+@keyframes cardIn{from{transform:translateY(30px) rotateX(20deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes stampIn{0%{transform:rotate(-14deg) scale(2.2);opacity:0}60%{transform:rotate(-14deg) scale(.9);opacity:1}100%{transform:rotate(-14deg) scale(1);opacity:1}}
+.vowbtn{display:block;width:100%;text-align:left;border:0;border-radius:16px;padding:14px 16px;margin-top:8px;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.1);font-size:16px;font-family:var(--font-display);color:#1f3229;cursor:pointer}
+.vowbtn:active{transform:scale(.98)}
+#gyeChip{display:none;position:fixed;left:14px;top:96px;z-index:11;border:0;border-radius:999px;background:linear-gradient(160deg,#2d7356,#1f4d3a);color:#fff;padding:7px 12px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .choice{border:1.5px solid #c8ddd1;background:#fff;border-radius:999px;padding:6px 12px;font-size:14.5px;color:var(--ink)}
 .choice[aria-pressed="true"]{border-color:var(--leaf);background:var(--leaf-soft);color:var(--leaf)}
 .sw{width:32px;height:32px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px #c8ddd1}
@@ -116,6 +127,7 @@ select{font:inherit;font-size:15px;padding:6px 10px;border-radius:10px;border:1.
 @media (max-width:700px){
   .hud{gap:6px;padding:8px 10px}
   .hud.bottom{justify-content:flex-end}
+  #gyeChip{top:98px;left:10px;font-size:12px}
   .act{min-width:40px;padding:5px 2px;font-size:12px}
   .hud.top .row{gap:6px}
   .brand{padding:6px 12px}.brand b{font-size:15px}.brand span{display:none}
@@ -282,6 +294,7 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
 <div class="saying" id="saying"><div class="s" id="sayDate"></div><div class="q" id="sayQ"></div><div class="s" id="saySrc"></div></div>
 
 <button id="jumpToggle" type="button" aria-expanded="false">바로 가기 ▴</button>
+<button id="gyeChip" type="button" title="오늘의 약속"></button>
 <nav class="jump" aria-label="바로 가기">
   <h3>바로 가기</h3>
   <button data-go="altar">부처님 앞·공양</button>
@@ -329,6 +342,7 @@ var IMG_ALTAR="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBA
 var store={get:function(k,d){try{var v=localStorage.getItem('yeon3d-'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set:function(k,v){try{localStorage.setItem('yeon3d-'+k,JSON.stringify(v))}catch(e){}}};
 
 var role=store.get('role','child'), isTeacher=role==='teacher'||role==='admin', isAdmin=role==='admin', isAdult=role==='adult'||isTeacher;
+var viewAs=store.get('viewAs','child');if(isAdmin)isAdult=viewAs==='adult'; // 교법사는 두 화면을 다 본다(기본 어린이)
 /* ---------------- 데이터 ---------------- */
 // 유튜브 영상(링크만 넣어 둔다. 영상 자체는 유튜브에서 재생) — 2026-11-05 복선생이 고른 것
 var MEDIA={samgwi:{id:'DgSSqJuGtK8',n:'어린이 삼귀의'},banya:{id:'YgHYcGOMyK4',n:'어린이 반야심경'}};
@@ -776,6 +790,8 @@ var MANNERS_ADULT=[
  '좌복을 제자리에, 부처님께 합장 반배하고 뒷걸음으로 두어 걸음 물러난 뒤 돌아섭니다. 법당 물건에 손대지 않고, 신발은 다시 가지런히.'
 ];
 var SAMGWI_ADULT='<h3>세 가지 보물에 돌아가 기댑니다</h3><div class="ln" style="font-family:var(--font-display);font-size:19px;line-height:1.7">거룩한 부처님께 귀의합니다.<br>거룩한 가르침에 귀의합니다.<br>거룩한 스님들께 귀의합니다.</div><div class="note" style="margin-top:8px">귀의(歸依)는 "돌아가 기댄다"는 뜻입니다. 불(깨달은 분)·법(가르침)·승(함께 수행하는 공동체)을 삼보라 합니다. 삼귀의는 불자가 되는 첫 서약이며, 모든 법회가 이것으로 시작합니다. 세 번 합장하며 마음속으로 따라 하세요.</div>';
+var SAMGWI_SELF_CHILD='처음엔 <b>밖의</b> 부처님·가르침·스님들께 기대요. 그런데 부처님은 "네 안에도 부처가 있다"고 하셨어요. 그래서 한 걸음 더 — <b>내 안의 삼보</b>에 귀의해요.<div class="rank" style="margin-top:8px"><div class="r"><span>🌅</span><span><b>내 안의 부처(자성불)</b> — 졸다가 "아!" 하고 깨어나는 그 마음. 알아차리는 마음.</span></div><div class="r"><span>🧭</span><span><b>내 안의 가르침(자성법)</b> — 무엇이 옳은지 사실 나는 알고 있어요. 그 바른 마음.</span></div><div class="r"><span>🤝</span><span><b>내 안의 스님(자성승)</b> — 싸우지 않고 맑게 함께하는 마음.</span></div></div><div class="note" style="margin-top:8px">밖의 삼보에 기대어 배우고, 결국 내 안의 삼보로 돌아와요. 합장할 때 마음속으로 한 번 더: "내 안의 부처님께 귀의합니다."</div>';
+var SAMGWI_SELF_ADULT='육조 혜능 스님은 삼귀의를 <b>자성삼귀의(自性三歸依)</b>로 풀었습니다. 불(佛)은 각(覺), 법(法)은 정(正), 승(僧)은 정(淨). "자기 마음의 깨달음에 귀의하고, 자기 마음의 바름에 귀의하고, 자기 마음의 깨끗함에 귀의한다."<div class="rank" style="margin-top:8px"><div class="r"><span>覺</span><span><b>귀의각 — 이족존(二足尊)</b>: 복과 지혜가 갖추어진 깨어 있음. 밖의 부처님을 통해 내 안의 깨어 있음을 봅니다.</span></div><div class="r"><span>正</span><span><b>귀의정 — 이욕존(離欲尊)</b>: 욕심을 떠난 바름. 경전은 문이고, 내 안의 바른 앎이 집입니다.</span></div><div class="r"><span>淨</span><span><b>귀의정 — 중중존(衆中尊)</b>: 무리 가운데 깨끗함. 승가는 함께 가는 이들이며, 내 안의 화합하는 마음입니다.</span></div></div><div class="note" style="margin-top:8px">밖의 삼보는 문이고 자성삼보는 집입니다. 문 없이 집에 들어갈 수 없고, 집을 잊고 문만 지키면 평생 문지기입니다. 삼배를 밖의 부처님께 한 번, 내 안의 깨어 있음에 한 번, 함께 가는 이들에게 한 번 — 그렇게 올려 보십시오. (육조단경 참회품)</div>';
 var CHEONBUL_ADULT='<h3>천 분의 부처님 — 천불(千佛)</h3>과거·현재·미래의 삼천 부처님 중 현겁(現劫)의 천불을 모신 것입니다. 뜻은 하나: 부처는 한 분이 아니라 깨달은 모든 존재이며, 누구나 그 자리에 설 수 있다는 것(일체중생 실유불성). 지금 보는 나도 그중 한 분이 될 수 있습니다.<div class="note" style="margin-top:8px">천불전에서는 한 분 한 분 손 모양(수인)이 다르기도 합니다. 지나며 한 번 합장해 보세요.</div>';
 var CHAM_ADULT='<h3>참회(懺悔)란</h3>懺(참)은 뉘우침, 悔(회)는 후회. 범어 크샤마(kṣama), "참고 용서를 구함"에서 왔습니다. 벌을 받는 일이 아니라, 지은 것을 바로 보고(알아차림), 인정하고(솔직함), 다시 짓지 않기로 하는(결심) 세 걸음입니다. 불교에서 참회는 죄의식이 아니라 <b>마음을 씻어 가볍게 하는 수행</b>입니다.'+
  '<div class="box" style="margin-top:10px;background:#f6f0ff"><b>참회의 세 걸음</b><div class="rank"><div class="r"><span>①</span><span>알아차리기 — 무엇을, 몸·말·마음 중 어디로 지었는가</span></div><div class="r"><span>②</span><span>솔직히 말하기 — 변명 없이 "잘못했습니다"</span></div><div class="r"><span>③</span><span>다시 하기로 — 같은 자리에서 다르게 하겠다는 원</span></div></div></div>'+
@@ -1463,8 +1479,9 @@ function panelGuide(){
   hs.addEventListener('change',function(){hairStyle=this.value;store.set('hair',hairStyle);doHair();showOff=4;toast(HAIR_NAME[hairStyle]+' 머리로 바꿨어요');});
   ub.querySelector('#uSkirt').addEventListener('click',function(){uniSkirt=!uniSkirt;store.set('skirt',uniSkirt);this.setAttribute('aria-pressed',String(uniSkirt));dress();showOff=4;});
   sBody.insertBefore(ub,sBody.firstChild);
-  var vb=el('<div class="box"><h3>법당에 온 날 (선생님 확인용)</h3><div class="note">법당에 온 날이 쌓일수록 꾸미기 물건과 염주 색이 열리고, 30일이면 비밀 정원 문이 열려요(3·5·7·10·15·20·30일). 하루에 몇 번 와도 하루예요. 지금 '+visitDays()+'일째.</div><div class="row" style="margin-top:8px"><button class="btn ghost sm" id="vPlus">방문일 +1</button><button class="btn ghost sm" id="vReset">방문일 되돌리기</button></div><div class="row" style="margin-top:8px"><button class="btn pink sm" id="vAll">🔓 다 열어 보기 (200일째로)</button><button class="btn ghost sm" id="vFill">🏆 108배·도장 8·사경 10 채우기</button><button class="btn ghost sm" id="vWipe" style="color:#b5462f">🧹 이 기기 기록 모두 지우기</button></div><div class="note" style="margin-top:6px">교법사 체험용. 「방문일 되돌리기」로 원래대로. 채우기는 되돌릴 수 없어요(이 기기만).</div></div>');
+  var vb=el('<div class="box"><h3>법당에 온 날 (선생님 확인용)</h3><div class="note">법당에 온 날이 쌓일수록 꾸미기 물건과 염주 색이 열리고, 30일이면 비밀 정원 문이 열려요(3·5·7·10·15·20·30일). 하루에 몇 번 와도 하루예요. 지금 '+visitDays()+'일째.</div><div class="row" style="margin-top:8px"><button class="btn ghost sm" id="vPlus">방문일 +1</button><button class="btn ghost sm" id="vReset">방문일 되돌리기</button></div><div class="row" style="margin-top:8px"><button class="btn pink sm" id="vAll">🔓 다 열어 보기 (200일째로)</button><button class="btn ghost sm" id="vFill">🏆 108배·도장 8·사경 10 채우기</button><button class="btn ghost sm" id="vWipe" style="color:#b5462f">🧹 이 기기 기록 모두 지우기</button></div><div class="row" style="margin-top:8px"><span class="note">지금 보는 화면: <b>'+(isAdult?'어른(연화회)':'어린이')+'</b></span><button class="btn ghost sm" id="vChild">👧 어린이 화면</button><button class="btn ghost sm" id="vAdult">🧕 어른 화면</button></div><div class="note" style="margin-top:6px">교법사 체험용. 「방문일 되돌리기」로 원래대로. 채우기는 되돌릴 수 없어요(이 기기만).</div></div>');
   vb.querySelector('#vAll').addEventListener('click',function(){visitBonus=200;store.set('visitBonus',200);toast('다 열었어요. 화면을 새로 열어요');setTimeout(function(){location.reload();},700);});
+  vb.querySelector('#vChild').addEventListener('click',function(){store.set('viewAs','child');location.reload();});vb.querySelector('#vAdult').addEventListener('click',function(){store.set('viewAs','adult');location.reload();});
   vb.querySelector('#vWipe').addEventListener('click',function(){if(this.dataset.arm){var ks=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('yeon3d-')===0)ks.push(k);}ks.forEach(function(k){localStorage.removeItem(k);});toast('다 지웠어요. 처음 화면으로');setTimeout(function(){location.reload();},700);}else{this.dataset.arm='1';this.textContent='한 번 더 누르면 지워요';}});
   vb.querySelector('#vFill').addEventListener('click',function(){store.set('bows',Math.max(bows,108));store.set('stamps',[0,1,2,3,4,5,6,7]);store.set('sagyeong',Math.max(store.get('sagyeong',0),10));toast('채웠어요. 화면을 새로 열어요');setTimeout(function(){location.reload();},700);});
   vb.querySelector('#vPlus').addEventListener('click',function(){visitBonus++;store.set('visitBonus',visitBonus);paintDecoUI();fillBeads();fillPets();paintSecret();paintPet();paintWho();paintNext();toast('법당에 온 날 '+visitDays()+'일째 · '+nextUnlock());});
@@ -1518,7 +1535,7 @@ var DHP=[
  [361,'몸을 다스리고, 말을 다스리고, 마음을 다스리는 것이 좋아요. 모두를 다스린 사람은 모든 괴로움에서 벗어나요.']
 ];
 var doy2=Math.floor((now0-new Date(now0.getFullYear(),0,0))/864e5);
-function wrapLines(g,text,maxW){var words=text.split(' '),lines=[],line='';words.forEach(function(wd){var t=line?line+' '+wd:wd;if(g.measureText(t).width>maxW&&line){lines.push(line);line=wd;}else line=t;});if(line)lines.push(line);return lines;}
+function wrapLines(g,text,maxW){var lines=[];text.split(/(?<=[.!?])s+/).forEach(function(sent){var words=sent.split(' '),line='';words.forEach(function(wd){var t=line?line+' '+wd:wd;if(g.measureText(t).width>maxW&&line){lines.push(line);line=wd;}else line=t;});if(line)lines.push(line);});return lines;} // 문장 단위로 먼저 끊고, 긴 문장만 단어에서 접는다
 function drawDhp(g,w,h){var v=DHP[doy2%DHP.length];g.fillStyle='#10201a';g.fillRect(0,0,w,h);g.strokeStyle='#2d7356';g.lineWidth=6;g.strokeRect(14,14,w-28,h-28);
   g.textAlign='center';g.textBaseline='middle';g.fillStyle='#9fd3b5';g.font='34px "Gowun Dodum", sans-serif';g.fillText('오늘의 법구경 · '+(now0.getMonth()+1)+'월 '+now0.getDate()+'일',w/2,70);
   g.fillStyle='#fbf5e6';g.font='52px Jua, sans-serif';var lines=wrapLines(g,v[1],w-140);var y=h/2-(lines.length-1)*36;lines.forEach(function(l){g.fillText(l,w/2,y);y+=72;});
@@ -1927,7 +1944,7 @@ var learnSpots=[],ogyeStones=[];
   (function(){var tx=canvasTex(640,440,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.strokeStyle='#8a4fa8';g.lineWidth=10;g.strokeRect(12,12,w-24,h-24);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#8a4fa8';g.font='64px Jua, sans-serif';g.fillText('삼귀의 三歸依',w/2,78);g.fillStyle='#1f3229';g.font='44px "Gowun Dodum", sans-serif';['거룩한 부처님께 귀의합니다','거룩한 가르침에 귀의합니다','거룩한 스님들께 귀의합니다'].forEach(function(t,i){g.fillText(t,w/2,170+i*82);});g.fillStyle='#5b7166';g.font='30px "Gowun Dodum", sans-serif';g.fillText('앞에 서서 합장해 보세요',w/2,400);});
     var bd=new THREE.Mesh(new THREE.BoxGeometry(1.75,1.22,.06),new THREE.MeshStandardMaterial({color:0x5a3a1e,roughness:.7}));bd.position.set(hx-.05,2.3,7.0);bd.rotation.y=-Math.PI/2;scene.add(bd);
     var pl=new THREE.Mesh(new THREE.PlaneGeometry(1.62,1.1),new THREE.MeshStandardMaterial({map:tx}));pl.position.set(hx-.09,2.3,7.0);pl.rotation.y=-Math.PI/2;scene.add(pl);})();
-  learnSpots.push({x:6.1,z:7.0,r:.95,lock:'samgwi',label:'삼귀의 · 귀의하기',open:function(){hapAnim=4;bell();showLearn('삼귀의 (三歸依)',isAdult?SAMGWI_ADULT:'<h3>세 가지 보물에 기대요</h3><div class="ln" style="font-family:var(--font-display);font-size:19px;line-height:1.7">거룩한 부처님께 귀의합니다.<br>거룩한 가르침에 귀의합니다.<br>거룩한 스님들께 귀의합니다.</div><div class="note" style="margin-top:8px">귀의는 "믿고 기댄다"는 뜻이에요. 부처님(불)·가르침(법)·함께 수행하는 분들(승)을 삼보라고 해요. 법회는 늘 삼귀의로 시작해요. 연이가 합장하고 있어요.</div>',function(){sBody.appendChild(videoBox('samgwi'));});questEvent('learn');}});
+  learnSpots.push({x:6.1,z:7.0,r:.95,lock:'samgwi',label:'삼귀의 · 귀의하기',open:function(){hapAnim=4;bell();showLearn('삼귀의 (三歸依)',isAdult?SAMGWI_ADULT:'<h3>세 가지 보물에 기대요</h3><div class="ln" style="font-family:var(--font-display);font-size:19px;line-height:1.7">거룩한 부처님께 귀의합니다.<br>거룩한 가르침에 귀의합니다.<br>거룩한 스님들께 귀의합니다.</div><div class="note" style="margin-top:8px">귀의는 "믿고 기댄다"는 뜻이에요. 부처님(불)·가르침(법)·함께 수행하는 분들(승)을 삼보라고 해요. 법회는 늘 삼귀의로 시작해요. 연이가 합장하고 있어요.</div>',function(){var more=el('<div class="box" style="background:#f6f0ff"><h3>한 걸음 더 — 내 안의 삼보</h3><button class="btn ghost sm">펼쳐 보기</button><div style="display:none;margin-top:8px">'+(isAdult?SAMGWI_SELF_ADULT:SAMGWI_SELF_CHILD)+'</div></div>');var mb=more.querySelector('button');mb.addEventListener('click',function(){var dv=more.querySelector('div');dv.style.display=dv.style.display==='none'?'block':'none';mb.textContent=dv.style.display==='none'?'펼쳐 보기':'접기';});sBody.appendChild(more);sBody.appendChild(videoBox('samgwi'));});questEvent('learn');}});
   // 부처님 생애 그림책
   var bk=new THREE.Group();bk.position.set(5.5,0,4.4);var bd=new THREE.Mesh(new THREE.BoxGeometry(.7,.4,.5),new THREE.MeshStandardMaterial({color:0x6b3e22}));bd.position.y=.2;bk.add(bd);
   [-1,1].forEach(function(k){var pg2=new THREE.Mesh(new THREE.BoxGeometry(.34,.03,.46),new THREE.MeshStandardMaterial({color:0xfbf5e6}));pg2.position.set(k*.18,.42,0);pg2.rotation.z=-k*.12;bk.add(pg2);});scene.add(bk);
@@ -1952,6 +1969,8 @@ var GYE_TIPS=[
  {d:'참말만 하기 · 고운 말 쓰기',v:['참말만 할게요','고운 말로 말할게요','잘못했으면 먼저 사과할게요']},
  {d:'정신 흐리게 하는 것 멀리하기 · 빠져서 나를 잊지 않기',v:['화면에 빠져 할 일을 잊지 않을게요','해야 할 일을 먼저 하고 놀게요']}
 ];
+var GYE_ICON=['🕊️','🤲','🧍','💬','💧','✨'];
+function paintGyeChip(){var c=document.getElementById('gyeChip');if(!c)return;if(gyeP&&gyeP.d===todayKey){c.style.display='block';c.textContent=GYE_ICON[gyeP.k]+' 오늘의 약속 · '+gyeP.v;}else c.style.display='none';}
 var GYE_OTHER={d:'그 밖의 것',v:['한 번 더 생각하고 행동할게요','먼저 사과할게요','같은 일을 되풀이하지 않을게요']};
 if(isAdult){GYE_TIPS=GYE_TIPS_ADULT;GYE_OTHER=GYE_OTHER_ADULT;}
 var cham=store.get('cham',{days:[],n:0});
@@ -1997,14 +2016,14 @@ function openCham(step){
   if(!step){ // 첫 화면
     showLearn('참회의 자리',chamIntroHtml(),function(){
       sBody.appendChild(pouchBtn('잘못을 알고 고치는 사람이 훌륭해요.','참회의 자리'));
-      if(gyeP&&gyeP.d!==todayKey&&!gyeP.checked){var rv=el('<div class="box" style="background:#fff5f8"><h3>지난 약속은 어땠어요?</h3><div class="big">'+gyeName(gyeP.k)+'</div><div class="sub">'+gyeP.v+'</div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn sm">잘 지켰어요</button><button class="btn ghost sm">반쯤 지켰어요</button><button class="btn ghost sm">못 지켰어요</button></div><div class="note" style="margin-top:6px">솔직하면 돼요. 못 지킨 날도 알아차린 날이에요.</div></div>');
+      if(gyeP&&gyeP.d!==todayKey&&!gyeP.checked){var rv=el('<div class="box" style="background:#fff5f8"><h3>지난 약속은 어땠어요?</h3><div class="big">'+gyeName(gyeP.k)+'</div><div class="sub">'+gyeP.v+'</div><div class="gcards" style="margin-top:10px"><button class="gcard"><span class="ic">😊</span>잘 지켰어요</button><button class="gcard"><span class="ic">🙂</span>반쯤</button><button class="gcard"><span class="ic">😔</span>못 지켰어요</button></div><div class="note" style="margin-top:6px">솔직하면 돼요. 못 지킨 날도 알아차린 날이에요.</div></div>');
         var bs=rv.querySelectorAll('button');
         bs[0].addEventListener('click',function(){gyeKept[gyeP.k]=(gyeKept[gyeP.k]||0)+1;gyeP.checked=true;chamSave();paintGye();chime();toast(gyeP.k<5?'오계 돌이 조금 더 빛나요 ('+gyeName(gyeP.k)+' '+gyeKept[gyeP.k]+'일)':'잘했어요. 애쓴 날 '+(kept+1)+'일');paintWho();openCham();});
         bs[1].addEventListener('click',function(){gyeKept[gyeP.k]=(gyeKept[gyeP.k]||0)+1;gyeP.checked=true;chamSave();paintGye();toast('반쯤도 애쓴 거예요. 애쓴 날로 세요.');openCham();});
         bs[2].addEventListener('click',function(){chamSt.k=gyeP.k;gyeP.checked=true;chamSave();toast('괜찮아요. 씻고 다시 시작해요.');openCham('how');});
         sBody.appendChild(rv);}
       var st=el('<div class="box"><h3>나의 참회·약속</h3><div class="rank"><div class="r"><span>🪷</span><span>참회한 날 <b>'+cham.days.length+'</b>일 · <b>'+cham.n+'</b>번</span></div><div class="r"><span>🪨</span><span>계를 지키려 애쓴 날 <b>'+kept+'</b>일'+(gyeP&&gyeP.d===todayKey?' · 오늘 약속: '+gyeName(gyeP.k):'')+'</span></div></div></div>');sBody.appendChild(st);
-      var row=el('<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="btn pink">🪷 참회하기</button><button class="btn">🪨 오늘의 계 약속</button></div>');
+      var row=el('<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="btn pink">🪷 참회하기</button><button class="btn">'+(isAdult?'🪨 오늘의 계 약속':'🃏 오늘의 약속 카드')+'</button></div>');
       row.children[0].addEventListener('click',function(){chamSt={k:null,how:null};openCham('what');});row.children[1].addEventListener('click',function(){openCham('gye');});sBody.appendChild(row);
     });questEvent('learn');return;
   }
@@ -2027,24 +2046,33 @@ function openCham(step){
       sBody.appendChild(b);
     });return;
   }
-  if(step==='again'){
-    var tip=chamSt.k===5||chamSt.k===null?GYE_OTHER:GYE_TIPS[chamSt.k];
-    showLearn('참회 ③ 다시 하기로','<h3>앞으로는 이렇게 할게요</h3><div class="note">하나 고르면 오늘의 계 약속이 돼요. 다음에 법당에 오면 "어땠어요?" 하고 물어봐요.</div>',function(){
-      var ch=el('<div class="choices"></div>');tip.v.forEach(function(v){var b=el('<button class="btn ghost">'+v+'</button>');b.addEventListener('click',function(){
-        gyeP={d:todayKey,k:chamSt.k===null?5:chamSt.k,v:v,checked:false};cham.n++;if(cham.days.indexOf(todayKey)<0)cham.days.push(todayKey);chamSave();bell();paintWho();closeSheet();
-        toast('참회 끝. 마음이 조금 가벼워졌나요? 오늘 약속: '+v);});ch.appendChild(b);});sBody.appendChild(ch);
+  if(step==='again'||step==='gyeVow'){
+    var k=chamSt.k===null?5:chamSt.k,tip=k===5?GYE_OTHER:GYE_TIPS[k];
+    showLearn(step==='again'?'참회 ③ 다시 하기로':(isAdult?'오늘의 계 약속':'오늘의 약속 카드'),'',function(){
+      sBody.appendChild(el('<div class="vow-card" style="animation:none"><div class="ic">'+GYE_ICON[k]+'</div><div class="t">'+gyeName(k)+'</div><div class="v">'+(k<5?GYE_TIPS[k].d:'')+'</div></div>'));
+      sBody.appendChild(el('<div class="note" style="margin:12px 0 4px;text-align:center">'+(step==='again'?'앞으로는 이렇게 — 하나 고르면 오늘의 약속이 돼요':'오늘은 이렇게 — 하나만 골라요')+'</div>'));
+      tip.v.forEach(function(v){var b=el('<button class="vowbtn">✋ '+v+'</button>');b.addEventListener('click',function(){
+        gyeP={d:todayKey,k:k,v:v,checked:false};if(step==='again'){cham.n++;if(cham.days.indexOf(todayKey)<0)cham.days.push(todayKey);}chamSave();openCham('sealed');});sBody.appendChild(b);});
+    });return;
+  }
+  if(step==='sealed'){ // 약속 카드에 도장 쾅
+    chime();hapAnim=3;paintWho();paintGyeChip();if(typeof questEvent==='function')questEvent('cham');
+    showLearn(isAdult?'오늘의 계 약속':'오늘의 약속 카드','',function(){
+      sBody.appendChild(el('<div class="vow-card"><div class="stamp">오늘의<br>약속</div><div class="ic">'+GYE_ICON[gyeP.k]+'</div><div class="t">'+gyeName(gyeP.k)+'</div><div class="v">'+gyeP.v+'</div></div>'));
+      sBody.appendChild(el('<div class="note" style="margin-top:12px;text-align:center">'+(isAdult?'내일 법당에 오시면 "어땠어요?" 하고 묻습니다. 애쓴 날이 쌓이면 오계 돌이 빛납니다.':'내일 법당에 오면 "어땠어요?" 하고 물어봐요. 지키려 애쓴 날이 쌓이면 뒷마당 오계 돌이 빛나요.')+'</div>'));
+      var ok=el('<button class="btn pink" style="margin-top:14px;width:100%">🙏 약속했어요</button>');ok.addEventListener('click',function(){closeSheet();toast('오늘의 약속: '+gyeP.v);});sBody.appendChild(ok);
     });return;
   }
   if(step==='gye'){
-    showLearn('오늘의 계 약속','<h3>오늘 지킬 약속 하나</h3><div class="note">오계는 다섯 가지지만, 하루에 하나만 골라서 지켜 봐요. 다음에 오면 "어땠어요?" 하고 물어봐요. 지키려 애쓴 날이 쌓이면 뒷마당 오계 돌이 빛나요.</div>'+(gyeP&&gyeP.d===todayKey?'<div class="box" style="background:#eef9f1;margin-top:8px">오늘 약속: <b>'+gyeName(gyeP.k)+'</b> — '+gyeP.v+'</div>':''),function(){
-      var ch=el('<div class="choices"></div>');OGYE.forEach(function(o,i){var b=el('<button class="btn ghost" style="text-align:left"><b>'+o.n+'</b> <span class="note">'+(gyeKept[i]?'· 애쓴 날 '+gyeKept[i]:'')+'</span><br><span class="note">'+GYE_TIPS[i].d+'</span></button>');b.addEventListener('click',function(){
-        showLearn('오늘의 계 약속 · '+o.n,'<h3>'+o.n+' <span style="color:#8a6a2a;font-size:14px">'+o.hj+'</span></h3>'+o.m+'<div class="note" style="margin-top:6px">오늘은 이렇게:</div>',function(){var c2=el('<div class="choices"></div>');GYE_TIPS[i].v.forEach(function(v){var b2=el('<button class="btn ghost">'+v+'</button>');b2.addEventListener('click',function(){gyeP={d:todayKey,k:i,v:v,checked:false};chamSave();chime();closeSheet();questEvent('cham');toast('오늘 약속: '+o.n+' — '+v);});c2.appendChild(b2);});sBody.appendChild(c2);});
-      });ch.appendChild(b);});sBody.appendChild(ch);
+    showLearn(isAdult?'오늘의 계 약속':'오늘의 약속 카드','',function(){
+      if(gyeP&&gyeP.d===todayKey){sBody.appendChild(el('<div class="vow-card" style="animation:none"><div class="stamp" style="animation:none;transform:rotate(-14deg) scale(1)">오늘의<br>약속</div><div class="ic">'+GYE_ICON[gyeP.k]+'</div><div class="t">'+gyeName(gyeP.k)+'</div><div class="v">'+gyeP.v+'</div></div>'));sBody.appendChild(el('<div class="note" style="margin:10px 0;text-align:center">오늘 약속은 정해졌어요. 바꾸고 싶으면 아래에서 다시 골라요.</div>'));}
+      else sBody.appendChild(el('<div class="note" style="margin-bottom:10px;text-align:center">'+(isAdult?'오계 중 오늘 지킬 것 하나를 고릅니다. 하루에 하나.':'다섯 장 중에 오늘 지킬 카드 한 장! 하루에 하나만.')+'</div>'));
+      var grid=el('<div class="gcards"></div>');OGYE.forEach(function(o,i){var b=el('<button class="gcard"><span class="ic">'+GYE_ICON[i]+'</span>'+o.n+'<span class="k">'+(gyeKept[i]?'애쓴 날 '+gyeKept[i]:o.hj)+'</span></button>');b.addEventListener('click',function(){chamSt={k:i,how:null};openCham('gyeVow');});grid.appendChild(b);});sBody.appendChild(grid);
     });return;
   }
 }
 learnSpots.push({x:6.0,z:-7.3,r:.95,lock:'cham',label:'참회의 자리 · 씻고 다시 시작',open:function(){openCham();}});
-paintGye();
+paintGye();paintGyeChip();document.getElementById('gyeChip').addEventListener('click',function(){openCham();});
 if(gyeP&&gyeP.d!==todayKey&&!gyeP.checked&&isOpen('cham'))setTimeout(function(){toast('지난 약속('+gyeName(gyeP.k)+')은 어땠어요? 참회의 자리에서 알려 줘요.');},5200);
 
 // ===== C. 재미 요소: 동자승 퀘스트 · 뱃지 · 놀이터(목탁 리듬·팔정도 짝 맞추기) · 동반자 동물 · 출석 달력 · 칭호 =====
