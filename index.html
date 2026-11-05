@@ -371,6 +371,7 @@ var paths=[
 /* 이번 주 팔정도: 한 해의 몇째 주인지로 정해져 8주마다 한 바퀴 돈다. 사람이 바꿀 일이 없다. */
 var now0=new Date(), weekIdx=(function(d){var s=new Date(d.getFullYear(),0,1);return Math.floor((d-s)/864e5/7)%8})(now0);
 var wishes=["우리 가족 모두 건강하게","친구들과 사이좋게","마음이 편안하게","하고 싶은 일을 잘 해내게","모든 생명이 행복하게","아픈 사람이 낫게"];
+var LANTERN_WISHES={self:["마음이 편안하게","하고 싶은 일을 잘 해내게","건강하게 자라게","친구들과 사이좋게","공부가 재미있어지게","용기가 생기게"],other:["우리 가족 모두 건강하게","아픈 사람이 낫게","모든 생명이 행복하게","친구가 힘을 내게","선생님이 건강하시게","돌아가신 분이 편안하시게"]};
 var lcolors=[["분홍",0xf07a9b,"#f07a9b"],["주황",0xf39a3d,"#f39a3d"],["노랑",0xf2c84b,"#f2c84b"],["연두",0x8fcf6b,"#8fcf6b"],["하늘",0x6cb8e6,"#6cb8e6"]];
 var pool=[
  ["육법공양에서 '등(초)'은 무엇을 뜻할까요?",["보시","지혜","인욕","청량"],1,"등불이 어둠을 밝히듯 지혜로 마음을 밝혀요(반야등)."],
@@ -694,9 +695,12 @@ function lanternSpot(i){ // 천장 통로 위로 줄지어 달림
   var row=Math.floor(i/6), col=i%6;
   return new THREE.Vector3(-3.75+col*1.5,H-1.25-(row%2)*.35,-4+row*1.6);
 }
+function lanternTag(text){var tx=canvasTex(256,112,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.strokeStyle='#c9a86a';g.lineWidth=6;g.strokeRect(5,5,w-10,h-10);g.fillStyle='#8a4fa8';g.font='36px Jua, sans-serif';g.textAlign='center';g.textBaseline='middle';var s=text.length>9?text.slice(0,9)+'…':text;g.fillText(s,w/2,h/2);});
+  var g=new THREE.Group();var c=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.22,4),new THREE.MeshBasicMaterial({color:0xeeeeee}));c.position.y=-.5;g.add(c);
+  var pl=new THREE.Mesh(new THREE.PlaneGeometry(.46,.2),new THREE.MeshStandardMaterial({map:tx,side:THREE.DoubleSide}));pl.position.y=-.72;g.add(pl);return g;}
 function renderLanterns(){
   while(lanternGroup.children.length)lanternGroup.remove(lanternGroup.children[0]);
-  savedLanterns.slice(0,36).forEach(function(l,i){var m=makeLantern(lcolors[l.c][1]);m.position.copy(lanternSpot(i));m.userData.phase=Math.random()*6;lanternGroup.add(m);});
+  savedLanterns.slice(0,36).forEach(function(l,i){var m=makeLantern(lcolors[l.c][1]);if(l.to)m.add(lanternTag(l.to+(l.f==='other'?'를 위해':'')));m.position.copy(lanternSpot(i));m.userData.phase=Math.random()*6;lanternGroup.add(m);});
 }
 renderLanterns();
 // 받침대는 연등을 만드는 자리. 만든 연등은 여기서 천장으로 올라간다
@@ -1201,21 +1205,28 @@ function panelAltar(){
 // 소원 연등
 function panelLantern(){
   sTitle.textContent='소원 연등 달기';
-  sBody.appendChild(el('<div class="note">소원을 고르고 색을 고르면 법당 천장에 연등이 하나 켜져요. 이름은 남지 않고 학년·반만 남아요.</div>'));
+  sBody.appendChild(el('<div class="note">연등 하나에 기도 하나. <b>나를 위해</b> 빌 수도, <b>다른 사람을 위해</b> 빌 수도 있어요. 고르거나 직접 써요. 이름은 쓰지 않고 "엄마"·"3반 친구들"처럼 써요.</div>'));
   if(isGuest){sBody.appendChild(lock());return;}
-  var pw=0,pc=0;
-  var wbox=el('<div class="box"><h3>어떤 소원을 빌까요?</h3><div class="choices"></div></div>');
-  wishes.forEach(function(w,i){var b=el('<button class="choice" aria-pressed="'+(i===0)+'">'+w+'</button>');b.addEventListener('click',function(){pw=i;[].forEach.call(wbox.querySelectorAll('.choice'),function(c,j){c.setAttribute('aria-pressed',String(j===i))});});wbox.querySelector('.choices').appendChild(b);});
-  sBody.appendChild(wbox);
+  var mode='self',pw=0,pc=0;
+  var tabs=el('<div class="row" style="margin-bottom:8px"><button class="btn pink sm" data-m="self">🙏 나를 위해</button><button class="btn ghost sm" data-m="other">💗 남을 위해</button></div>');
+  var wbox=el('<div class="box"><h3>어떤 소원을 빌까요?</h3><div class="choices"></div><input id="lwish" maxlength="24" placeholder="✏️ 내 소원을 직접 써도 돼요 (24자까지)" style="width:100%;margin-top:8px;font:inherit;padding:9px 10px;border:1.5px solid #c8ddd1;border-radius:12px"></div>');
+  var tbox=el('<div class="box"><h3>연등 꼬리표 — 누구를 위해?</h3><div class="row" style="gap:8px;flex-wrap:wrap"><div class="choices" id="lwho"></div></div><input id="lto" maxlength="8" placeholder="예: 엄마, 할머니, 3반 친구들" style="width:100%;margin-top:8px;font:inherit;padding:9px 10px;border:1.5px solid #c8ddd1;border-radius:12px"><div class="note" style="margin-top:4px">꼬리표가 연등 아래 매달려요. 비워 두면 꼬리표 없이 켜져요.</div></div>');
+  function fillWishes(){var ch=wbox.querySelector('.choices');ch.innerHTML='';pw=0;LANTERN_WISHES[mode].forEach(function(w,i){var b=el('<button class="choice" aria-pressed="'+(i===0)+'">'+w+'</button>');b.addEventListener('click',function(){pw=i;wbox.querySelector('#lwish').value='';[].forEach.call(ch.querySelectorAll('.choice'),function(c,j){c.setAttribute('aria-pressed',String(j===i))});});ch.appendChild(b);});
+    var who=tbox.querySelector('#lwho');who.innerHTML='';(mode==='self'?['나']:['엄마','아빠','할머니','할아버지','동생','언니·오빠','친구','우리 반','선생님']).forEach(function(n){var b=el('<button class="choice">'+n+'</button>');b.addEventListener('click',function(){tbox.querySelector('#lto').value=n==='나'?'':n;});who.appendChild(b);});
+    tbox.querySelector('h3').textContent=mode==='self'?'연등 꼬리표 — 나를 위한 한마디':'연등 꼬리표 — 누구를 위해?';tbox.querySelector('#lto').placeholder=mode==='self'?'예: 힘내자, 괜찮아 (비워도 돼요)':'예: 엄마, 할머니, 3반 친구들';}
+  tabs.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){mode=b.dataset.m;tabs.querySelectorAll('button').forEach(function(x){x.className='btn '+(x===b?'pink':'ghost')+' sm';});fillWishes();});});
+  sBody.appendChild(tabs);sBody.appendChild(wbox);sBody.appendChild(tbox);fillWishes();
   var cbox=el('<div class="box"><h3>연등 색과 학년·반</h3><div class="row" style="gap:14px"><div class="choices"></div><select id="lgrade" aria-label="학년 반"></select></div></div>');
   lcolors.forEach(function(c,i){var b=el('<button class="sw" aria-label="'+c[0]+'" aria-pressed="'+(i===0)+'" style="background:'+c[2]+'"></button>');b.addEventListener('click',function(){pc=i;[].forEach.call(cbox.querySelectorAll('.sw'),function(x,j){x.setAttribute('aria-pressed',String(j===i))});});cbox.querySelector('.choices').appendChild(b);});
   var sel=cbox.querySelector('select');for(var g=1;g<=6;g++)for(var c=1;c<=5;c++){var o=document.createElement('option');o.textContent=g+'학년 '+c+'반';if(g===6&&c===2)o.selected=true;sel.appendChild(o);}
   sBody.appendChild(cbox);
   var go=el('<button class="btn pink">연등에 불 켜기</button>');
-  go.addEventListener('click',function(){savedLanterns.unshift({c:pc,w:wishes[pw],g:sel.value});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];LANTERN_START.set(pos.x+Math.sin(heading)*.55,.95,pos.z+Math.cos(heading)*.55);rising={m:nm,to:nm.position.clone(),t:0};questEvent('lantern');nm.position.copy(LANTERN_START);hapAnim=3;bell();toast('연등이 천장으로 올라가요');closeSheet();lookUp=5;});
+  go.addEventListener('click',function(){var own=wbox.querySelector('#lwish').value.trim(),to=tbox.querySelector('#lto').value.trim();var w=own||LANTERN_WISHES[mode][pw];if(/단톡|카톡|전화|\d{3,}/.test(w+to)){toast('연락처나 긴 숫자는 쓰지 않아요');return;}
+    savedLanterns.unshift({c:pc,w:w,g:sel.value,f:mode,to:to});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];LANTERN_START.set(pos.x+Math.sin(heading)*.55,.95,pos.z+Math.cos(heading)*.55);rising={m:nm,to:nm.position.clone(),t:0};questEvent('lantern');nm.position.copy(LANTERN_START);hapAnim=3;bell();toast(mode==='other'?(to?to+'를 위한 연등이 올라가요':'다른 사람을 위한 연등이 올라가요'):'내 연등이 천장으로 올라가요');closeSheet();lookUp=5;});
   sBody.appendChild(go);
-  var list=el('<div class="box"><h3>법당에 켜진 연등 '+savedLanterns.length+'개</h3><div class="note"></div></div>');
-  list.querySelector('.note').textContent=savedLanterns.slice(0,6).map(function(l){return l.g+': '+l.w}).join(' · ');
+  var mine=savedLanterns.filter(function(l){return l.f}).length,others=savedLanterns.filter(function(l){return l.f==='other'}).length;
+  var list=el('<div class="box"><h3>법당에 켜진 연등 '+savedLanterns.length+'개'+(others?' · 남을 위한 연등 '+others+'개':'')+'</h3><div class="note"></div></div>');
+  list.querySelector('.note').textContent=savedLanterns.slice(0,6).map(function(l){return (l.to?l.to+'를 위해 · ':'')+l.w}).join(' / ');
   sBody.appendChild(list);
 }
 // 팔정도 액자
