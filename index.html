@@ -618,8 +618,7 @@ function renderLotus(){
 
 // 소원 연등 거는 곳(왼쪽 벽)
 var standMat=new THREE.MeshStandardMaterial({color:0x6b3e22,roughness:.7});
-var stand=new THREE.Mesh(new THREE.BoxGeometry(.15,3.2,.15),standMat);stand.position.set(-5.6,1.6,0.5);scene.add(stand);
-var arm=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,3),standMat);arm.position.set(-5.6,3.15,0.5);scene.add(arm);
+// (연등 받침대는 뺐다. 연등은 연이 손에서 천장으로 올라간다)
 function makeLantern(color){
   var g=new THREE.Group();
   var body=new THREE.Mesh(new THREE.SphereGeometry(.32,20,16),new THREE.MeshStandardMaterial({color:color,emissive:color,emissiveIntensity:.55,roughness:.5}));
@@ -641,7 +640,7 @@ function renderLanterns(){
 }
 renderLanterns();
 // 받침대는 연등을 만드는 자리. 만든 연등은 여기서 천장으로 올라간다
-var rising=null, LANTERN_START=new THREE.Vector3(-5.6,2.45,0.5);
+var rising=null, LANTERN_START=new THREE.Vector3(-5.6,.9,0.5);
 
 // 글자 스프라이트
 function label(text,sub,color){
@@ -1025,7 +1024,7 @@ function panelLantern(){
   var sel=cbox.querySelector('select');for(var g=1;g<=6;g++)for(var c=1;c<=5;c++){var o=document.createElement('option');o.textContent=g+'학년 '+c+'반';if(g===6&&c===2)o.selected=true;sel.appendChild(o);}
   sBody.appendChild(cbox);
   var go=el('<button class="btn pink">연등에 불 켜기</button>');
-  go.addEventListener('click',function(){savedLanterns.unshift({c:pc,w:wishes[pw],g:sel.value});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];rising={m:nm,to:nm.position.clone(),t:0};nm.position.copy(LANTERN_START);bell();toast('연등이 천장으로 올라가요');closeSheet();lookUp=5;});
+  go.addEventListener('click',function(){savedLanterns.unshift({c:pc,w:wishes[pw],g:sel.value});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];LANTERN_START.set(pos.x+Math.sin(heading)*.55,.95,pos.z+Math.cos(heading)*.55);rising={m:nm,to:nm.position.clone(),t:0};nm.position.copy(LANTERN_START);hapAnim=3;bell();toast('연등이 천장으로 올라가요');closeSheet();lookUp=5;});
   sBody.appendChild(go);
   var list=el('<div class="box"><h3>법당에 켜진 연등 '+savedLanterns.length+'개</h3><div class="note"></div></div>');
   list.querySelector('.note').textContent=savedLanterns.slice(0,6).map(function(l){return l.g+': '+l.w}).join(' · ');
