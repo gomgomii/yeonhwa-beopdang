@@ -417,8 +417,9 @@ var bowl=new THREE.Mesh(new THREE.CylinderGeometry(.45,.3,.35,24),brass);bowl.po
 
 // 방석
 var cushionMat=[new THREE.MeshStandardMaterial({color:0xb5462f,roughness:.9}),new THREE.MeshStandardMaterial({color:0xd98a2b,roughness:.9})];
-for(var r=0;r<3;r++)for(var c=0;c<6;c++){
+for(var r=0;r<7;r++)for(var c=0;c<6;c++){ // 7줄 × 좌우 3개 = 40장 (사경대 자리는 비움)
   var x=(c<3?-1:1)*(1.6+(c%3)*1.3), z=-5.2+r*1.4;
+  if(x>4&&z>1)continue;
   var cu=new THREE.Mesh(new THREE.BoxGeometry(.85,.12,.85),cushionMat[(r+c)%2]);cu.position.set(x,.06,z);cu.castShadow=true;scene.add(cu);
 }
 // 공중에 떠다니는 빛 알갱이: 촛불 가까운 곳에 더 많이
@@ -711,26 +712,27 @@ function dress(){
     var lo=new THREE.Mesh(new THREE.CylinderGeometry(.068,.06,.17,10),legM||(s==='summer'?skin:um(UNI.navy)));lo.position.y=-.08;lo.castShadow=true;knee.add(lo);
     var shoe=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),um(UNI.white));shoe.position.set(0,-.13,.03);shoe.scale.set(1,.55,1.35);shoe.castShadow=true;knee.add(shoe); // 흰 실내화
   });
-  // 팔: 동복 남색 소매, 춘추복 흰 긴팔, 하복 흰 반팔
+  // 팔: 어깨(pv)·팔꿈치(el) 관절. 동복 남색 소매, 춘추복 흰 긴팔, 하복 흰 반팔
   [-1,1].forEach(function(sd){var pv=new THREE.Group();pv.position.set(sd*.27,.34,0);
     var sleeve=um(s==='winter'?UNI.navy:UNI.white), shortS=s==='summer';
-    var up=new THREE.Mesh(new THREE.CylinderGeometry(.055,.05,shortS?.18:.36,10),sleeve);up.position.y=shortS?-.09:-.18;up.castShadow=true;pv.add(up);
-    if(shortS){var fa=new THREE.Mesh(new THREE.CylinderGeometry(.045,.04,.18,10),skin);fa.position.y=-.27;pv.add(fa);}
-    var h=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),skin);h.position.y=-.38;pv.add(h);
+    var up=new THREE.Mesh(new THREE.CylinderGeometry(.055,.05,.19,10),sleeve);up.position.y=-.09;up.castShadow=true;pv.add(up);
+    var el=new THREE.Group();el.position.y=-.18;pv.add(el);
+    var fa=new THREE.Mesh(new THREE.CylinderGeometry(.05,.045,.19,10),shortS?skin:sleeve);fa.position.y=-.09;fa.castShadow=true;el.add(fa);
+    var h=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),skin);h.position.y=-.2;el.add(h);
     // 목탁(왼손)과 채(오른손): 목탁 버튼을 누르면 보인다
-    if(sd<0){var mk=new THREE.Group();mk.position.set(.1,-.42,.06);
+    if(sd<0){var mk=new THREE.Group();mk.position.set(.08,-.24,.03);
       var mb=new THREE.Mesh(new THREE.SphereGeometry(.085,16,12),woodMat);mb.scale.set(1,.8,1.1);mb.castShadow=true;mk.add(mb);
       var slit=new THREE.Mesh(new THREE.BoxGeometry(.15,.02,.03),new THREE.MeshBasicMaterial({color:0x2a1608}));slit.position.set(0,-.045,.075);mk.add(slit);
       var grip=new THREE.Mesh(new THREE.CylinderGeometry(.018,.02,.1,8),woodMat);grip.position.set(0,-.06,-.09);grip.rotation.x=.9;mk.add(grip);
-      mk.visible=false;pv.add(mk);mokProps.push(mk);}
-    else{var st=new THREE.Group();st.position.set(0,-.4,.02);
-      var rod=new THREE.Mesh(new THREE.CylinderGeometry(.011,.013,.24,8),woodMat);rod.position.y=-.11;rod.castShadow=true;st.add(rod);
-      var tip=new THREE.Mesh(new THREE.SphereGeometry(.02,8,8),woodMat);tip.position.y=-.23;st.add(tip);
-      st.visible=false;pv.add(st);mokProps.push(st);}
-    pv.userData.s=sd;outfit.add(pv);arms.push(pv);});
+      mk.visible=false;el.add(mk);mokProps.push(mk);}
+    else{var st=new THREE.Group();st.position.set(0,-.2,.02);st.rotation.z=-.95; // 채는 가운데(목탁) 쪽으로 기울여 쥔다
+      var rod=new THREE.Mesh(new THREE.CylinderGeometry(.011,.013,.24,8),woodMat);rod.position.y=-.1;rod.castShadow=true;st.add(rod);
+      var tip=new THREE.Mesh(new THREE.SphereGeometry(.02,8,8),woodMat);tip.position.y=-.22;st.add(tip);
+      st.visible=false;el.add(st);mokProps.push(st);}
+    pv.userData.s=sd;pv.userData.el=el;outfit.add(pv);arms.push(pv);});
 }
 dress();
-var hands=new THREE.Group();hands.position.set(0,.3,.3);hands.visible=false;
+var hands=new THREE.Group();hands.position.set(0,.27,.26);hands.visible=false;
 [-1,1].forEach(function(s){var p=new THREE.Mesh(new THREE.BoxGeometry(.05,.2,.08),skin);p.position.x=s*.027;p.rotation.z=-s*.08;hands.add(p);});torsoG.add(hands);
 scene.add(yeoni);
 var pos=new THREE.Vector3(0,0,7.6), heading=Math.PI;
@@ -1181,13 +1183,15 @@ function loop(){
   if(hapAnim>0)hapAnim-=dt;if(mokT>0)mokT-=dt;if(mokHit>0)mokHit-=dt;
   var armMode=bp?bp.arm:(mokT>0?'mok':(hapAnim>0?'hap':'free'));
   hands.visible=armMode==='hap';mokProps.forEach(function(m){m.visible=armMode==='mok';});
-  arms.forEach(function(a){var s=a.userData.s,tx,tz;
-    if(armMode==='hap'){tx=-1.25;tz=-s*.5;}
-    else if(armMode==='floor'){tx=-1.75;tz=-s*.12;}
-    else if(armMode==='lift'){tx=-2.2;tz=-s*.12;}
-    else if(armMode==='mok'){tx=s<0?-1.2:(-1.15-(mokHit>0?Math.sin(mokHit/.28*Math.PI)*.45:0));tz=-s*.45;}
-    else{tx=moving?Math.sin(t*10)*.55*s:Math.sin(t*1.6)*.04;tz=s*.12;}
-    a.rotation.x+=(tx-a.rotation.x)*Math.min(1,dt*(armMode==='mok'?18:10));a.rotation.z+=(tz-a.rotation.z)*Math.min(1,dt*8);
+  arms.forEach(function(a){var s=a.userData.s,el=a.userData.el,tx,tz,ex;
+    if(armMode==='hap'){tx=-.45;tz=-s*.3;ex=-1.6;}
+    else if(armMode==='floor'){tx=-1.7;tz=-s*.1;ex=-.25;}
+    else if(armMode==='lift'){tx=-2.1;tz=-s*.1;ex=-.5;}
+    else if(armMode==='mok'){var hit=mokHit>0?Math.sin(mokHit/.28*Math.PI):0;
+      if(s<0){tx=-.4;tz=-s*.3;ex=-1.55;}else{tx=-.5-hit*.15;tz=-s*.25;ex=-1.05-hit*.75;}} // 팔꿈치로 친다
+    else{tx=moving?Math.sin(t*10)*.55*s:Math.sin(t*1.6)*.04;tz=s*.12;ex=moving?-.4:-.15;}
+    var ka=Math.min(1,dt*(armMode==='mok'?18:10));
+    a.rotation.x+=(tx-a.rotation.x)*ka;a.rotation.z+=(tz-a.rotation.z)*Math.min(1,dt*8);el.rotation.x+=(ex-el.rotation.x)*ka;
   });
   head.position.y=.65+Math.sin(t*1.6)*.006; // 숨 쉬듯
   // 촛불·빛 알갱이·연못
