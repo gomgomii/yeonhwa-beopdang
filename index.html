@@ -1094,11 +1094,12 @@ function walkTo(x,z,then){
   var inY=function(px,pz){return px<-hx&&pz>=YARD.z0;};
   var fromY=inY(pos.x,pos.z),toY=inY(x,z);
   routeQ=[];onArrive=then||null;
-  if(fromY!==toY){var a=new THREE.Vector3(-hx+.7,0,6.0),b=new THREE.Vector3(-hx-.7,0,6.0);routeQ=fromY?[a]:[b];target=fromY?b:a;routeQ.push(new THREE.Vector3(x,0,z));}
-  else target=new THREE.Vector3(x,0,z);
+  var dest=new THREE.Vector3(x,0,z);clampPos(dest); // 벽 너머를 눌렀으면 갈 수 있는 자리까지만
+  if(fromY!==toY){var a=new THREE.Vector3(-hx+.7,0,6.0),b=new THREE.Vector3(-hx-.7,0,6.0);routeQ=fromY?[a]:[b];target=fromY?b:a;routeQ.push(dest);}
+  else target=dest;
 }
 function stopWalk(){target=null;routeQ=[];onArrive=null;turnTo=null;}
-var turnTo=null; // 도착 뒤 천천히 돌아설 방향
+var turnTo=null,stuckT=0; // 도착 뒤 천천히 돌아설 방향 / 막힌 시간
 function faceRoom(){ // 코앞(1.4m)이 벽이면 방 가운데를 보게. 불단(앞벽) 쪽을 보고 있을 땐 그대로
   if(Math.cos(heading)<-.5&&pos.x>-hx)return;
   var p=new THREE.Vector3(pos.x+Math.sin(heading)*1.4,0,pos.z+Math.cos(heading)*1.4),q=p.clone();clampPos(q);
@@ -2514,7 +2515,7 @@ window.addEventListener('resize',resize);resize();
 function loop(){
   var dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
   var moving=false;
-  if(!sheetOpen&&!cer.on&&!sitOn&&!awakeLock()){
+  if(!sheetOpen&&!cer.on&&!sitOn&&!awakeLock()){var px0=pos.x,pz0=pos.z;
     if(keys.left)heading+=2.2*dt;if(keys.right)heading-=2.2*dt;
     var f=(keys.up?1:0)-(keys.down?1:0);
     if(f){pos.x+=Math.sin(heading)*f*3*dt;pos.z+=Math.cos(heading)*f*3*dt;moving=true;}
@@ -2523,6 +2524,7 @@ function loop(){
     else{var want=Math.atan2(dx,dz),diff=((want-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=diff*Math.min(1,8*dt);var sp=Math.min(dist,3*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
     else if(turnTo!==null){var tdiff=((turnTo-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=tdiff*Math.min(1,5*dt);if(Math.abs(tdiff)<.03)turnTo=null;} // 도착 뒤 벽을 보고 있으면 방 안쪽으로 돌아섬
     clampPos(pos);
+    if(target){if(Math.hypot(pos.x-px0,pos.z-pz0)<.004){stuckT+=dt;if(stuckT>.25){stopWalk();faceRoom();}}else stuckT=0;} // 벽에 막혀 제자리걸음이면 멈춤
   }
   if(showOff>0)showOff-=dt;
   yeoni.position.set(pos.x,moving?Math.abs(Math.sin(t*10))*.06:0,pos.z);yeoni.rotation.y=heading+(showOff>0?Math.PI:0);
