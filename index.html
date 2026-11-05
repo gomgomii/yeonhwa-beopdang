@@ -1013,7 +1013,7 @@ window.addEventListener('keydown',function(e){if(sheetOpen||!gate.classList.cont
 window.addEventListener('keyup',function(e){var k=keyMap[e.code];if(k)keys[k]=0;});
 [].forEach.call(document.querySelectorAll('.dpad button'),function(b){
   var k=b.dataset.k;
-  b.addEventListener('pointerdown',function(e){e.preventDefault();keys[k]=1;target=null;b.setPointerCapture(e.pointerId);});
+  b.addEventListener('pointerdown',function(e){e.preventDefault();keys[k]=1;stopWalk();b.setPointerCapture(e.pointerId);});
   ['pointerup','pointercancel','pointerleave'].forEach(function(ev){b.addEventListener(ev,function(){keys[k]=0;});});
 });
 var ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),downAt=null,dragLast=null,dragged=false;
@@ -1023,7 +1023,7 @@ renderer.domElement.addEventListener('pointermove',function(e){
   if(gazeOn){if(!downAt)return;if(!dragged&&Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>8)dragged=true;if(dragged)gazeYaw=Math.max(-.85,Math.min(.85,gazeYaw-(e.clientX-dragLast[0])*.005));dragLast=[e.clientX,e.clientY];return;}
   if(!downAt||cer.on||sheetOpen)return;
   if(!dragged&&Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>8)dragged=true;
-  if(dragged){heading-=(e.clientX-dragLast[0])*.006;target=null;}
+  if(dragged){heading-=(e.clientX-dragLast[0])*.006;stopWalk();}
   dragLast=[e.clientX,e.clientY];
 });
 ['pointercancel','pointerleave'].forEach(function(ev){renderer.domElement.addEventListener(ev,function(){downAt=null;});});
@@ -1042,9 +1042,19 @@ renderer.domElement.addEventListener('pointerup',function(e){
   if(lanternFocus){lanternFocus=null;closeSheet();return;}
   var hl=ray.intersectObjects(lanternGroup.children,true);if(hl.length){var lo=hl[0].object;while(lo.parent&&lo.parent!==lanternGroup)lo=lo.parent;var li=lanternGroup.children.indexOf(lo),L=savedLanterns[li];if(L){lanternFocus={m:lo};chime();showLearn('연등 가까이 보기','<div class="vow-card" style="background:linear-gradient(160deg,'+lcolors[L.c][2]+',#7a4b1e)"><div class="ic">🏮</div><div class="t">'+L.w+'</div><div class="v">'+(L.to?L.to+'를 위해 · ':'')+L.g+'</div></div><div class="note" style="margin-top:8px">닫거나 화면을 누르면 제자리로 돌아와요.</div>');return;}}
   if(ray.intersectObject(altar).length){openSpot('taeng');return;}
-  var hit=ray.intersectObject(floor);
-  if(hit.length){target=hit[0].point.clone();target.y=0;}
+  var hit=ray.intersectObjects(yardGround?[floor,yardGround]:[floor]);
+  if(hit.length){walkTo(hit[0].point.x,hit[0].point.z);}
 });
+// 탭한 곳으로 걸어가기. 법당 안↔마당은 출입문(z 6)을 거쳐 간다. then = 도착하면 할 일
+var routeQ=[],onArrive=null;
+function walkTo(x,z,then){
+  var inY=function(px,pz){return px<-hx&&pz>=YARD.z0;};
+  var fromY=inY(pos.x,pos.z),toY=inY(x,z);
+  routeQ=[];onArrive=then||null;
+  if(fromY!==toY){var a=new THREE.Vector3(-hx+.7,0,6.0),b=new THREE.Vector3(-hx-.7,0,6.0);routeQ=fromY?[a]:[b];target=fromY?b:a;routeQ.push(new THREE.Vector3(x,0,z));}
+  else target=new THREE.Vector3(x,0,z);
+}
+function stopWalk(){target=null;routeQ=[];onArrive=null;}
 function clampPos(p){
   if(p.z>5.35&&p.z<6.65&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(5.35,Math.min(6.65,p.z));return;} // 출입문 문턱
   if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));return;} // 마당
@@ -1885,13 +1895,13 @@ function panelManner(){
 // ===== 비밀 정원: 법당에 30일 온 어린이에게 왼쪽 벽 문이 열린다 (횟수가 아니라 날수) =====
 // ===== 마당(앞뜰): 출입문(왼쪽 벽 뒤쪽, z 5.3~6.7) 밖. 연꽃 연못 · 범종각(사물 4종) · 참회실 별채. 1일째부터 열림 =====
 var YARD={x0:-16.2,x1:-hx,z0:4.5,z1:11.4};
-var yard=new THREE.Group();scene.add(yard);
+var yard=new THREE.Group();scene.add(yard);var yardGround=null; // 마당 바닥(탭해서 걸어가기용)
 (function(){
   var g=yard;
   function pl(w,h,x,y,z,ry,mat){var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);m.position.set(x,y,z);m.rotation.y=ry;g.add(m);return m;}
   var grassM=new THREE.MeshStandardMaterial({color:0x6aa24c,roughness:.95}),gravelM=new THREE.MeshStandardMaterial({color:0xd2c6ad,roughness:.9}),fenceM=new THREE.MeshStandardMaterial({color:0xe6dfcf,roughness:.9}),woodM=new THREE.MeshStandardMaterial({color:0x5a3a1e,roughness:.75}),tileM=new THREE.MeshStandardMaterial({color:0x4b4a52,roughness:.8});
   // 바닥·하늘·담
-  var ground=pl(YARD.x1-YARD.x0,YARD.z1-YARD.z0,(YARD.x0+YARD.x1)/2,.004,(YARD.z0+YARD.z1)/2,0,grassM);ground.rotation.x=-Math.PI/2;ground.rotation.y=0;ground.receiveShadow=true;
+  var ground=pl(YARD.x1-YARD.x0,YARD.z1-YARD.z0,(YARD.x0+YARD.x1)/2,.004,(YARD.z0+YARD.z1)/2,0,grassM);ground.rotation.x=-Math.PI/2;ground.rotation.y=0;ground.receiveShadow=true;yardGround=ground;
   var path=pl(4.2,1.3,-hx-2.2,.012,6.0,0,gravelM);path.rotation.x=-Math.PI/2;path.rotation.y=0;
   var path2=pl(1.3,4.6,-9.6,.012,8.5,0,gravelM);path2.rotation.x=-Math.PI/2;path2.rotation.y=0;
   var sky=pl(YARD.x1-YARD.x0+2,YARD.z1-YARD.z0+2,(YARD.x0+YARD.x1)/2,7.2,(YARD.z0+YARD.z1)/2,0,new THREE.MeshBasicMaterial({color:0xa9d8f5}));sky.rotation.x=Math.PI/2;sky.rotation.y=0;
@@ -2044,7 +2054,7 @@ var learnSpots=[],ogyeStones=[];
 // 눌러서 배우기: 사물·천불·공양물
 function learnClick(){
   var hv=ray.intersectObjects(vowScroll.children,true);if(hv.length){openSpot('vow');return true;}
-  var hs=ray.intersectObjects(samulGroup.children,true);if(hs.length){openSamul(hs[0].object.userData.samul);return true;}
+  var hs=ray.intersectObjects(samulGroup.children,true);if(hs.length){var si=hs[0].object.userData.samul,hp=hs[0].point,hd=Math.hypot(hp.x-pos.x,hp.z-pos.z);if(hd>2.6){var ux=(pos.x-hp.x)/hd,uz=(pos.z-hp.z)/hd;walkTo(hp.x+ux*1.3,hp.z+uz*1.3,function(){openSamul(si);});toast('걸어가서 울려요');}else openSamul(si);return true;}
   var ht=ray.intersectObjects(learnMeshes,false);if(ht.length){showLearn('천불 (千佛)',isAdult?CHEONBUL_ADULT:'<h3>천 분의 부처님</h3>법당 양옆 벽에 작은 부처님이 천 분 계세요. "누구나 부처가 될 수 있다"는 뜻이에요. 지금 보는 나도, 옆 친구도요.<div class="note" style="margin-top:8px">천불전에서는 한 분 한 분이 다 다른 손 모양을 하고 있기도 해요. 우리 법당 천불 벽을 지나갈 때 한 번 합장해 보세요.</div>');questEvent('learn');return true;}
   var ho=ray.intersectObjects(offerGroup.children,true);if(ho.length){var o=ho[0].object;while(o.parent&&o.parent!==offerGroup)o=o.parent;var of=offerings.filter(function(x){return x.k===o.userData.k})[0];if(of){showLearn('육법공양 · '+of.n,'<h3>'+of.n+' <span style="color:#8a6a2a;font-size:14px">'+of.t+'</span></h3>'+of.m+'<div class="note" style="margin-top:8px">육법공양: 향·등·꽃·과일·차·쌀. 올린 것을 누르면 뜻이 나와요.</div>');questEvent('learn');return true;}}
   return false;
@@ -2450,7 +2460,7 @@ function loop(){
     var f=(keys.up?1:0)-(keys.down?1:0);
     if(f){pos.x+=Math.sin(heading)*f*3*dt;pos.z+=Math.cos(heading)*f*3*dt;moving=true;}
     if(target){var dx=target.x-pos.x,dz=target.z-pos.z,dist=Math.hypot(dx,dz);
-      if(dist<.08){target=null;if(autoSit){autoSit=false;sitHere();}}else{var want=Math.atan2(dx,dz),diff=((want-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=diff*Math.min(1,8*dt);var sp=Math.min(dist,3*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
+      if(dist<.08){target=null;if(routeQ.length){target=routeQ.shift();}else{if(autoSit){autoSit=false;sitHere();}if(onArrive){var oa=onArrive;onArrive=null;oa();}}}else{var want=Math.atan2(dx,dz),diff=((want-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=diff*Math.min(1,8*dt);var sp=Math.min(dist,3*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
     clampPos(pos);
   }
   if(showOff>0)showOff-=dt;
