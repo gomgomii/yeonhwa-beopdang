@@ -241,15 +241,12 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
   <div class="pill brand"><b>은석 온라인 연화법당</b><span>연이의 마음법당</span></div>
   <div class="row">
     <div class="pill" id="who" style="font-size:14px"></div>
-    <div class="pill" id="nextOpen" style="font-size:13px"></div>
     <button class="btn pink sm" id="cerBtn">법회 모드</button>
     <button class="btn ghost sm" id="recBtn">내 수행록</button>
-    <button class="btn ghost sm" id="decoBtn">🏠 꾸미기</button>
     <button class="btn ghost sm" id="mindBtn">🌿 마음 쉼터</button>
     <button class="btn pink sm" id="sosBtn" style="background:#d9486f">지금 힘들어요</button>
-    <button class="btn ghost sm" id="sndBtn" aria-pressed="true" title="소리 켜고 끄기">🔔 소리</button>
-    <button class="btn ghost sm" id="leaveBtn">법당 나가기</button>
     <button class="btn ghost sm" id="guideBtn">⚙️ 설정</button>
+    <span id="hudMore" style="display:none" aria-hidden="true"><button id="decoBtn" tabindex="-1"></button><button id="sndBtn" aria-pressed="true" tabindex="-1"></button><button id="leaveBtn" tabindex="-1"></button><span id="nextOpen"></span></span>
   </div>
 </div>
 
@@ -270,15 +267,10 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
 <nav class="jump" aria-label="바로 가기">
   <h3>바로 가기</h3>
   <button data-go="altar">부처님 앞·공양</button>
-  <button data-go="lantern">소원 연등</button>
-  <button data-go="sagyeong">사경대</button>
-  <button data-go="pond">연꽃 연못</button>
   <button data-go="path">팔정도 길</button>
-  <button data-go="board">뒷벽 게시판</button>
+  <button data-go="sagyeong">사경대</button>
+  <button data-go="lantern">소원 연등</button>
   <button data-spot="manner">법당 예절</button>
-  <button data-spot="quest">동자승 심부름</button>
-  <button data-spot="play">놀이터</button>
-  <button data-spot="taeng">탱화 동자승 찾기</button>
 </nav>
 
 <div id="tv" role="dialog" aria-label="TV 화면"><div class="row" style="justify-content:flex-end"><button class="btn ghost sm" id="tvClose">닫기</button></div><div id="tvBody"></div></div>
@@ -961,6 +953,7 @@ function panelRecord(){
   sTitle.textContent='내 수행록';
   var mind=store.get('mind',0),sg=store.get('sagyeong',0),nf=taengFound.filter(function(id){return taeng.some(function(t){return t.id===id&&!t.b})}).length;
   var rows=[['법당에 온 날',visitDays()+'일'],['팔정도 도장',stampDone.length+' / 8'],['연꽃 연못',stampDone.length+' 송이'],['108배',bows+' / 108'],['내 법당 꾸미기',decor.length+'개'],['3분 마음챙김',mind+'번'],['마음 쉼터',store.get('rest',0)+'번'],['선생님 칭찬 도장',store.get('praise',0)+'번'],['눈 감고 법당 떠올리기',store.get('imagine',0)+'번'],['사경',sg+'번'],['육법공양',offered.length+' / 6'],['켜 둔 연등',savedLanterns.length+'개'],['찾은 동자승',nf+' / '+dongjaCount]];
+  (function(){var ne=nextUnlockEntry();sBody.appendChild(el('<div class="box" style="background:#f6f0ff"><h3>🏷️ 지금 칭호 · '+myTitle()+'</h3><div class="note">칭호는 한 일에 따라 저절로 바뀌어요. '+(ne?'다음 열림까지 '+(ne.d-visitDays())+'일.':'다 열렸어요.')+'</div></div>'));})();
   var box=el('<div class="box"><h3>'+(now0.getMonth()+1)+'월 '+now0.getDate()+'일까지</h3><div class="rank"></div></div>');
   rows.forEach(function(r){box.querySelector('.rank').appendChild(el('<div class="r" style="grid-template-columns:1fr auto"><span>'+r[0]+'</span><span class="n" style="font-family:var(--font-display);color:var(--leaf)">'+r[1]+'</span></div>'));});
   sBody.appendChild(box);
@@ -1312,6 +1305,11 @@ window.addEventListener('keydown',function(e){if(!cer.on)return;if(e.code==='Arr
 // 시안 안내
 function panelGuide(){
   sTitle.textContent='설정과 도움말';
+  (function(){var ne=nextUnlockEntry();var hb=el('<div class="box" style="background:#eef9f1"><h3>법당 안에서</h3><div class="row" style="flex-wrap:wrap"><button class="btn ghost sm" id="gDeco">🏠 꾸미기</button><button class="btn ghost sm" id="gSnd">'+(soundOn?'🔔 소리 켜짐':'🔕 소리 꺼짐')+'</button><button class="btn ghost sm" id="gLeave">🚪 법당 나가기</button></div><div class="note" style="margin-top:8px">'+(ne?'🔓 다음 열림까지 '+(ne.d-visitDays())+'일'+(ne.n==='???'?' · 무엇이 열릴까요?':' · '+ne.n):'🔓 다 열렸어요')+' · 열림표는 내 수행록에</div></div>');
+    hb.querySelector('#gDeco').addEventListener('click',function(){closeSheet();document.getElementById('decoBtn').click();});
+    hb.querySelector('#gSnd').addEventListener('click',function(){document.getElementById('sndBtn').click();this.textContent=soundOn?'🔔 소리 켜짐':'🔕 소리 꺼짐';});
+    hb.querySelector('#gLeave').addEventListener('click',function(){closeSheet();document.getElementById('leaveBtn').click();});
+    sBody.appendChild(hb);})();
   var sv=el('<div class="box"><h3>기념일 법당 미리보기</h3><div class="note">날짜가 되면 법당이 저절로 바뀌어요. 지금: '+(liveEvent?liveEvent.e.n:'평소 법당')+'</div><div class="row" style="margin-top:8px"><select id="sPrev" aria-label="기념일 미리보기"><option value="">평소 법당 (오늘 날짜 기준)</option></select></div><div class="note" style="margin-top:6px">음력 기념일 날짜는 해마다 달력으로 확인해 표만 고치면 돼요.</div></div>');
   EVENTS.forEach(function(e){var o=document.createElement('option');o.value=e.k;o.textContent=e.n+' ('+e.d.join(', ')+')';sv.querySelector('select').appendChild(o);});
   sv.querySelector('select').addEventListener('change',function(){var k=this.value;if(!k){applySeason(liveEvent);return;}var e=EVENTS.filter(function(x){return x.k===k})[0];applySeason({e:e,diff:0});toast(e.n+' 법당으로 바꿨어요');});
@@ -1981,7 +1979,7 @@ function calendarBox(){var y=now0.getFullYear(),m=now0.getMonth();var first=new 
   return el(html+'</div><div class="note" style="margin-top:6px">하루에 몇 번 와도 하루. 연꽃이 핀 날이 법당에 온 날이에요.</div></div>');}
 // --- 칭호 ---
 function myTitle(){if(isAdmin)return '교법사';if(isTeacher)return visitDays()>=30?'꾸준한 선생님':'선생님';if(isAdult){return visitDays()>=30?'꾸준한 보살님':(bows>=108?'백팔배 보살님':(stampDone.length>=8?'팔정도 보살님':'연화회 보살님'));}if(visitDays()>=30)return '꾸준한 연화 어린이';if(bows>=108)return '백팔배 수행자';if(gyeKept.slice(0,5).every(function(n){return n>=3}))return '오계 지킴이';if(stampDone.length>=8)return '팔정도 길잡이';if(questDays.length>=3)return '동자승의 친구';if(store.get('rest',0)>=3)return '마음을 아는 어린이';if(visitDays()>=7)return '일주일 연화 어린이';return '연화 어린이';}
-// --- 놀이터: 목탁 리듬 · 팔정도 짝 맞추기 ---
+// --- 놀이터: 목탁 리듬 (짝 맞추기는 11-05 정리 때 뺌, pairGame 코드만 남김) ---
 var playRaf=null;
 function stopPlay(){if(playRaf){cancelAnimationFrame(playRaf);playRaf=null;}}
 function panelPlay(){
@@ -1989,8 +1987,6 @@ function panelPlay(){
   sBody.appendChild(el('<div class="note">1~3분짜리 놀이예요. 점수는 이 기기에만 남아요.</div>'));
   var b1=el('<div class="box"><h3>🥁 목탁 리듬</h3>움직이는 점이 가운데 올 때 「똑!」을 눌러요. 16번.<div style="margin-top:8px"><button class="btn pink">시작</button> <span class="note">최고 '+store.get('rhythmBest',0)+'점</span></div></div>');
   b1.querySelector('button').addEventListener('click',rhythmGame);sBody.appendChild(b1);
-  var b2=el('<div class="box"><h3>🃏 팔정도 짝 맞추기</h3>덕목 이름과 뜻을 짝지어요. 여덟 쌍.<div style="margin-top:8px"><button class="btn pink">시작</button> <span class="note">최고 기록 '+(store.get('pairBest',0)?store.get('pairBest',0)+'번 만에':'없음')+'</span></div></div>');
-  b2.querySelector('button').addEventListener('click',pairGame);sBody.appendChild(b2);
 }
 function rhythmGame(){
   sBody.innerHTML='';sTitle.textContent='🥁 목탁 리듬';
@@ -2022,7 +2018,7 @@ function buildPet(k){var g=new THREE.Group();function m(geo,col,x,y,z){var mm=ne
   return g;}
 function paintPet(){if(pet){scene.remove(pet);pet=null;}if(isAdult||petKey==='none'||visitDays()<7)return;pet=buildPet(petKey);pet.position.copy(petPos);scene.add(pet);}
 paintPet();
-function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+myTitle()+'</b> · '+(isTeacher?'교직원':isAdult?'연화회':'6학년 2반 <span class="note">(예시)</span> · <span class="note">'+SEASON_NAME[uniSeason]+'</span>');}
+function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+(isAdmin?'교법사':isTeacher?'선생님':isAdult?'연화회 보살님':'연화 어린이')+'</b>'+(isAdult?'':' · 6학년 2반 <span class="note">(예시)</span> · <span class="note">'+SEASON_NAME[uniSeason]+'</span>');}
 
 learnSpots.push({x:-5.9,z:-2,r:1.2,lock:'dhp',label:'오늘의 법구경 읽기',open:function(){var v=DHP[doy2%DHP.length];showLearn('오늘의 법구경','<div style="font-family:var(--font-display);font-size:20px;line-height:1.6">'+v[1]+'</div><div class="note" style="margin-top:8px">— 법구경 '+v[0]+' · 날마다 한 구절씩 바뀌어요</div>',function(){sBody.appendChild(pouchBtn(v[1],'법구경 '+v[0]));});questEvent('dhp');}});
 
@@ -2099,7 +2095,7 @@ var MANUAL_CHILD=[
  ['🏛 법당 네 곳','<b>부처님 앞</b>: 공양 올리기, 절, 탱화 이야기<br><b>오른쪽 벽 팔정도</b>: 액자 앞 버튼을 밟으면 설명이 펼쳐져요. 이번 주 약속 하나!<br><b>사경대</b>: 글귀 따라 쓰기<br><b>연꽃 연못</b>: 도장마다 연꽃 한 송이<br>그리고 뒷벽 게시판 퀴즈, 왼쪽 벽 오늘의 법구경, 사물 네 가지, 오계 돌, 부처님 생애 그림책.'],
  ['🌿 마음이 힘들 때','위쪽 <b>🌿 마음 쉼터</b>: 마음 날씨 → 감정 단어 → 바란 것 → 숨 고르기. 5분이면 돼요.<br><b>지금 힘들어요</b> 버튼: 숨 세 번부터 같이 해요.<br>방석 가까이 가면 <b>앉아서 명상</b>.<br><br>점수 없어요. 기록은 이 크롬북에만 남고 아무도 못 봐요.'],
  ['📅 날마다','입구 <b>동자승</b>이 하루 세 가지 심부름을 줘요(하면 저절로 체크).<br>왼쪽 벽 <b>법구경</b>은 날마다 바뀌어요.<br><b>하루에 몇 번 와도 하루</b>예요. 날이 쌓이면 꾸미기 물건·염주 색·동반자 동물이 열리고, 30일이면 왼쪽 벽 <b>비밀의 문</b>이 열려요.'],
- ['🏠 내 법당','<b>🏠 꾸미기</b>로 방석·연꽃·석등을 놓고 내 법당 이름을 걸어요.<br>부처님 앞 족자에 <b>내 원력</b> 한 줄을 걸어요 — "내가 이렇게 하겠다"는 것.<br><br>그리고 <b>눈 감고 법당 떠올리기</b>: 이 법당을 마음속에 하나 지어 두면, 크롬북이 없어도 힘들 때 떠올릴 수 있어요.'],
+ ['🏠 내 법당','<b>⚙️ 설정 → 🏠 꾸미기</b>로 방석·연꽃·석등을 놓고 내 법당 이름을 걸어요.<br>부처님 앞 족자에 <b>내 원력</b> 한 줄을 걸어요 — "내가 이렇게 하겠다"는 것.<br><br>그리고 <b>눈 감고 법당 떠올리기</b>: 이 법당을 마음속에 하나 지어 두면, 크롬북이 없어도 힘들 때 떠올릴 수 있어요.'],
  ['🙏 약속','법당에서는 뛰지 않고, 가운데 길은 비워 두고, 부처님께 합장 반배.<br>여기서 배운 걸 학교와 집에서도 해 봐요 — 그게 진짜 법당이에요.<br><br>준비됐으면 <b>시작하기</b>. 내 원력부터 적어도 좋아요.']
 ];
 function panelManual(){var pi=0,MANUAL=isTeacher?MANUAL_ADULT.concat([['🧑‍🏫 선생님만','<b>열림표는 아이와 똑같아요.</b> 선생님 화면이 예고편이 되지 않게, 선생님도 법당에 온 날수만큼만 열려요.<br><br><b>📺 TV 모드</b>: 법회 모드 안의 「TV에 크게」 — 이번 주 팔정도·법구경·그림책·오계·떠올리기 대본을 교실 TV에 띄워요(열린 것만).<br><b>🎁 칭찬 선물</b>: 아이 크롬북 ⚙️ 설정 → 「선생님 선물」에 선생님 코드를 넣으면 아이가 선물 하나를 골라요(하루 한 번). 다음 기능을 미리 여는 선물은 없어요.<br><b>내 신행 기록</b>: 사경·명상·108배가 수행록에 남아요.']]):(isAdult?MANUAL_ADULT:MANUAL_CHILD);function pg(){sBody.innerHTML='';sTitle.textContent='법당 사용설명서 '+(pi+1)+' / '+MANUAL.length;var M=MANUAL[pi];sBody.appendChild(el('<div class="box"><h3>'+M[0]+'</h3><div style="line-height:1.75;font-size:15.5px">'+M[1]+'</div></div>'));
@@ -2149,8 +2145,6 @@ function paintNext(){var ne=nextUnlockEntry();var elx=document.getElementById('n
   else{g.fillStyle='#2d7356';g.font='44px Jua, sans-serif';g.fillText('다 열렸어요',w/2,210);}
   nextTex.needsUpdate=true;}
 var nextTex=canvasTex(512,360,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);});
-(function(){var wd=new THREE.MeshStandardMaterial({color:0x4a2d16,roughness:.7});var post=new THREE.Mesh(new THREE.CylinderGeometry(.04,.05,1.7,8),wd);post.position.set(5.6,.85,8.3);scene.add(post);
-  var bd=new THREE.Mesh(new THREE.BoxGeometry(1.2,.86,.06),wd);bd.position.set(5.6,1.95,8.3);scene.add(bd);var pl=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.77),new THREE.MeshStandardMaterial({map:nextTex}));pl.position.set(5.6,1.95,8.26);pl.rotation.y=Math.PI;scene.add(pl);})();
 paintNext();
 // 오늘 새로 열린 것 알리기
 (function(){var dd=visitDays(),seen=store.get('seenUnlock',0),opened=UNLOCKS.filter(function(u){return u.d<=dd&&u.d>seen&&u.d>1});if(opened.length){store.set('seenUnlock',dd);setTimeout(function(){bell();toast('🔓 오늘 열렸어요: '+opened.map(function(u){return u.n}).join(' / '));},2600);}else if(seen<dd)store.set('seenUnlock',dd);})();
