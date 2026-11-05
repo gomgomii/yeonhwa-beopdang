@@ -948,7 +948,7 @@ var woodMat=new THREE.MeshStandardMaterial({color:0x8b5a2b,roughness:.6});
 var head=new THREE.Mesh(new THREE.SphereGeometry(.32,28,22),skin);head.position.y=.66;head.castShadow=true;torsoG.add(head);
 var dot=new THREE.Mesh(new THREE.SphereGeometry(.035,10,8),new THREE.MeshBasicMaterial({color:0xe3a72f}));dot.position.set(.19,.13,.255);head.add(dot); // 앞머리 옆 연꽃 핀
 var eyeMat=new THREE.MeshBasicMaterial({color:0x3b2b22});
-[-.1,.1].forEach(function(x){var e=new THREE.Mesh(new THREE.SphereGeometry(.028,8,8),eyeMat);e.position.set(x,.66,.3);e.scale.set(1,1.2,.7);torsoG.add(e);});
+var eyeMeshes=[];[-.1,.1].forEach(function(x){var e=new THREE.Mesh(new THREE.SphereGeometry(.028,8,8),eyeMat);e.position.set(x,.66,.3);e.scale.set(1,1.2,.7);torsoG.add(e);eyeMeshes.push(e);});
 [-.1,.1].forEach(function(x){var hl=new THREE.Mesh(new THREE.SphereGeometry(.01,6,6),new THREE.MeshBasicMaterial({color:0xffffff}));hl.position.set(x+.009,.675,.322);torsoG.add(hl);}); // 눈 반짝
 var mouth=new THREE.Mesh(new THREE.TorusGeometry(.035,.007,6,14,Math.PI),new THREE.MeshBasicMaterial({color:0xc9605a}));mouth.position.set(0,.585,.305);mouth.rotation.z=Math.PI;torsoG.add(mouth); // 살짝 웃는 입
 var cheekMat=new THREE.MeshBasicMaterial({color:0xf3b3b3});
@@ -2661,6 +2661,7 @@ function loop(){
     if(target){if(Math.hypot(pos.x-px0,pos.z-pz0)<.004){stuckT+=dt;if(stuckT>.25){stopWalk();faceRoom();}}else stuckT=0;} // 벽에 막혀 제자리걸음이면 멈춤
   }
   if(showOff>0)showOff-=dt;
+  (function(){var closed=sitOn||(bowT>=1.3&&bowT<2.6);eyeMeshes.forEach(function(e){e.scale.y+=((closed?.14:1.2)-e.scale.y)*Math.min(1,dt*8);});})(); /* 명상·절(엎드릴 때)엔 눈을 감음 */
   yeoni.position.set(pos.x,moving?Math.abs(Math.sin(t*10))*.06:0,pos.z);yeoni.rotation.y=heading+(showOff>0?Math.PI:0);
   // 절·목탁·합장 자세
   var bp=null;
