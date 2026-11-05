@@ -513,9 +513,10 @@ moteGeo.setAttribute('position',new THREE.BufferAttribute(moteArr,3));
 var moteTex=canvasTex(32,32,function(g,w,h){var gr=g.createRadialGradient(16,16,0,16,16,16);gr.addColorStop(0,'rgba(255,240,200,1)');gr.addColorStop(.4,'rgba(255,220,150,.5)');gr.addColorStop(1,'rgba(255,220,150,0)');g.fillStyle=gr;g.fillRect(0,0,w,h);});
 var motes=new THREE.Points(moteGeo,new THREE.PointsMaterial({map:moteTex,size:.09,transparent:true,opacity:.75,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}));scene.add(motes);
 
-// 뒷벽 게시판: 개선안
+// 뒷벽 게시판 → 법회 스크린(가운데 판): 왼쪽 이번 주 팔정도 + 스크린
 var bosalImg=new Image(), samgwiImg=new Image();
 var boardTex=null, boardCanvas=document.createElement('canvas');boardCanvas.width=2400;boardCanvas.height=800;
+var boardReady=false; // 데이터(행사·기록)가 다 정의된 뒤 true
 function drawBoard(){
   var g=boardCanvas.getContext('2d'),w=2400,h=800;
   g.fillStyle='#dcd2c2';g.fillRect(0,0,w,h);
@@ -542,30 +543,33 @@ function drawBoard(){
   g.fillStyle='#5b7166';g.font='28px "Gowun Dodum", sans-serif';g.fillText('이번 주 약속',ax+aw/2,ay+320);
   g.fillStyle='#1f3229';g.font='30px Jua, sans-serif';g.fillText(wp[3],ax+aw/2,ay+370);
   g.fillStyle='#5b7166';g.font='24px "Gowun Dodum", sans-serif';g.fillText('실제 게시판은 카드 8종을 크게 인쇄해 매달 한 장 교체',ax+aw/2,ay+465);
-  // 구역 2: 연꽃 소원 벽
-  var bx=ax+aw+25,by=ay,bw=500,bh2=ah;
-  g.fillStyle='#d3e9dc';g.fillRect(bx,by,bw,bh2);
-  g.fillStyle='#2d7356';g.font='34px Jua, sans-serif';g.fillText('연꽃 소원 벽',bx+bw/2,by+40);
-  var wl=['가족 건강','친구랑 사이좋게','시험 잘 보기','마음 편안히','강아지 행복','모두 행복','할머니 쾌유','고운 말 쓰기','축구 잘하기','동생 사랑','모든 생명 행복','감사해요'];
-  for(var k=0;k<12;k++){
-    var cx=bx+75+(k%4)*118,cy=by+125+Math.floor(k/4)*120+(k%2)*14;
-    g.save();g.translate(cx,cy);g.rotate((k%3-1)*.12);
-    g.fillStyle=['#f7a8bd','#f9c4d2','#f4d58a','#ffffff'][k%4];
-    g.beginPath();g.moveTo(0,-48);g.bezierCurveTo(42,-30,46,30,0,48);g.bezierCurveTo(-46,30,-42,-30,0,-48);g.fill();
-    g.fillStyle='#7a3b4d';g.font='19px "Gowun Dodum", sans-serif';g.fillText(wl[k],0,4);g.restore();
+  // 구역 2: 법회 스크린 — 평소: 오늘의 한 마디·이달 행사·내 기록 / 법회 모드: 지금 단계 글귀 크게
+  var bx=ax+aw+25,by=ay,bw=x1-30-bx,bh2=ah;
+  g.fillStyle='#2b2520';g.fillRect(bx-10,by-10,bw+20,bh2+20);g.fillStyle='#10201a';g.fillRect(bx,by,bw,bh2);g.strokeStyle='#2d7356';g.lineWidth=5;g.strokeRect(bx+8,by+8,bw-16,bh2-16);
+  var cx=bx+bw/2;
+  if(typeof cer!=='undefined'&&cer.on){
+    var sc=CER_SCREEN[cer.step]?CER_SCREEN[cer.step]():[],stt=cerSteps[cer.step];
+    g.fillStyle='#f4b6c6';g.font='34px Jua, sans-serif';g.fillText((cer.step+1)+' / '+cerSteps.length+' · '+stt.t,cx,by+52);
+    var ls=[];sc.forEach(function(x){g.font='46px Jua, sans-serif';wrapLines(g,x,bw-70).forEach(function(l){ls.push(l);});});
+    var lh=ls.length>4?56:66,sy0=by+bh2/2+20-(ls.length-1)*lh/2;
+    g.fillStyle='#fbf5e6';g.font=(ls.length>4?'40px':'46px')+' Jua, sans-serif';ls.forEach(function(l,i){g.fillText(l,cx,sy0+i*lh);});
+  }else{
+    g.fillStyle='#8fd3b2';g.font='26px "Gowun Dodum", sans-serif';g.fillText('법회 스크린 · 오늘의 한 마디',cx,by+44);
+    var say=(typeof sy!=='undefined')?sy[0]:'마음을 둘 곳을 알면 어디서나 평안하다';
+    g.fillStyle='#fbf5e6';g.font='40px Jua, sans-serif';var sl=wrapLines(g,'“'+say+'”',bw-80);sl.forEach(function(l,i){g.fillText(l,cx,by+110+i*50);});
+    if(boardReady){ // 이달 행사
+    var ev=[],t0=new Date();t0=new Date(t0.getFullYear(),t0.getMonth(),t0.getDate()).getTime();
+    (typeof EVENTS!=='undefined'?EVENTS:[]).forEach(function(e){e.d.forEach(function(ds){var p=ds.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]).getTime(),df=Math.round((d-t0)/864e5);if(df>=-1&&df<=400)ev.push({n:e.n,df:df,m:+p[1],dd:+p[2]});});});
+    ev.sort(function(a,b){return a.df-b.df;});ev=ev.slice(0,2);
+    g.fillStyle='#f4d58a';g.font='28px Jua, sans-serif';g.fillText('다가오는 날',cx,by+270);
+    g.fillStyle='#fbf5e6';g.font='30px "Gowun Dodum", sans-serif';
+    if(!ev.length)g.fillText('다음 행사를 기다려요',cx,by+312);
+    ev.forEach(function(e,i){g.fillText(e.n+'  '+e.m+'. '+e.dd+'.  '+(e.df===0?'오늘!':(e.df<0?'어제':'D-'+e.df)),cx,by+312+i*40);});
+    // 내 기록(이 기기)
+    var rec=(typeof visitDays==='function')?('📅 온 날 '+visitDays()+'  🏮 연등 '+(typeof savedLanterns!=='undefined'?savedLanterns.length:0)+'  ✍️ 사경 '+store.get('sagyeong',0)+'  🙏 절 '+store.get('bows',0)):'';
+    g.fillStyle='#8fd3b2';g.font='26px "Gowun Dodum", sans-serif';g.fillText(rec,cx,by+bh2-42);
+    }
   }
-  g.fillStyle='#5b7166';g.font='24px "Gowun Dodum", sans-serif';g.fillText('법회 날 연꽃 메모지에 써서 직접 붙여요',bx+bw/2,by+bh2-40);
-  // 구역 3: 온라인 법당 QR
-  var cx0=bx+bw+25,cw0=x1-30-cx0;
-  g.fillStyle='#fff';g.fillRect(cx0,ay,cw0,ah);g.strokeStyle='#2d7356';g.lineWidth=4;g.strokeRect(cx0,ay,cw0,ah);
-  g.fillStyle='#2d7356';g.font='30px Jua, sans-serif';g.fillText('온라인',cx0+cw0/2,ay+40);g.fillText('마음법당',cx0+cw0/2,ay+78);
-  var qs=200,qx=cx0+(cw0-qs)/2,qy=ay+120,n=21,cs=qs/n;
-  g.fillStyle='#1f3229';
-  for(var i2=0;i2<n;i2++)for(var j2=0;j2<n;j2++){var f=((i2*7+j2*13+i2*j2)%5)<2;var fin=(i2<7&&j2<7)||(i2<7&&j2>13)||(i2>13&&j2<7);
-    if(fin){var a=i2%14,b=j2%14;var ring=(a===0||a===6||b===0||b===6)||(a>=2&&a<=4&&b>=2&&b<=4);if(ring)g.fillRect(qx+j2*cs,qy+i2*cs,cs,cs);}
-    else if(f)g.fillRect(qx+j2*cs,qy+i2*cs,cs,cs);}
-  g.fillStyle='#5b7166';g.font='24px "Gowun Dodum", sans-serif';g.fillText('회원증 코드로',cx0+cw0/2,ay+370);g.fillText('입장해요',cx0+cw0/2,ay+402);
-  g.fillStyle='#d9486f';g.font='24px Jua, sans-serif';g.fillText('QR 예시',cx0+cw0/2,ay+460);
   if(boardTex)boardTex.needsUpdate=true;
 }
 boardTex=new THREE.CanvasTexture(boardCanvas);boardTex.encoding=THREE.sRGBEncoding;boardTex.anisotropy=4;
@@ -882,7 +886,7 @@ function drawWall(i){var p=paths[i],d=DETAIL[i],c=wallTex.image,g=c.getContext('
 function showWall(i){if(wallIdx===i)return;wallIdx=i;questEvent('wall');drawWall(i);wallPanel.position.z=bayZ(i);wallPanel.visible=true;wallT=0;}
 function hideWall(){wallIdx=-1;}
 paintStones();
-var signs=[label('소원 연등','연등 달기'),label('뒷벽 게시판','교리 퀴즈·개선안'),label('오늘의 법구경','날마다 한 구절')];signs[2].position.set(-5.9,1.5,-2);signs[2].scale.set(1.1,.43,1);
+var signs=[label('소원 연등','연등 달기'),label('법회 스크린','오늘의 한 마디·행사·퀴즈'),label('오늘의 법구경','날마다 한 구절')];signs[2].position.set(-5.9,1.5,-2);signs[2].scale.set(1.1,.43,1);
 signs[0].position.set(-5.2,1.7,.5);signs[0].scale.set(.9,.35,1);
 signs[1].position.set(0,5.25,hz-.4);signs[1].scale.set(.9,.35,1);
 var s3=label('사경','따라 쓰기');s3.position.set(5.6,1.5,6);s3.scale.set(.8,.31,1);signs.push(s3);
@@ -1079,7 +1083,7 @@ var spots={
   lantern:{p:new THREE.Vector3(-4.6,0,.5),r:1.5,label:'소원 연등 달기',title:'소원 연등'},
   sagyeong:{p:new THREE.Vector3(4.6,0,6),r:1.3,label:'사경하기',title:'사경'},
   pond:{p:new THREE.Vector3(-10.4,0,8.5),r:1.4,label:'연꽃 연못 보기',title:'연꽃 연못'},
-  board:{p:new THREE.Vector3(2.4,0,6.4),r:1.7,label:'게시판 보기',title:'뒷벽 게시판'},
+  board:{p:new THREE.Vector3(2.4,0,6.4),r:1.7,label:'스크린 보기',title:'법회 스크린'},
   door:{p:new THREE.Vector3(-hx+1.0,0,2.5),r:1.0,label:'비밀의 문',title:'비밀의 문'}
 };
 var nearSpot=null;
@@ -1275,7 +1279,7 @@ function panelStone(i){
 }
 // 게시판
 function panelBoard(){
-  sTitle.textContent='뒷벽 게시판';
+  sTitle.textContent='법회 스크린';
   sBody.appendChild(el('<div class="box"><h3>오늘의 한 마디</h3><div style="font-family:var(--font-display);font-size:20px">“'+sy[0]+'”</div><div class="note">'+sy[1]+'</div></div>'));
   if(isGuest){sBody.appendChild(lock());}
   else{
@@ -1289,9 +1293,9 @@ function panelBoard(){
       nx.addEventListener('click',function(){qi++;render();});qEl.appendChild(opts);qEl.appendChild(ex);qEl.appendChild(nx);
     })();
   }
-  var cmp=el('<div class="box"><h3>게시판 개선안</h3><div class="cmp"><img class="board-img" alt="개선한 뒷벽 게시판: 삼귀의·어린이오계, 평화의 기도 띠, 이달의 팔정도, 연꽃 소원 벽, 온라인 법당 QR, 보살 그림"><div class="note">삼귀의·어린이오계와 보살 그림은 그대로 두고, 가운데 판만 바꿨어요. 낱글자 「평화의 기도」는 위쪽 띠 하나로 줄이고, 남는 자리를 아이들이 채우는 공간으로 만들었어요.</div></div></div>');
-  cmp.querySelector('img').src=boardCanvas.toDataURL('image/jpeg',.85);
-  sBody.appendChild(cmp);
+  (function(){var ev=[],t0=new Date();t0=new Date(t0.getFullYear(),t0.getMonth(),t0.getDate()).getTime();EVENTS.forEach(function(e){e.d.forEach(function(ds){var p=ds.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]).getTime(),df=Math.round((d-t0)/864e5);if(df>=-1&&df<=400)ev.push({n:e.n,df:df,m:+p[1],dd:+p[2],s:e.s});});});ev.sort(function(a,b){return a.df-b.df;});
+    var bx=el('<div class="box"><h3>다가오는 날</h3><div class="rank"></div><div class="note">법회 모드를 켜면 이 스크린에 지금 단계 글귀가 크게 나와요.</div></div>');ev.slice(0,3).forEach(function(e){bx.querySelector('.rank').appendChild(el('<div class="r"><span>'+e.n+' · '+e.m+'. '+e.dd+'.</span><b>'+(e.df===0?'오늘':'D-'+e.df)+'</b></div>'));});sBody.appendChild(bx);
+    sBody.appendChild(el('<div class="box"><h3>이 기기의 기록</h3><div class="note">📅 법당에 온 날 '+visitDays()+'일 · 🏮 연등 '+savedLanterns.length+' · ✍️ 사경 '+store.get('sagyeong',0)+'줄 · 🙏 절 '+store.get('bows',0)+'번</div></div>'));})();
 }
 // 사경
 function panelSagyeong(){
@@ -1435,7 +1439,7 @@ function applySeason(ev){
     for(var k=0;k<10;k++){var cd=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.3,10),candleMat);cd.position.set(-4.5+k,1.05,-hz+1.55);seasonGroup.add(cd);var fl=new THREE.Mesh(new THREE.SphereGeometry(.04,8,8),new THREE.MeshBasicMaterial({color:0xffd27a}));fl.position.set(-4.5+k,1.25,-hz+1.55);seasonGroup.add(fl);}
   }else{altarBase=.6;}
 }
-var liveEvent=currentEvent(new Date());
+var liveEvent=currentEvent(new Date());boardReady=true;drawBoard();
 applySeason(liveEvent);
 
 /* ---------------- 법회 모드 ---------------- */
@@ -1457,6 +1461,14 @@ var cerSteps=[
  {t:'사홍서원',b:'<div class="ln">중생을 다 건지오리다.<br>번뇌를 다 끊으오리다.<br>법문을 다 배우오리다.<br>불도를 다 이루오리다.</div>',go:function(){bell();}},
  {t:'회향',b:'',go:function(){var p=paths[weekIdx];document.getElementById('cerBody').innerHTML='<div class="sm">이번 주 약속</div><div class="ln">'+p[0]+' · '+p[2]+'<br><span style="color:#d9486f">'+p[3]+'</span></div><div class="sm">서로 합장하며 "성불하세요" 인사로 마쳐요.</div>';startBow();bell();}}
 ];
+var CER_SCREEN=[
+ function(){return ['거룩한 부처님께 귀의합니다','거룩한 가르침에 귀의합니다','거룩한 스님들께 귀의합니다'];},
+ function(){return ['눈을 감고','숨을 바라봐요'];},
+ function(){return ['“'+sy[0]+'”'];},
+ function(){return ['향 · 등 · 꽃 · 과일 · 차 · 쌀','두 손으로 올려요'];},
+ function(){return ['중생을 다 건지오리다','번뇌를 다 끊으오리다','법문을 다 배우오리다','불도를 다 이루오리다'];},
+ function(){var p=paths[weekIdx];return ['이번 주 약속 · '+p[0]+' '+p[2],p[3],'성불하세요'];}
+];
 var cerCard=document.getElementById('cerCard');
 function showCer(i){
   clearCerTimer();cer.step=Math.max(0,Math.min(cerSteps.length-1,i));var st=cerSteps[cer.step];
@@ -1464,10 +1476,10 @@ function showCer(i){
   document.getElementById('cerTitle').textContent=st.t;document.getElementById('cerBody').innerHTML=st.b;
   document.getElementById('cerPrev').disabled=cer.step===0;
   document.getElementById('cerNext').textContent=cer.step===cerSteps.length-1?'법회 마치기':'다음';
-  st.go();
+  st.go();drawBoard();
 }
 function startCer(){closeSheet();if(decoOn)setDeco(false);if(sitOn)endSit();cer.on=true;document.body.classList.add('cer');pos.set(0,0,-4.4);heading=Math.PI;target=null;showCer(0);}
-function endCer(){clearCerTimer();try{cerAudio.pause();}catch(e){}cer.on=false;document.body.classList.remove('cer');}
+function endCer(){clearCerTimer();try{cerAudio.pause();}catch(e){}cer.on=false;document.body.classList.remove('cer');drawBoard();}
 document.getElementById('cerBtn').addEventListener('click',function(){cer.on?endCer():startCer();});
 document.getElementById('cerPrev').addEventListener('click',function(){showCer(cer.step-1);});
 document.getElementById('cerNext').addEventListener('click',function(){if(cer.step===cerSteps.length-1)endCer();else showCer(cer.step+1);});
