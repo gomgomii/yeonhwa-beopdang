@@ -2431,7 +2431,7 @@ function loop(){
   waterTex.offset.x=t*.012;waterTex.offset.y=Math.sin(t*.3)*.02;
   lotusGroup.children.forEach(function(l,i){if(l.type==='Group')l.rotation.z=Math.sin(t*1.1+i)*.05;});
   lanternGroup.children.forEach(function(l){l.rotation.z=Math.sin(t*.8+l.userData.phase)*.05;});
-  if(pet){var ptx=pos.x-Math.sin(heading)*.9-Math.cos(heading)*.55,ptz=pos.z-Math.cos(heading)*.9+Math.sin(heading)*.55;var pmv=Math.hypot(ptx-petPos.x,ptz-petPos.z);petPos.x+=(ptx-petPos.x)*Math.min(1,dt*3);petPos.z+=(ptz-petPos.z)*Math.min(1,dt*3);pet.position.set(petPos.x,pmv>.2?Math.abs(Math.sin(t*12))*.12:0,petPos.z);pet.rotation.y=heading;}
+  if(pet){var ptx=pos.x+Math.sin(heading)*.45+Math.cos(heading)*.85,ptz=pos.z+Math.cos(heading)*.45-Math.sin(heading)*.85;var pmv=Math.hypot(ptx-petPos.x,ptz-petPos.z);petPos.x+=(ptx-petPos.x)*Math.min(1,dt*3);petPos.z+=(ptz-petPos.z)*Math.min(1,dt*3);pet.position.set(petPos.x,pmv>.2?Math.abs(Math.sin(t*12))*.12:0,petPos.z);pet.rotation.y=heading;}
   if(rising){rising.t=Math.min(1,rising.t+dt/3.2);var re=1-Math.pow(1-rising.t,3);rising.m.position.lerpVectors(LANTERN_START,rising.to,re);rising.m.position.x+=Math.sin(rising.t*9)*.08*(1-re);if(rising.t>=1)rising=null;}
   smoke.forEach(function(sm){var f=(t*.22+sm.userData.ph)%1;sm.position.set(Math.sin(t*1.3+sm.userData.ph*9)*.05*f*3,.65+f*.9,0);sm.scale.setScalar(.6+f*1.6);sm.material.opacity=.4*(1-f);});
   if(chamPaper){chamPaper.t+=dt;chamPaper.m.position.y=.7+chamPaper.t*.5;chamPaper.m.material.opacity=Math.max(0,1-chamPaper.t/3);if(chamPaper.t>3){scene.remove(chamPaper.m);chamPaper=null;}}
