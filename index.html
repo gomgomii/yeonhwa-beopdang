@@ -616,9 +616,9 @@ var latticeMat=new THREE.MeshStandardMaterial({map:lattice,roughness:.9});
 [-1,1].forEach(function(s){
   var ry=-s*Math.PI/2, wx=s*(hx-.01);
   var band=new THREE.Mesh(new THREE.PlaneGeometry(D,.6),new THREE.MeshStandardMaterial({map:dancheong}));band.position.set(wx,H-.3,0);band.rotation.y=ry;scene.add(band);
-  var wain=new THREE.Mesh(new THREE.PlaneGeometry(D,.9),wainMat);wain.position.set(s*(hx-.02),.45,0);wain.rotation.y=ry;scene.add(wain);
+  (s>0?[[D,0]]:[[hz+5.3,(-hz+5.3)/2],[hz-6.7,(6.7+hz)/2]]).forEach(function(q){var wain=new THREE.Mesh(new THREE.PlaneGeometry(q[0],.9),wainMat);wain.position.set(s*(hx-.02),.45,q[1]);wain.rotation.y=ry;scene.add(wain);}); // 왼쪽은 출입문(z 5.3~6.7)에서 끊김
   (s>0?[8]:[-4,0,4,8]).forEach(function(z){var p=new THREE.Mesh(new THREE.CylinderGeometry(.22,.25,H,16),pillarMat);p.position.set(s*(hx-.25),H/2,z);p.castShadow=true;scene.add(p);});
-  (s>0?[6]:[-2,6]).forEach(function(z){var pn=new THREE.Mesh(new THREE.PlaneGeometry(3.1,3),latticeMat);pn.position.set(s*(hx-.03),2.5,z);pn.rotation.y=ry;scene.add(pn);});
+  (s>0?[6]:[-2]).forEach(function(z){var pn=new THREE.Mesh(new THREE.PlaneGeometry(3.1,3),latticeMat);pn.position.set(s*(hx-.03),2.5,z);pn.rotation.y=ry;scene.add(pn);});
 });
 var bandBack=new THREE.Mesh(new THREE.PlaneGeometry(W,.6),new THREE.MeshStandardMaterial({map:dancheong}));bandBack.position.set(0,H-.3,hz-.01);bandBack.rotation.y=Math.PI;scene.add(bandBack);
 
@@ -1002,7 +1002,7 @@ if(isAdult){yeoni.scale.set(1.15,1.28,1.15);head.scale.setScalar(.88);} // 어�
 var hands=new THREE.Group();hands.position.set(0,.22,.25);hands.visible=false;
 var palm=new THREE.Mesh(new THREE.BoxGeometry(.05,.19,.03),skin);palm.rotation.x=-.25;hands.add(palm);torsoG.add(hands); // 두 손바닥을 맞댄 모양 하나
 scene.add(yeoni);
-var pos=new THREE.Vector3(-5.4,0,6.0), heading=Math.PI/2; // 출입문 안쪽에서 시작, 법당 안을 보며
+var pos=new THREE.Vector3(-4.8,0,6.2), heading=Math.PI*5/6; // 출입문 안쪽에서 시작, 법당 안(불단 쪽)을 비스듬히 보며
 yeoni.position.copy(pos);yeoni.rotation.y=heading;
 
 /* ---------------- 이동 ---------------- */
@@ -2514,7 +2514,8 @@ function loop(){
   var cp=new THREE.Vector3(pos.x-fx*4.2,2.7+lookUp*.2,pos.z-fz*4.2);
   // 벽은 한쪽 면만 그려서 카메라가 벽 밖으로 조금 나가도 안이 보인다. 뒷벽 가까이에서 연이가 화면 아래로 잘리지 않게.
   var inYard=pos.x<-hx+.3&&pos.z>=YARD.z0, inGarden=secretOpen&&pos.x<-hx+.3&&!inYard;
-  cp.x=Math.max(inGarden?-12.6:(inYard?YARD.x0-.4:-hx-1.2),Math.min(hx+1.2,cp.x));cp.z=Math.max(-hz+.3,Math.min(inYard?YARD.z1+.6:hz+1.6,cp.z));if(inYard)cp.x=Math.min(-hx-.5,cp.x); // 마당에 있으면 카메라도 마당 안에
+  var hallMinX=cp.z>YARD.z0-.3?-hx+.3:-hx-1.2; // 마당 쪽(z 4.2~)은 벽 밖에 마당이 있어 카메라를 안에 둠
+  cp.x=Math.max(inGarden?-12.6:(inYard?YARD.x0-.4:hallMinX),Math.min(hx+1.2,cp.x));cp.z=Math.max(-hz+.3,Math.min(inYard?YARD.z1+.6:hz+1.6,cp.z));if(inYard)cp.x=Math.min(-hx-.5,cp.x); // 마당에 있으면 카메라도 마당 안에
   var lk=new THREE.Vector3(pos.x+fx*2.5,1.2+(lookUp>0?2.6:0),pos.z+fz*2.5);
   if(showOff>0){cp.set(pos.x-fx*2.6,1.5,pos.z-fz*2.6);lk.set(pos.x,.75,pos.z);}
   else if(bowT>=0){var rx=Math.cos(heading),rz=-Math.sin(heading);cp.set(pos.x+rx*2.4+fx*.6,1.15,pos.z+rz*2.4+fz*.6);lk.set(pos.x+fx*.3,.5,pos.z+fz*.3);} // 절은 옆에서
