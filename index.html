@@ -194,6 +194,7 @@ body.deco .hud.bottom,body.deco .prompt,body.deco .hint,body.deco .jump,body.cer
 #med{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(760px,calc(100% - 28px));z-index:6;background:var(--glass);border-radius:18px;padding:12px 16px;display:none;gap:10px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 body.sit #med{display:grid}
 body.sit .hud.bottom,body.sit .prompt,body.sit .dpad,body.sit .jump,body.sit .hint{display:none !important}
+.mcircle{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle,#bfe3cd,#2d7356);flex:none;transform:scale(.7)}
 #medCircle{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle,#f7b3c6,#d9486f);animation:breathe 8s ease-in-out infinite;flex:none}
 @keyframes breathe{0%{transform:scale(.7)}50%{transform:scale(1.25)}100%{transform:scale(.7)}}
 </style>
@@ -234,6 +235,7 @@ body.sit .hud.bottom,body.sit .prompt,body.sit .dpad,body.sit .jump,body.sit .hi
     <button class="btn pink sm" id="cerBtn">법회 모드</button>
     <button class="btn ghost sm" id="recBtn">내 수행록</button>
     <button class="btn ghost sm" id="decoBtn">🏠 꾸미기</button>
+    <button class="btn ghost sm" id="mindBtn">🌿 마음 쉼터</button>
     <button class="btn ghost sm" id="sndBtn" aria-pressed="true" title="소리 켜고 끄기">🔔 소리</button>
     <button class="btn ghost sm" id="leaveBtn">법당 나가기</button>
     <button class="btn ghost sm" id="guideBtn">⚙️ 설정</button>
@@ -920,7 +922,7 @@ document.getElementById('recBtn').addEventListener('click',function(){openSpot('
 function panelRecord(){
   sTitle.textContent='내 수행록';
   var mind=store.get('mind',0),sg=store.get('sagyeong',0),nf=taengFound.filter(function(id){return taeng.some(function(t){return t.id===id&&!t.b})}).length;
-  var rows=[['법당에 온 날',visitDays()+'일'],['팔정도 도장',stampDone.length+' / 8'],['연꽃 연못',stampDone.length+' 송이'],['108배',bows+' / 108'],['내 법당 꾸미기',decor.length+'개'],['3분 마음챙김',mind+'번'],['사경',sg+'번'],['육법공양',offered.length+' / 6'],['켜 둔 연등',savedLanterns.length+'개'],['찾은 동자승',nf+' / '+dongjaCount]];
+  var rows=[['법당에 온 날',visitDays()+'일'],['팔정도 도장',stampDone.length+' / 8'],['연꽃 연못',stampDone.length+' 송이'],['108배',bows+' / 108'],['내 법당 꾸미기',decor.length+'개'],['3분 마음챙김',mind+'번'],['마음 쉼터',store.get('rest',0)+'번'],['사경',sg+'번'],['육법공양',offered.length+' / 6'],['켜 둔 연등',savedLanterns.length+'개'],['찾은 동자승',nf+' / '+dongjaCount]];
   var box=el('<div class="box"><h3>'+(now0.getMonth()+1)+'월 '+now0.getDate()+'일까지</h3><div class="rank"></div></div>');
   rows.forEach(function(r){box.querySelector('.rank').appendChild(el('<div class="r" style="grid-template-columns:1fr auto"><span>'+r[0]+'</span><span class="n" style="font-family:var(--font-display);color:var(--leaf)">'+r[1]+'</span></div>'));});
   sBody.appendChild(box);
@@ -968,14 +970,14 @@ document.getElementById('leaveBtn').addEventListener('click',function(){
 /* ---------------- 패널 ---------------- */
 var sheet=document.getElementById('sheet'),sBody=document.getElementById('sheetBody'),sTitle=document.getElementById('sheetTitle');
 var sheetOpen=false,currentSpot=null;
-function closeSheet(){sheet.classList.remove('on');sheet.setAttribute('aria-hidden','true');sheetOpen=false;currentSpot=null;stopBreath(false);}
+function closeSheet(){if(typeof stopMind==='function')stopMind();sheet.classList.remove('on');sheet.setAttribute('aria-hidden','true');sheetOpen=false;currentSpot=null;stopBreath(false);}
 document.getElementById('sheetClose').addEventListener('click',closeSheet);
 window.addEventListener('keydown',function(e){if(e.code==='Escape'&&sheetOpen)closeSheet();});
 function el(html){var d=document.createElement('div');d.innerHTML=html;return d.firstElementChild;}
 function lock(){return el('<div class="lockbox"><b>연화 회원 전용</b>연화 어린이회에 가입하면 회원증 뒷면 코드로 열 수 있어요. 지금은 법당을 둘러보고 합장·절하기·목탁은 함께할 수 있어요.</div>');}
 function openSpot(key){
   currentSpot=key;sBody.innerHTML='';stopBreath(false);
-  var fn={altar:panelAltar,lantern:panelLantern,board:panelBoard,guide:panelGuide,sagyeong:panelSagyeong,pond:panelPond,taeng:panelTaeng,record:panelRecord,manner:panelManner,door:panelDoor}[key];
+  var fn={altar:panelAltar,lantern:panelLantern,board:panelBoard,guide:panelGuide,sagyeong:panelSagyeong,pond:panelPond,taeng:panelTaeng,record:panelRecord,manner:panelManner,door:panelDoor,mind:panelMind}[key];
   if(key.indexOf('stone')===0){panelStone(+key.slice(5));}else fn();
   sheet.classList.add('on');sheet.setAttribute('aria-hidden','false');sheetOpen=true;
   for(var k in keys)keys[k]=0;
@@ -1273,7 +1275,7 @@ function panelGuide(){
   sBody.insertBefore(vb,ub.nextSibling);
   sBody.appendChild(el('<div class="box"><h3>법회 모드</h3>위쪽 분홍 「법회 모드」 버튼을 누르면 교실 TV용 화면이 돼요. 삼귀의 → 입정(종 세 번, 1분) → 법문(오늘의 한 마디) → 육법공양 → 사홍서원 → 회향 순서로 큰 글씨가 나와요. 다음 장은 「다음」 버튼이나 키보드 →, 스페이스, 프레젠터로 넘겨요.</div>'));
   sBody.appendChild(el('<div class="box"><h3>이 3D 법당은</h3>은석초 연화법당 사진(후불탱화, 동자불, 천불, 뒷벽 게시판)으로 만든 공간이에요. 연이로 걸어 다니며 네 곳에서 활동해요.<ul class="list"><li>부처님 앞: 탱화 이야기, 육법공양 올리기, 3분 마음챙김, 108배</li><li>사경대(오른쪽 벽): 흐린 글씨 따라 쓰기, 사경 공모전과 연결</li><li>연꽃 연못(왼쪽 뒤): 팔정도 도장마다 연꽃 한 송이</li><li>소원 연등: 고른 소원이 천장 연등으로 켜짐</li><li>팔정도 액자 8개(오른쪽 벽): 앞의 버튼을 밟으면 벽에 설명이 펼쳐지고, 도장 8개를 모으면 키링 코드</li><li>뒷벽 게시판: 오늘의 한 마디, 교리 퀴즈, 게시판 개선안</li></ul></div>'));
-  sBody.appendChild(el('<div class="box"><h3>2차 시안에서 달라진 것 (11. 5.)</h3><ul class="list"><li>연이가 은석초 교복을 입어요. 계절에 따라 동복·춘추복·하복으로 저절로 바뀌어요. 여자아이·남자아이를 고를 수 있고, 머리 모양(단발·양갈래 / 짧은 머리·스포츠 머리)도 골라요.</li><li>이번 주 팔정도가 날짜로 저절로 정해져요(8주에 한 바퀴). 뒷벽 게시판, 법회 회향, 내 수행록이 같은 덕목을 보여요. 문구는 점검된 카드 8장과 같아요.</li><li>촛불이 흔들리고 그림자가 생기고 빛 알갱이가 떠다녀요. 연못 물결과 연꽃도 움직여요.</li><li>연이가 걸을 때 팔을 흔들고, 합장하면 두 손을 모아요.</li><li>「절하기」를 누르면 절에서 하듯 합장 → 무릎 꿇기 → 엎드려 이마 대기 → 손바닥 올리기 → 일어나 합장까지 하고, 그래야 한 배로 세요.</li><li>「목탁」을 누르면 연이가 목탁과 채를 들고 쳐요.</li><li>방석 가까이 가면 「방석에 앉아 명상하기」— 연이가 가부좌로 앉고 1·3·5분 숨 바라보기(끝나면 종, 마음챙김 기록). 바로 가기에 「법당 예절」이 생겨 다섯 가지 예절을 연이가 보여 줘요(반배·삼배·앉기·합장).</li><li>왼쪽 벽에 「비밀의 문」— 법당에 온 날이 30일이 되면 열리고 안에 비밀 정원(밤하늘·큰 나무·석등·반딧불)이 있어요. 횟수가 아니라 날수예요. 염주도 걸 수 있고 날수에 따라 색이 늘어요(나무→흑단→호박→자수정→비취→수정→산호→금).</li><li>팔정도 설명판이 오른쪽 벽 한가운데 한 장으로 커졌어요(기둥 셋을 치움). 꾸미기 물건이 22가지로 늘고, 법당에 온 날이 쌓이면 새 물건이 열려요(3일 난초·풍경·향로 … 30일 금빛 탑).</li><li>왼쪽 벽에 「오늘의 법구경」 전광판이 생겨 날마다 한 구절씩 바뀌어요(30구절). 왼쪽 위 오늘의 한 마디는 뺐어요.</li><li>뒷벽 삼귀의·오계 사진을 밝게 하고 조명을 달았어요. 종·목탁·도장처럼 무언가 할 때마다 그쪽이 반짝 밝아져요.</li><li>「🏠 꾸미기」로 나만의 법당을 꾸며요. 방석·돗자리·연꽃 화분·촛불·연등·돌탑·소나무·꽃밭·족자·법고·석탑·풍경 12가지를 바닥에 놓고 돌리고 색을 바꿔요. 내 법당 이름도 걸어요. 이 기기에만 저장돼요.</li><li>목탁은 한 번 누르면 똑·똑·똑 세 번, 팔꿈치로 내리쳐요.</li><li>사경 글귀가 부처님 이름·경전 구절·서원·이번 주 팔정도·내가 쓰고 싶은 말로 늘었어요. 긴 글귀는 두 줄로 나와요.</li><li>팔정도가 통로 디딤돌에서 오른쪽 벽 액자 8개로 옮겨 갔어요. 액자 앞 버튼을 밟으면 벽에 뜻·학교에서의 예·이번 주 약속·경전 한 줄이 쫙 펼쳐져요.</li><li>화면을 옆으로 끌면 둘러볼 수 있어요.</li><li>「내 수행록」 한 장에 기록이 모여요. 풍경 소리가 가끔 울리고, 소리는 끌 수 있어요.</li></ul></div>'));
+  sBody.appendChild(el('<div class="box"><h3>2차 시안에서 달라진 것 (11. 5.)</h3><ul class="list"><li>연이가 은석초 교복을 입어요. 계절에 따라 동복·춘추복·하복으로 저절로 바뀌어요. 여자아이·남자아이를 고를 수 있고, 머리 모양(단발·양갈래 / 짧은 머리·스포츠 머리)도 골라요.</li><li>이번 주 팔정도가 날짜로 저절로 정해져요(8주에 한 바퀴). 뒷벽 게시판, 법회 회향, 내 수행록이 같은 덕목을 보여요. 문구는 점검된 카드 8장과 같아요.</li><li>촛불이 흔들리고 그림자가 생기고 빛 알갱이가 떠다녀요. 연못 물결과 연꽃도 움직여요.</li><li>연이가 걸을 때 팔을 흔들고, 합장하면 두 손을 모아요.</li><li>「절하기」를 누르면 절에서 하듯 합장 → 무릎 꿇기 → 엎드려 이마 대기 → 손바닥 올리기 → 일어나 합장까지 하고, 그래야 한 배로 세요.</li><li>「목탁」을 누르면 연이가 목탁과 채를 들고 쳐요.</li><li>「🌿 마음 쉼터」— 쉬는 시간 5분: 마음 날씨 → 감정 단어 → 몸 어디 → 바란 것 → 숨 고르기(4·4·6)·종소리·목탁·삼배 중 하나 → 한 줄. 점수 없고 기록은 이 기기에만. 회원이 아니어도 열려요.</li><li>방석 가까이 가면 「방석에 앉아 명상하기」— 연이가 가부좌로 앉고 1·3·5분 숨 바라보기(끝나면 종, 마음챙김 기록). 바로 가기에 「법당 예절」이 생겨 다섯 가지 예절을 연이가 보여 줘요(반배·삼배·앉기·합장).</li><li>왼쪽 벽에 「비밀의 문」— 법당에 온 날이 30일이 되면 열리고 안에 비밀 정원(밤하늘·큰 나무·석등·반딧불)이 있어요. 횟수가 아니라 날수예요. 염주도 걸 수 있고 날수에 따라 색이 늘어요(나무→흑단→호박→자수정→비취→수정→산호→금).</li><li>팔정도 설명판이 오른쪽 벽 한가운데 한 장으로 커졌어요(기둥 셋을 치움). 꾸미기 물건이 22가지로 늘고, 법당에 온 날이 쌓이면 새 물건이 열려요(3일 난초·풍경·향로 … 30일 금빛 탑).</li><li>왼쪽 벽에 「오늘의 법구경」 전광판이 생겨 날마다 한 구절씩 바뀌어요(30구절). 왼쪽 위 오늘의 한 마디는 뺐어요.</li><li>뒷벽 삼귀의·오계 사진을 밝게 하고 조명을 달았어요. 종·목탁·도장처럼 무언가 할 때마다 그쪽이 반짝 밝아져요.</li><li>「🏠 꾸미기」로 나만의 법당을 꾸며요. 방석·돗자리·연꽃 화분·촛불·연등·돌탑·소나무·꽃밭·족자·법고·석탑·풍경 12가지를 바닥에 놓고 돌리고 색을 바꿔요. 내 법당 이름도 걸어요. 이 기기에만 저장돼요.</li><li>목탁은 한 번 누르면 똑·똑·똑 세 번, 팔꿈치로 내리쳐요.</li><li>사경 글귀가 부처님 이름·경전 구절·서원·이번 주 팔정도·내가 쓰고 싶은 말로 늘었어요. 긴 글귀는 두 줄로 나와요.</li><li>팔정도가 통로 디딤돌에서 오른쪽 벽 액자 8개로 옮겨 갔어요. 액자 앞 버튼을 밟으면 벽에 뜻·학교에서의 예·이번 주 약속·경전 한 줄이 쫙 펼쳐져요.</li><li>화면을 옆으로 끌면 둘러볼 수 있어요.</li><li>「내 수행록」 한 장에 기록이 모여요. 풍경 소리가 가끔 울리고, 소리는 끌 수 있어요.</li></ul></div>'));
   sBody.appendChild(el('<div class="box"><h3>교사가 할 일</h3><ul class="list"><li>3월: 회원증 뒷면 코드·QR로 입장 안내 (업체 인쇄)</li><li>5월: 연등이 켜진 법당 화면을 교내 화면에 띄우기</li><li>7월·12월: 키링 코드 확인 후 교환</li></ul></div>'));
   sBody.appendChild(el('<div class="box"><h3>아직 시안이라</h3><ul class="list"><li>연등·도장·절 기록은 이 기기에만 저장돼요. 전교 연등이 한 법당에 모이려면 공유 저장과 학생용 호스팅이 필요해요.</li><li>친구 캐릭터가 실시간으로 함께 보이는 기능은 다음 단계예요. 채팅은 넣지 않아요.</li><li>학교 태블릿에서 무거우면 2D 마음법당으로 바꿔 쓰면 돼요.</li></ul></div>'));
 }
@@ -1327,6 +1329,83 @@ var dhpFrame=new THREE.Mesh(new THREE.BoxGeometry(2.3,1.4,.08),new THREE.MeshSta
 var dhpScreen=new THREE.Mesh(new THREE.PlaneGeometry(2.1,1.23),new THREE.MeshBasicMaterial({map:dhpTex}));dhpScreen.position.set(-hx+.15,2.75,-2);dhpScreen.rotation.y=Math.PI/2;scene.add(dhpScreen);
 var dhpLight=new THREE.PointLight(0x9fd3b5,.35,4);dhpLight.position.set(-hx+.9,2.6,-2);scene.add(dhpLight);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){drawDhp(dhpTex.image.getContext('2d'),dhpTex.image.width,dhpTex.image.height);dhpTex.needsUpdate=true;});
+
+var questEvent=function(){}; // C단계에서 채움
+// ===== 🌿 마음 쉼터: 쉬는 시간 5분. 날씨 → 감정 단어 → 몸 → 바란 것 → 지금 할 것 → 한 줄. 진단·점수 없음, 기록은 이 기기에만 =====
+var WEATHER=[['☀️','맑음'],['⛅','구름 조금'],['🌧','비'],['⛈','번개'],['🌫','안개']];
+var EMO=[
+ {g:'기쁨',c:'#f2c84b',w:['신나','행복해','뿌듯해','편안해','설레','고마워','재밌어']},
+ {g:'슬픔',c:'#6cb8e6',w:['속상해','외로워','서운해','눈물 나','허전해','지쳤어','심심해']},
+ {g:'화',c:'#e8605a',w:['짜증 나','억울해','분해','답답해','열받아','미워','싫어']},
+ {g:'두려움',c:'#8a4fa8',w:['무서워','걱정돼','불안해','떨려','긴장돼','조마조마해','자신 없어']},
+ {g:'부끄러움',c:'#f39a3d',w:['창피해','민망해','미안해','쑥스러워','후회돼','숨고 싶어']},
+ {g:'놀람',c:'#8fcf6b',w:['깜짝 놀랐어','어리둥절해','당황했어','믿기지 않아','멍해']}
+];
+var BODY=['머리','얼굴','목','가슴','배','손','다리','온몸','모르겠어'];
+var NEEDS=['안전하고 싶어','쉬고 싶어','인정받고 싶어','이해받고 싶어','같이 놀고 싶어','친하게 지내고 싶어','혼자 있고 싶어','공평했으면 해','존중받고 싶어','도움이 필요해','자유롭고 싶어','잘하고 싶어'];
+var ACTS=[{k:'breath',n:'숨 고르기 1분 (4·4·6)'},{k:'bell',n:'종소리 끝까지 듣기'},{k:'mok',n:'목탁 10번 치기'},{k:'bow',n:'삼배'},{k:'pond',n:'연못 물결 보기'},{k:'garden',n:'비밀 정원 걷기'}];
+var moods=store.get('moods',[]), ms=null, mindTimer=null, mindTick=null;
+function stopMind(){clearInterval(mindTimer);clearInterval(mindTick);mindTimer=mindTick=null;}
+function chip(txt,on,color){return '<button class="choice" aria-pressed="'+(!!on)+'"'+(color?' style="border-color:'+color+'"':'')+'>'+txt+'</button>';}
+function panelMind(){
+  sTitle.textContent='🌿 마음 쉼터';
+  if(!ms)ms={w:null,e:[],b:[],n:[],act:null,note:''};
+  var root=el('<div></div>');sBody.appendChild(root);
+  function render(){
+    stopMind();root.innerHTML='';
+    root.appendChild(el('<div class="note">여기는 혼자 조용히 마음을 들여다보는 곳이에요. 맞고 틀린 답은 없어요. 기록은 이 크롬북에만 남고 아무도 못 봐요.</div>'));
+    // 1 날씨
+    var w=el('<div class="box"><h3>1. 지금 내 마음 날씨는?</h3><div class="choices"></div></div>');
+    WEATHER.forEach(function(x,i){var b=el(chip(x[0]+' '+x[1],ms.w===i));b.addEventListener('click',function(){ms.w=i;render();});w.querySelector('.choices').appendChild(b);});
+    root.appendChild(w);
+    if(ms.w===null)return;
+    // 2 감정 단어
+    var e=el('<div class="box"><h3>2. 어떤 마음이 있어? (여러 개 골라도 돼)</h3></div>');
+    EMO.forEach(function(gr){var row=el('<div style="margin-top:8px"><div class="note" style="color:'+gr.c+';font-weight:700">'+gr.g+'</div><div class="choices" style="margin-top:4px"></div></div>');
+      gr.w.forEach(function(wd){var b=el(chip(wd,ms.e.indexOf(wd)>-1,gr.c));b.addEventListener('click',function(){var k=ms.e.indexOf(wd);if(k>-1)ms.e.splice(k,1);else ms.e.push(wd);render();});row.querySelector('.choices').appendChild(b);});e.appendChild(row);});
+    root.appendChild(e);
+    if(!ms.e.length)return;
+    root.appendChild(el('<div class="box" style="background:#fff5f8"><div style="font-family:var(--font-display);font-size:18px;color:#d9486f">그럴 수 있어. 지금 '+ms.e.join(', ')+' 마음이구나.</div><div class="note">"아, 이런 마음이구나" 하고 알아차리면 이미 반은 가라앉아요. 이게 팔정도의 정념이에요.</div></div>'));
+    // 3 몸
+    var bb=el('<div class="box"><h3>3. 그 마음이 몸 어디서 느껴져?</h3><div class="choices"></div></div>');
+    BODY.forEach(function(x){var b=el(chip(x,ms.b.indexOf(x)>-1));b.addEventListener('click',function(){var k=ms.b.indexOf(x);if(k>-1)ms.b.splice(k,1);else ms.b.push(x);render();});bb.querySelector('.choices').appendChild(b);});
+    root.appendChild(bb);
+    if(!ms.b.length)return;
+    // 4 바란 것
+    var nn=el('<div class="box"><h3>4. 사실 내가 바란 건?</h3><div class="note">마음 밑에는 늘 바라는 게 있어요. 하나만 골라도 돼요.</div><div class="choices" style="margin-top:6px"></div></div>');
+    NEEDS.forEach(function(x){var b=el(chip(x,ms.n.indexOf(x)>-1));b.addEventListener('click',function(){var k=ms.n.indexOf(x);if(k>-1)ms.n.splice(k,1);else ms.n.push(x);render();});nn.querySelector('.choices').appendChild(b);});
+    root.appendChild(nn);
+    if(!ms.n.length)return;
+    root.appendChild(el('<div class="box" style="background:#f3faf5"><div style="font-family:var(--font-display);font-size:18px;color:#2d7356">내가 정말 바란 건 "'+ms.n.join('", "')+'" 였구나.</div></div>'));
+    // 5 지금 할 것
+    var aa=el('<div class="box"><h3>5. 지금 하나만 해 볼까?</h3><div class="choices"></div><div id="mindAct" style="margin-top:10px"></div></div>');
+    ACTS.forEach(function(a){if(a.k==='garden'&&!secretOpen)return;var b=el(chip(a.n,ms.act===a.k));b.addEventListener('click',function(){ms.act=a.k;render();runAct(a.k);});aa.querySelector('.choices').appendChild(b);});
+    root.appendChild(aa);
+    // 6 한 줄 + 저장
+    var ss=el('<div class="box"><h3>6. 한 줄 남길래? (안 써도 돼)</h3><input id="mindNote" maxlength="40" placeholder="지금은…" style="width:100%;padding:10px;border:1px solid #cfe0d6;border-radius:10px;font:inherit"><div class="row" style="margin-top:8px"><button class="btn pink" id="mindSave">마음 쉼터 다녀왔어요</button><button class="btn ghost sm" id="mindReset">처음부터</button></div></div>');
+    ss.querySelector('#mindNote').value=ms.note;ss.querySelector('#mindNote').addEventListener('input',function(){ms.note=this.value;});
+    ss.querySelector('#mindSave').addEventListener('click',function(){moods.unshift({d:(now0.getMonth()+1)+'/'+now0.getDate(),w:ms.w,e:ms.e.slice(),b:ms.b.slice(),n:ms.n.slice(),act:ms.act,note:ms.note.trim()});if(moods.length>60)moods.pop();store.set('moods',moods);store.set('rest',store.get('rest',0)+1);bell();toast('마음은 날씨 같아서 지나가요. 잘 다녀왔어요');ms=null;closeSheet();questEvent('mind');});
+    ss.querySelector('#mindReset').addEventListener('click',function(){ms={w:null,e:[],b:[],n:[],act:null,note:''};render();});
+    root.appendChild(ss);
+    root.appendChild(el('<div class="note">더 말하고 싶으면 담임 선생님이나 교법사 선생님(상담실)에게 와요. 밤이나 주말엔 청소년 전화 <b>1388</b>.</div>'));
+    if(moods.length){var past=el('<div class="box"><h3>지난 마음 '+moods.length+'개</h3><div class="note"></div></div>');past.querySelector('.note').innerHTML=moods.slice(0,5).map(function(m){return m.d+' '+WEATHER[m.w][0]+' '+m.e.join('·')+(m.n.length?' → '+m.n[0]:'')+(m.note?' · "'+m.note+'"':'');}).join('<br>');root.appendChild(past);}
+  }
+  function runAct(k){
+    var box=root.querySelector('#mindAct');if(!box)return;
+    if(k==='breath'){box.innerHTML='<div class="row" style="gap:16px;align-items:center"><div class="mcircle" id="mc"></div><div><div id="mw" style="font-family:var(--font-display);font-size:24px;color:#2d7356">들이쉬고</div><div class="note" id="mt">1:00 · 코로 4, 멈추고 4, 입으로 6</div></div></div>';
+      var ph=[['들이쉬고',4,1.3],['멈추고',4,1.3],['내쉬고',6,.7]],pi=0,left=60,sec=0,mc=box.querySelector('#mc'),mw=box.querySelector('#mw'),mt=box.querySelector('#mt');
+      function phase(){var p=ph[pi];mw.textContent=p[0];mc.style.transition='transform '+p[1]+'s ease-in-out';mc.style.transform='scale('+p[2]+')';sec=p[1];}
+      mc.style.transform='scale(.7)';setTimeout(phase,50);
+      mindTick=setInterval(function(){left--;sec--;mt.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0')+' · 코로 4, 멈추고 4, 입으로 6';if(sec<=0){pi=(pi+1)%3;phase();}if(left<=0){stopMind();bell();mw.textContent='잘했어요';mt.textContent='숨이 고르면 마음도 고르게 돼요.';}},1000);}
+    else if(k==='bell'){bell();box.innerHTML='<div class="note" id="mt">종소리가 완전히 사라질 때까지 들어 봐요… 30</div>';var left=30,mt=box.querySelector('#mt');mindTick=setInterval(function(){left--;if(left===20||left===10)bell();mt.textContent=left>0?'종소리가 완전히 사라질 때까지 들어 봐요… '+left:'고요해졌어요. 그 고요가 내 마음이에요.';if(left<=0)stopMind();},1000);}
+    else if(k==='mok'){closeSheet();mokT=9;mokSeq=10;mokNext=0;toast('목탁 소리에 마음을 얹어요');}
+    else if(k==='bow'){closeSheet();bowQueue=2;startBow();toast('천천히 삼배해요');}
+    else if(k==='pond'){closeSheet();goTo('pond');toast('물결을 1분만 바라봐요');}
+    else if(k==='garden'){closeSheet();pos.set(-9.6,0,2.5);heading=-Math.PI/2;target=null;toast('정원을 천천히 걸어요');}
+  }
+  render();
+}
+document.getElementById('mindBtn').addEventListener('click',function(){openSpot('mind');});
 
 // ===== 나만의 법당 꾸미기: 바닥을 눌러 물건을 놓고, 이 기기에만 저장된다 (서로 보이기는 아직 없음) =====
 var DECO_COLORS=[0xb5462f,0xd98a2b,0x2d7356,0x3c6fb0,0x8a4fa8,0xf0d35a,0xf7b3c6,0xf2efe6];
