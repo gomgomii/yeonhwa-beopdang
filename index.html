@@ -144,6 +144,7 @@ select{font:inherit;font-size:15px;padding:6px 10px;border-radius:10px;border:1.
   .prompt{bottom:150px;width:calc(100% - 120px);left:10px;transform:none}
   .prompt button{font-size:15px;padding:10px 14px;width:100%}
   #awakeBar,#gazeBar{bottom:150px;flex-wrap:wrap;justify-content:center;font-size:13px}
+  body.sheetOn #awakeBar,body.sheetOn #gazeBar,body.sheetOn #jumpToggle,body.sheetOn #gyeChip,body.sheetOn .prompt,body.sheetOn .toast{display:none!important} /* 폰에서 패널이 열리면 위에 뜨는 안내·버튼 숨김 */
   .dpad{grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,42px);bottom:10px;left:10px}
   .hud.bottom{padding:8px}
 }/* 법회 모드 */
@@ -2508,6 +2509,7 @@ function loop(){
   if(glowT>0)glowT-=dt;var gk=Math.max(0,Math.min(1,glowT))*(.6+.4*Math.sin(t*14));
   board.material.emissiveIntensity=.14+gk*.5;boardLights.forEach(function(l,i){l.intensity=(i%2?0:1.0)+gk*(i%2?1.6:1.2);});
   decoGroup.traverse(function(o){if(o.userData.flame){var k=1+Math.sin(t*12+o.parent.position.x*7)*.15;o.scale.set(k,1+(k-1)*2,k);}});
+  document.body.classList.toggle('sheetOn',!!sheetOpen);
   if(sheetOpen)prompt.classList.remove('on');else if(nearSpot)prompt.classList.add('on');
   // 카메라: 연이 뒤
   var fx=Math.sin(heading),fz=Math.cos(heading);
