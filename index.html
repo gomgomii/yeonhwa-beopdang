@@ -146,6 +146,7 @@ select{font:inherit;font-size:15px;padding:6px 10px;border-radius:10px;border:1.
   #awakeBar,#gazeBar{bottom:150px;left:10px;transform:none;width:calc(100% - 160px);flex-wrap:wrap;justify-content:center;font-size:13px}
   body.sheetOn #awakeBar,body.sheetOn #gazeBar,body.sheetOn #jumpToggle,body.sheetOn #gyeChip,body.sheetOn .prompt,body.sheetOn .toast{display:none!important} /* 폰에서 패널이 열리면 위에 뜨는 안내·버튼 숨김 */
   #gyeChip{top:164px;left:10px} /* 폰: HUD 세 줄 아래(설정 버튼을 가리지 않게) */
+  body.gaze .dpad,body.gaze #jumpToggle{display:none} /* 친견 중엔 방향키 숨김 */
   .dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);bottom:150px;left:auto;right:10px} /* 아래 바 위 오른쪽 */
   .hud.bottom{padding:8px}
 }/* 법회 모드 */
@@ -420,7 +421,7 @@ stage.appendChild(renderer.domElement);
 var scene=new THREE.Scene();
 scene.background=new THREE.Color(0x2a1f17);
 scene.fog=new THREE.Fog(0x2a1f17,18,34);
-var camera=new THREE.PerspectiveCamera(58,1,0.1,80);
+var camera=new THREE.PerspectiveCamera(58,1,0.25,80); // 근평면을 키워 폰에서 벽·판 겹침 깜박임 줄임
 
 var W=14,D=18,H=6.4; // 법당 너비·깊이·높이 (m)
 var hx=W/2, hz=D/2;
@@ -481,7 +482,7 @@ var thousand=canvasTex(512,1024,function(g,w,h){
 [-1,1].forEach(function(s){
   var panelW=(W-altarW)/2;
   var m=new THREE.Mesh(new THREE.PlaneGeometry(panelW,H-0.4),new THREE.MeshStandardMaterial({map:thousand,roughness:.6,metalness:.1}));
-  m.position.set(s*(altarW/2+panelW/2),H/2,-hz+0.03);scene.add(m);learnMeshes.push(m);
+  m.position.set(s*(altarW/2+panelW/2),H/2,-hz+0.07);scene.add(m);learnMeshes.push(m);
   var m2=new THREE.Mesh(new THREE.PlaneGeometry(3,H-0.4),new THREE.MeshStandardMaterial({map:thousand,roughness:.6,metalness:.1}));
   m2.position.set(s*(hx-0.02),H/2,-hz+1.5);m2.rotation.y=-s*Math.PI/2;scene.add(m2);
 });
@@ -1280,12 +1281,14 @@ function panelAltar(){
   sBody.appendChild(el('<div class="box"><h3>우리 법당 탱화 이야기</h3>가운데는 버들가지와 정병을 든 <b>관세음보살</b>이에요. 왼쪽 흰 코끼리에는 <b>보현보살</b>, 오른쪽 푸른 사자에는 <b>문수보살</b>이 앉아 계세요. 둘레의 동자승들은 야구, 축구, 태권도, 스노보드, 기타, 공부를 하고 있어요. 무엇을 하든 부처님 마음과 함께라는 뜻이에요.</div>'));
   var tb=el('<button class="btn ghost">탱화 속 동자승 찾기</button>');tb.addEventListener('click',function(){openSpot('taeng');});sBody.appendChild(tb);
   var vb2=el('<button class="btn ghost" style="margin-left:6px">내 원력 적기 (족자)</button>');vb2.addEventListener('click',function(){openSpot('vow');});sBody.appendChild(vb2);
+  var gz=el('<div class="box" style="background:#fff8e6;margin-top:8px"><h3>✨ 부처님 친견</h3><div class="note">조명이 잦아들고 부처님이 빛의 모습으로 떠올라요. 빛나는 점을 누르면 그 자리의 뜻을, 「여쭙기」로 한 말씀을 들어요.</div><button class="btn pink" style="margin-top:8px">🙏 빛으로 뵙기</button></div>');gz.querySelector('button').addEventListener('click',function(){startGaze();});sBody.appendChild(gz);
   if(isGuest){sBody.appendChild(lock());return;}
   var ob=el('<div class="box"><h3>육법공양 올리기 '+offered.length+' / 6</h3><div class="note">불단에 여섯 가지 공양을 올려요. 두 손으로 올리고 합장 반배해요.</div><div class="choices" style="margin-top:8px"></div><div class="note" id="offerMsg" style="margin-top:8px;min-height:1.4em"></div></div>');
   offerings.forEach(function(o){var done=offered.indexOf(o.k)>-1;var b=el('<button class="choice" aria-pressed="'+done+'">'+o.n+' · '+o.t+(done?' ✓':'')+'</button>');
     b.addEventListener('click',function(){var msg=ob.querySelector('#offerMsg');
       if(offered.indexOf(o.k)<0){offered.push(o.k);store.set('offered',offered);renderOfferings();bell();hapAnim=2;questEvent('offer');
-        toast(o.n+' 공양을 올렸어요'+(offered.length===6?' · 육법공양 완성!':''));openSpot('altar');sBody.querySelector('#offerMsg').textContent=o.t+': '+o.m;}
+        var nm=null;offerGroup.children.forEach(function(c){if(c.userData.k===o.k)nm=c;});if(nm){var t0=performance.now();nm.scale.setScalar(.01);(function gr(){var k=Math.min(1,(performance.now()-t0)/900),e=1-Math.pow(1-k,3);nm.scale.setScalar(.01+1.59*e);nm.position.y=.9+(1-e)*.6;if(k<1)requestAnimationFrame(gr);})();}
+        closeSheet();toast(o.n+' 공양을 올렸어요 — '+o.t+'. '+o.m+(offered.length===6?' · 육법공양 완성!':''));}
       else msg.textContent=o.t+': '+o.m;});
     ob.querySelector('.choices').appendChild(b);});
   if(offered.length&&isAdmin){var rs=el('<button class="btn ghost sm" style="margin-top:8px">공양 거두기 (교법사 확인용)</button>');rs.addEventListener('click',function(){offered=[];store.set('offered',[]);renderOfferings();openSpot('altar');});ob.appendChild(rs);}
