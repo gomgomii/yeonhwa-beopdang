@@ -272,8 +272,8 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
   <div class="cer-steps" id="cerSteps"></div>
   <div class="cer-title" id="cerTitle"></div>
   <div class="cer-body" id="cerBody"></div>
-  <div class="row" id="tvRow" style="display:none"><span class="note">📺 TV에 크게:</span><button class="btn ghost sm" data-tv="path">이번 주 팔정도</button><button class="btn ghost sm" data-tv="dhp">오늘의 법구경</button><button class="btn ghost sm" data-tv="life">생애 그림책</button><button class="btn ghost sm" data-tv="ogye">오계</button><button class="btn ghost sm" data-tv="tour">떠올리기 대본</button></div>
-  <div class="row" id="cerMusic"><label class="btn ghost sm" style="cursor:pointer">🎵 우리 학교 음원 열기<input type="file" id="cerFile" accept="audio/*" style="display:none"></label><button class="btn ghost sm" id="cerStop">음악 멈춤</button><span class="note" id="cerMusicNote">삼귀의·찬불가 음원(mp3)을 고르면 여기서 틀어요. 이 컴퓨터에서만.</span></div>
+  <div class="row" id="tvRow" style="display:none"><span class="note">📺 TV에 크게:</span><button class="btn ghost sm" data-tv="path">이번 주 팔정도</button><button class="btn ghost sm" data-tv="dhp">오늘의 법구경</button><button class="btn ghost sm" data-tv="life">생애 그림책</button><button class="btn ghost sm" data-tv="ogye">오계</button><button class="btn ghost sm" data-tv="tour">떠올리기 대본</button><button class="btn ghost sm" data-tv="samgwi">▶ 삼귀의 영상</button><button class="btn ghost sm" data-tv="banya">▶ 반야심경 영상</button></div>
+  <div class="row" id="cerMusic"><button class="btn ghost sm" id="cerVidS">▶ 삼귀의 영상</button><button class="btn ghost sm" id="cerVidB">▶ 반야심경 영상</button><label class="btn ghost sm" style="cursor:pointer">🎵 우리 학교 음원 열기<input type="file" id="cerFile" accept="audio/*" style="display:none"></label><button class="btn ghost sm" id="cerStop">음악 멈춤</button><span class="note" id="cerMusicNote">삼귀의·찬불가 음원(mp3)을 고르면 여기서 틀어요. 이 컴퓨터에서만.</span></div>
   <div class="cer-nav">
     <button class="btn ghost" id="cerPrev">이전</button>
     <div class="row"><button class="btn ghost" id="cerEnd">법회 마치기</button><button class="btn" id="cerNext">다음</button></div>
@@ -330,6 +330,10 @@ var store={get:function(k,d){try{var v=localStorage.getItem('yeon3d-'+k);return 
 
 var role=store.get('role','child'), isTeacher=role==='teacher'||role==='admin', isAdmin=role==='admin', isAdult=role==='adult'||isTeacher;
 /* ---------------- 데이터 ---------------- */
+// 유튜브 영상(링크만 넣어 둔다. 영상 자체는 유튜브에서 재생) — 2026-11-05 복선생이 고른 것
+var MEDIA={samgwi:{id:'DgSSqJuGtK8',n:'어린이 삼귀의'},banya:{id:'YgHYcGOMyK4',n:'어린이 반야심경'}};
+function videoHtml(k,big){var m=MEDIA[k];if(!m)return '';return '<div style="position:relative;padding-top:56.25%;'+(big?'max-width:960px;margin:0 auto;':'')+'"><iframe src="https://www.youtube-nocookie.com/embed/'+m.id+'?rel=0" title="'+m.n+'" allow="autoplay; encrypted-media; fullscreen" allowfullscreen loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:14px;background:#000"></iframe></div><div class="row" style="margin-top:6px;justify-content:space-between"><span class="note">영상이 안 보이면 →</span><a class="btn ghost sm" target="_blank" rel="noopener" href="https://www.youtube.com/watch?v='+m.id+'">▶ 유튜브에서 열기</a></div>';}
+function videoBox(k){var m=MEDIA[k];return el('<div class="box"><h3>▶ '+m.n+' 듣기</h3>'+videoHtml(k)+'</div>');}
 var sayings=[
  ["미움은 사랑으로만 그쳐요.","법구경에서"],["마음이 맑으면 행복이 그림자처럼 따라와요.","법구경에서"],
  ["물방울이 모여 항아리를 채우듯, 작은 착한 일이 큰 복이 돼요.","법구경에서"],["나 자신을 이기는 것이 가장 멋진 승리예요.","법구경에서"],
@@ -1277,6 +1281,7 @@ function panelSagyeong(){
   sc();
   box.querySelector('#skClear').addEventListener('click',guide);
   box.querySelector('#skDone').addEventListener('click',function(){store.set('sagyeong',store.get('sagyeong',0)+1);bell();toast('사경 한 줄을 마쳤어요');questEvent('sagyeong');sc();guide();});
+  sBody.appendChild(videoBox('banya'));
 }
 // 연꽃 연못
 function panelPond(){questEvent('pond');
@@ -1458,8 +1463,9 @@ function panelGuide(){
   hs.addEventListener('change',function(){hairStyle=this.value;store.set('hair',hairStyle);doHair();showOff=4;toast(HAIR_NAME[hairStyle]+' 머리로 바꿨어요');});
   ub.querySelector('#uSkirt').addEventListener('click',function(){uniSkirt=!uniSkirt;store.set('skirt',uniSkirt);this.setAttribute('aria-pressed',String(uniSkirt));dress();showOff=4;});
   sBody.insertBefore(ub,sBody.firstChild);
-  var vb=el('<div class="box"><h3>법당에 온 날 (선생님 확인용)</h3><div class="note">법당에 온 날이 쌓일수록 꾸미기 물건과 염주 색이 열리고, 30일이면 비밀 정원 문이 열려요(3·5·7·10·15·20·30일). 하루에 몇 번 와도 하루예요. 지금 '+visitDays()+'일째.</div><div class="row" style="margin-top:8px"><button class="btn ghost sm" id="vPlus">방문일 +1</button><button class="btn ghost sm" id="vReset">방문일 되돌리기</button></div><div class="row" style="margin-top:8px"><button class="btn pink sm" id="vAll">🔓 다 열어 보기 (200일째로)</button><button class="btn ghost sm" id="vFill">🏆 108배·도장 8·사경 10 채우기</button></div><div class="note" style="margin-top:6px">교법사 체험용. 「방문일 되돌리기」로 원래대로. 채우기는 되돌릴 수 없어요(이 기기만).</div></div>');
+  var vb=el('<div class="box"><h3>법당에 온 날 (선생님 확인용)</h3><div class="note">법당에 온 날이 쌓일수록 꾸미기 물건과 염주 색이 열리고, 30일이면 비밀 정원 문이 열려요(3·5·7·10·15·20·30일). 하루에 몇 번 와도 하루예요. 지금 '+visitDays()+'일째.</div><div class="row" style="margin-top:8px"><button class="btn ghost sm" id="vPlus">방문일 +1</button><button class="btn ghost sm" id="vReset">방문일 되돌리기</button></div><div class="row" style="margin-top:8px"><button class="btn pink sm" id="vAll">🔓 다 열어 보기 (200일째로)</button><button class="btn ghost sm" id="vFill">🏆 108배·도장 8·사경 10 채우기</button><button class="btn ghost sm" id="vWipe" style="color:#b5462f">🧹 이 기기 기록 모두 지우기</button></div><div class="note" style="margin-top:6px">교법사 체험용. 「방문일 되돌리기」로 원래대로. 채우기는 되돌릴 수 없어요(이 기기만).</div></div>');
   vb.querySelector('#vAll').addEventListener('click',function(){visitBonus=200;store.set('visitBonus',200);toast('다 열었어요. 화면을 새로 열어요');setTimeout(function(){location.reload();},700);});
+  vb.querySelector('#vWipe').addEventListener('click',function(){if(this.dataset.arm){var ks=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('yeon3d-')===0)ks.push(k);}ks.forEach(function(k){localStorage.removeItem(k);});toast('다 지웠어요. 처음 화면으로');setTimeout(function(){location.reload();},700);}else{this.dataset.arm='1';this.textContent='한 번 더 누르면 지워요';}});
   vb.querySelector('#vFill').addEventListener('click',function(){store.set('bows',Math.max(bows,108));store.set('stamps',[0,1,2,3,4,5,6,7]);store.set('sagyeong',Math.max(store.get('sagyeong',0),10));toast('채웠어요. 화면을 새로 열어요');setTimeout(function(){location.reload();},700);});
   vb.querySelector('#vPlus').addEventListener('click',function(){visitBonus++;store.set('visitBonus',visitBonus);paintDecoUI();fillBeads();fillPets();paintSecret();paintPet();paintWho();paintNext();toast('법당에 온 날 '+visitDays()+'일째 · '+nextUnlock());});
   vb.querySelector('#vReset').addEventListener('click',function(){visitBonus=0;store.set('visitBonus',0);paintDecoUI();fillBeads();fillPets();paintSecret();paintPet();paintWho();paintNext();toast('법당에 온 날 '+visitDays()+'일째');});
@@ -1922,7 +1928,7 @@ var learnSpots=[],ogyeStones=[];
   [['불','부처님께'],['법','가르침에'],['승','스님들께']].forEach(function(t,i){var x=-1.3+i*1.3,z=7.9;var p=new THREE.Mesh(new THREE.CylinderGeometry(.1,.12,1.3,10),post);p.position.set(x,.65,z);p.castShadow=true;scene.add(p);
     var tx=canvasTex(128,128,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.fillStyle='#8a4fa8';g.font='80px Jua, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(t[0],w/2,h/2);});
     var sgn=new THREE.Mesh(new THREE.BoxGeometry(.42,.42,.05),new THREE.MeshStandardMaterial({map:tx}));sgn.position.set(x,1.5,z);sgn.rotation.y=Math.PI;scene.add(sgn);});
-  learnSpots.push({x:0,z:7.4,r:1.2,lock:'samgwi',label:'삼귀의 기둥 · 귀의하기',open:function(){hapAnim=4;bell();showLearn('삼귀의 (三歸依)',isAdult?SAMGWI_ADULT:'<h3>세 가지 보물에 기대요</h3><div class="ln" style="font-family:var(--font-display);font-size:19px;line-height:1.7">거룩한 부처님께 귀의합니다.<br>거룩한 가르침에 귀의합니다.<br>거룩한 스님들께 귀의합니다.</div><div class="note" style="margin-top:8px">귀의는 "믿고 기댄다"는 뜻이에요. 부처님(불)·가르침(법)·함께 수행하는 분들(승)을 삼보라고 해요. 법회는 늘 삼귀의로 시작해요. 연이가 합장하고 있어요.</div>');questEvent('learn');}});
+  learnSpots.push({x:0,z:7.4,r:1.2,lock:'samgwi',label:'삼귀의 기둥 · 귀의하기',open:function(){hapAnim=4;bell();showLearn('삼귀의 (三歸依)',isAdult?SAMGWI_ADULT:'<h3>세 가지 보물에 기대요</h3><div class="ln" style="font-family:var(--font-display);font-size:19px;line-height:1.7">거룩한 부처님께 귀의합니다.<br>거룩한 가르침에 귀의합니다.<br>거룩한 스님들께 귀의합니다.</div><div class="note" style="margin-top:8px">귀의는 "믿고 기댄다"는 뜻이에요. 부처님(불)·가르침(법)·함께 수행하는 분들(승)을 삼보라고 해요. 법회는 늘 삼귀의로 시작해요. 연이가 합장하고 있어요.</div>',function(){sBody.appendChild(videoBox('samgwi'));});questEvent('learn');}});
   // 부처님 생애 그림책
   var bk=new THREE.Group();bk.position.set(5.5,0,4.4);var bd=new THREE.Mesh(new THREE.BoxGeometry(.7,.4,.5),new THREE.MeshStandardMaterial({color:0x6b3e22}));bd.position.y=.2;bk.add(bd);
   [-1,1].forEach(function(k){var pg2=new THREE.Mesh(new THREE.BoxGeometry(.34,.03,.46),new THREE.MeshStandardMaterial({color:0xfbf5e6}));pg2.position.set(k*.18,.42,0);pg2.rotation.z=-k*.12;bk.add(pg2);});scene.add(bk);
@@ -2310,9 +2316,11 @@ function tvShow(kind){var b=document.getElementById('tvBody'),h='';
   else if(kind==='dhp'){if(!isOpen('dhp')){toast('법구경은 법당에 7일 오면 열려요');return;}var v=DHP[doy2%DHP.length];h='<h1>오늘의 법구경</h1><div class="big">'+v[1]+'</div><div class="sub" style="margin-top:14px">— 법구경 '+v[0]+'</div>';}
   else if(kind==='life'){if(!isOpen('life')){toast('생애 그림책은 법당에 15일 오면 열려요');return;}h='<h1>부처님 생애</h1>'+LIFE.map(function(L,i){return '<div class="sub" style="margin-top:12px"><b style="color:#2d7356">'+(i+1)+'. '+L[2]+' '+L[0]+'</b> — '+L[1]+'</div>';}).join('');}
   else if(kind==='ogye'){if(!isOpen('ogye')){toast('오계는 법당에 15일 오면 열려요');return;}h='<h1>오계 五戒</h1>'+OGYE.map(function(o,i){return '<div class="big" style="margin-top:10px">'+(i+1)+'. '+o.n+' <span class="sub">'+o.hj+'</span></div><div class="sub">'+o.m+'</div>';}).join('');}
+  else if(kind==='samgwi'||kind==='banya'){h='<h1>'+MEDIA[kind].n+'</h1>'+videoHtml(kind,true);}
   else if(kind==='tour'){h='<h1>눈 감고 법당 떠올리기 — 읽어 주는 대본</h1>'+TOUR.map(function(t,i){return '<div class="big" style="margin-top:14px">'+(i+1)+'. '+t.t+'</div>';}).join('')+'<div class="sub" style="margin-top:18px">한 문장에 8초쯤, 천천히. 끝에 종 한 번.</div>';}
   b.innerHTML=h;document.body.classList.add('tv');}
 document.getElementById('tvClose').addEventListener('click',function(){document.body.classList.remove('tv');});
+document.getElementById('cerVidS').addEventListener('click',function(){tvShow('samgwi');});document.getElementById('cerVidB').addEventListener('click',function(){tvShow('banya');});
 if(isTeacher){document.getElementById('tvRow').style.display='';[].forEach.call(document.querySelectorAll('[data-tv]'),function(b){b.addEventListener('click',function(){tvShow(b.dataset.tv);});});}
 var clock=new THREE.Clock(),lookUp=0,camPos=new THREE.Vector3(),camLook=new THREE.Vector3(),first=true,showOff=0; // showOff: 옷을 갈아입으면 잠깐 돌아서서 보여 준다
 function resize(){var w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
