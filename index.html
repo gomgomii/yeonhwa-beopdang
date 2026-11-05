@@ -1565,15 +1565,26 @@ var questEvent=function(){}; // C단계에서 채움
 // ===== 🌿 마음 쉼터: 쉬는 시간 5분. 날씨 → 감정 단어 → 몸 → 바란 것 → 지금 할 것 → 한 줄. 진단·점수 없음, 기록은 이 기기에만 =====
 var WEATHER=[['☀️','맑음'],['⛅','구름 조금'],['🌧','비'],['⛈','번개'],['🌫','안개']];
 var EMO=[
- {g:'기쁨',c:'#f2c84b',w:['신나','행복해','뿌듯해','편안해','설레','고마워','재밌어']},
- {g:'슬픔',c:'#6cb8e6',w:['속상해','외로워','서운해','눈물 나','허전해','지쳤어','심심해']},
- {g:'화',c:'#e8605a',w:['짜증 나','억울해','분해','답답해','열받아','미워','싫어']},
- {g:'두려움',c:'#8a4fa8',w:['무서워','걱정돼','불안해','떨려','긴장돼','조마조마해','자신 없어']},
- {g:'부끄러움',c:'#f39a3d',w:['창피해','민망해','미안해','쑥스러워','후회돼','숨고 싶어']},
- {g:'놀람',c:'#8fcf6b',w:['깜짝 놀랐어','어리둥절해','당황했어','믿기지 않아','멍해']}
+ {g:'기쁨',c:'#f2c84b',w:['신나','행복해','뿌듯해','편안해','설레','고마워','재밌어','자랑스러워','든든해','홀가분해','기대돼','사랑받는 느낌이야']},
+ {g:'슬픔',c:'#6cb8e6',w:['속상해','외로워','서운해','눈물 나','허전해','지쳤어','심심해','섭섭해','그리워','실망했어','우울해','힘이 없어']},
+ {g:'화',c:'#e8605a',w:['짜증 나','억울해','분해','답답해','열받아','미워','싫어','약 올라','질투 나','성가셔','참을 수 없어','폭발할 것 같아']},
+ {g:'두려움',c:'#8a4fa8',w:['무서워','걱정돼','불안해','떨려','긴장돼','조마조마해','자신 없어','겁나','막막해','혼날까 봐','혼자인 것 같아','어떻게 될지 몰라']},
+ {g:'부끄러움',c:'#f39a3d',w:['창피해','민망해','미안해','쑥스러워','후회돼','숨고 싶어','죄책감 들어','내가 싫어','들킨 것 같아','부족한 것 같아']},
+ {g:'놀람·혼란',c:'#8fcf6b',w:['깜짝 놀랐어','어리둥절해','당황했어','믿기지 않아','멍해','헷갈려','어지러워','뭐가 뭔지 모르겠어']}
 ];
+// 느낌 밑에 있는 바람(욕구). 힘든 느낌 = 아직 안 채워진 바람, 기쁜 느낌 = 채워진 바람 (비폭력대화의 원리)
+var NEEDS=['안전하고 싶어','쉬고 싶어','인정받고 싶어','이해받고 싶어','같이 놀고 싶어','친하게 지내고 싶어','혼자 있고 싶어','공평했으면 해','존중받고 싶어','도움이 필요해','자유롭고 싶어','잘하고 싶어','사랑받고 싶어','믿어 주면 좋겠어','내가 고르고 싶어','새로운 걸 해 보고 싶어','편안하고 싶어','기억해 주면 좋겠어','함께 있고 싶어','마음을 알아주면 좋겠어'];
+var NEED_OF={
+ '신나':['같이 놀고 싶어','새로운 걸 해 보고 싶어'],'행복해':['사랑받고 싶어','함께 있고 싶어'],'뿌듯해':['잘하고 싶어','인정받고 싶어'],'편안해':['편안하고 싶어','안전하고 싶어'],'설레':['새로운 걸 해 보고 싶어'],'고마워':['도움이 필요해','마음을 알아주면 좋겠어'],'재밌어':['같이 놀고 싶어','자유롭고 싶어'],'자랑스러워':['인정받고 싶어','잘하고 싶어'],'든든해':['믿어 주면 좋겠어','안전하고 싶어'],'홀가분해':['자유롭고 싶어','쉬고 싶어'],'기대돼':['새로운 걸 해 보고 싶어'],'사랑받는 느낌이야':['사랑받고 싶어'],
+ '속상해':['이해받고 싶어','마음을 알아주면 좋겠어'],'외로워':['함께 있고 싶어','친하게 지내고 싶어'],'서운해':['기억해 주면 좋겠어','마음을 알아주면 좋겠어'],'눈물 나':['이해받고 싶어','쉬고 싶어'],'허전해':['함께 있고 싶어','사랑받고 싶어'],'지쳤어':['쉬고 싶어','도움이 필요해'],'심심해':['같이 놀고 싶어','새로운 걸 해 보고 싶어'],'섭섭해':['기억해 주면 좋겠어','공평했으면 해'],'그리워':['함께 있고 싶어'],'실망했어':['믿어 주면 좋겠어','잘하고 싶어'],'우울해':['쉬고 싶어','마음을 알아주면 좋겠어'],'힘이 없어':['쉬고 싶어','도움이 필요해'],
+ '짜증 나':['쉬고 싶어','내가 고르고 싶어'],'억울해':['공평했으면 해','이해받고 싶어'],'분해':['공평했으면 해','존중받고 싶어'],'답답해':['이해받고 싶어','자유롭고 싶어'],'열받아':['존중받고 싶어','공평했으면 해'],'미워':['존중받고 싶어','안전하고 싶어'],'싫어':['내가 고르고 싶어','자유롭고 싶어'],'약 올라':['공평했으면 해','인정받고 싶어'],'질투 나':['인정받고 싶어','사랑받고 싶어'],'성가셔':['혼자 있고 싶어','쉬고 싶어'],'참을 수 없어':['존중받고 싶어','쉬고 싶어'],'폭발할 것 같아':['이해받고 싶어','쉬고 싶어'],
+ '무서워':['안전하고 싶어','함께 있고 싶어'],'걱정돼':['안전하고 싶어','믿어 주면 좋겠어'],'불안해':['안전하고 싶어','편안하고 싶어'],'떨려':['잘하고 싶어','믿어 주면 좋겠어'],'긴장돼':['잘하고 싶어','편안하고 싶어'],'조마조마해':['안전하고 싶어'],'자신 없어':['인정받고 싶어','믿어 주면 좋겠어'],'겁나':['안전하고 싶어','도움이 필요해'],'막막해':['도움이 필요해','이해받고 싶어'],'혼날까 봐':['안전하고 싶어','이해받고 싶어'],'혼자인 것 같아':['함께 있고 싶어','마음을 알아주면 좋겠어'],'어떻게 될지 몰라':['안전하고 싶어','믿어 주면 좋겠어'],
+ '창피해':['존중받고 싶어','인정받고 싶어'],'민망해':['편안하고 싶어','존중받고 싶어'],'미안해':['친하게 지내고 싶어','이해받고 싶어'],'쑥스러워':['편안하고 싶어'],'후회돼':['잘하고 싶어','친하게 지내고 싶어'],'숨고 싶어':['혼자 있고 싶어','안전하고 싶어'],'죄책감 들어':['친하게 지내고 싶어','이해받고 싶어'],'내가 싫어':['사랑받고 싶어','인정받고 싶어'],'들킨 것 같아':['안전하고 싶어','이해받고 싶어'],'부족한 것 같아':['인정받고 싶어','잘하고 싶어'],
+ '깜짝 놀랐어':['안전하고 싶어'],'어리둥절해':['이해받고 싶어','도움이 필요해'],'당황했어':['편안하고 싶어','도움이 필요해'],'믿기지 않아':['이해받고 싶어'],'멍해':['쉬고 싶어'],'헷갈려':['도움이 필요해','이해받고 싶어'],'어지러워':['쉬고 싶어','안전하고 싶어'],'뭐가 뭔지 모르겠어':['도움이 필요해','편안하고 싶어']
+};
+function emoGroup(wd){for(var i=0;i<EMO.length;i++)if(EMO[i].w.indexOf(wd)>-1)return EMO[i];return null;}
+function suggestedNeeds(){var out=[];ms.e.forEach(function(wd){(NEED_OF[wd]||[]).forEach(function(n){if(out.indexOf(n)<0)out.push(n);});});return out;}
 var BODY=['머리','얼굴','목','가슴','배','손','다리','온몸','모르겠어'];
-var NEEDS=['안전하고 싶어','쉬고 싶어','인정받고 싶어','이해받고 싶어','같이 놀고 싶어','친하게 지내고 싶어','혼자 있고 싶어','공평했으면 해','존중받고 싶어','도움이 필요해','자유롭고 싶어','잘하고 싶어'];
 var ACTS=[{k:'breath',n:'숨 고르기 1분 (4·4·6)'},{k:'bell',n:'종소리 끝까지 듣기'},{k:'mok',n:'목탁 10번 치기'},{k:'bow',n:'삼배'},{k:'pond',n:'연못 물결 보기'},{k:'imagine',n:'눈 감고 법당 떠올리기'},{k:'garden',n:'비밀 정원 걷기'}];
 var moods=store.get('moods',[]), ms=null, mindTimer=null, mindTick=null;
 function stopMind(){clearInterval(mindTimer);clearInterval(mindTick);mindTimer=mindTick=null;}
@@ -1597,6 +1608,9 @@ function panelMind(){
     root.appendChild(e);
     if(!ms.e.length)return;
     root.appendChild(el('<div class="box" style="background:#fff5f8"><div style="font-family:var(--font-display);font-size:18px;color:#d9486f">그럴 수 있어. 지금 '+ms.e.join(', ')+' 마음이구나.</div><div class="note">"아, 이런 마음이구나" 하고 알아차리면 이미 반은 가라앉아요. 이게 팔정도의 정념이에요.</div></div>'));
+    (function(){var lk=el('<div class="box" style="background:#f6f0ff"><h3>느낌은 신호등이에요</h3><div class="note">느낌 밑에는 늘 <b>바라는 것</b>이 있어요. 힘든 느낌은 "아직 안 채워졌어"라는 신호, 기쁜 느낌은 "채워졌어"라는 신호. 네 느낌에 붙어 있는 바람을 보여 줄게요.</div><div class="rank" style="margin-top:8px"></div></div>');
+      ms.e.forEach(function(wd){var gr=emoGroup(wd),met=gr&&gr.g==='기쁨',ns=NEED_OF[wd]||[];lk.querySelector('.rank').appendChild(el('<div class="r" style="grid-template-columns:auto 1fr"><span style="color:'+(gr?gr.c:'#999')+';font-family:var(--font-display)">'+wd+'</span><span>'+(ns.length?(met?'→ <b>'+ns.join('</b>, <b>')+'</b> 가 채워진 느낌':'→ 사실은 <b>'+ns.join('</b>, <b>')+'</b>'):'→ 바라는 걸 아래에서 골라 봐')+'</span></div>'));});
+      root.appendChild(lk);})();
     // 3 몸
     var bb=el('<div class="box"><h3>3. 그 마음이 몸 어디서 느껴져?</h3><div class="choices"></div></div>');
     BODY.forEach(function(x){var b=el(chip(x,ms.b.indexOf(x)>-1));b.addEventListener('click',function(){var k=ms.b.indexOf(x);if(k>-1)ms.b.splice(k,1);else ms.b.push(x);render();});bb.querySelector('.choices').appendChild(b);});
@@ -1604,10 +1618,12 @@ function panelMind(){
     if(!ms.b.length)return;
     // 4 바란 것
     var nn=el('<div class="box"><h3>4. 사실 내가 바란 건?</h3><div class="note">마음 밑에는 늘 바라는 게 있어요. 하나만 골라도 돼요.</div><div class="choices" style="margin-top:6px"></div></div>');
-    NEEDS.forEach(function(x){var b=el(chip(x,ms.n.indexOf(x)>-1));b.addEventListener('click',function(){var k=ms.n.indexOf(x);if(k>-1)ms.n.splice(k,1);else ms.n.push(x);render();});nn.querySelector('.choices').appendChild(b);});
+    (function(){var sg=suggestedNeeds(),ordered=sg.concat(NEEDS.filter(function(x){return sg.indexOf(x)<0}));ordered.forEach(function(x){var star=sg.indexOf(x)>-1;var b=el(chip((star?'✨ ':'')+x,ms.n.indexOf(x)>-1,star?'#8a4fa8':undefined));b.addEventListener('click',function(){var k=ms.n.indexOf(x);if(k>-1)ms.n.splice(k,1);else ms.n.push(x);render();});nn.querySelector('.choices').appendChild(b);});})();
     root.appendChild(nn);
     if(!ms.n.length)return;
-    root.appendChild(el('<div class="box" style="background:#f3faf5"><div style="font-family:var(--font-display);font-size:18px;color:#2d7356">내가 정말 바란 건 "'+ms.n.join('", "')+'" 였구나.</div></div>'));
+    (function(){var sent='나는 지금 '+ms.e.join(', ')+'. 사실은 '+ms.n.map(function(n){return n.replace(/ 싶어$|했으면 해$|이 필요해$|면 좋겠어$/,function(m){return m==='이 필요해'?'이 필요하기':m===' 싶어'?' 싶기':m==='했으면 해'?'했으면 하기':'면 좋겠기';})}).join(', ')+' 때문이야.';
+      var sb=el('<div class="box" style="background:#f3faf5"><div class="note">느낌과 바람을 한 문장으로 — 이렇게 말하면 다른 사람도 내 마음을 알아줘요.</div><div style="font-family:var(--font-display);font-size:19px;line-height:1.6;color:#2d7356;margin-top:6px">'+sent+'</div></div>');
+      sb.appendChild(pouchBtn(sent,'마음 쉼터'));root.appendChild(sb);})();
     // 5 지금 할 것
     var aa=el('<div class="box"><h3>5. 지금 하나만 해 볼까?</h3><div class="choices"></div><div id="mindAct" style="margin-top:10px"></div></div>');
     ACTS.forEach(function(a){if(a.k==='garden'&&!secretOpen)return;var b=el(chip(a.n,ms.act===a.k));b.addEventListener('click',function(){ms.act=a.k;render();runAct(a.k);});aa.querySelector('.choices').appendChild(b);});
@@ -2383,7 +2399,8 @@ function loop(){
   if(bowT<0&&bowQueue>0&&!bp){bowQueue--;startBow();bp=bowPose(0);}
   if(halfBow>0)halfBow-=dt;
   var kb=Math.min(1,dt*8);
-  var tb=bp?bp.body:(sitOn?(sitCushion?-.1:-.22):0), tt=bp?bp.torso:(halfBow>0?.5:0), tk=bp?bp.knee:(sitOn?2.8:0), thx=(!bp&&sitOn)?-1.35:0, thy=(!bp&&sitOn)?.55:0;
+  var onCu=!sitOn&&!!nearestCushion(); // 방석 위에 서거나 절할 땐 방석 높이만큼 올린다
+  var tb=(bp?bp.body:(sitOn?(sitCushion?-.1:-.22):0))+(onCu?.12:0), tt=bp?bp.torso:(halfBow>0?.5:0), tk=bp?bp.knee:(sitOn?2.8:0), thx=(!bp&&sitOn)?-1.35:0, thy=(!bp&&sitOn)?.55:0;
   bodyG.position.y+=(tb-bodyG.position.y)*kb;torsoG.rotation.x+=(tt-torsoG.rotation.x)*kb;
   knees.forEach(function(k){k.rotation.x+=(tk-k.rotation.x)*kb;});
   hips.forEach(function(h,i){h.rotation.x+=(thx-h.rotation.x)*kb;h.rotation.y+=((i?1:-1)*thy-h.rotation.y)*kb;});
