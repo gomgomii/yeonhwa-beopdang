@@ -1287,6 +1287,7 @@ function panelAltar(){
   var tb=el('<button class="btn ghost">탱화 속 동자승 찾기</button>');tb.addEventListener('click',function(){openSpot('taeng');});sBody.appendChild(tb);
   var vb2=el('<button class="btn ghost" style="margin-left:6px">내 원력 적기 (족자)</button>');vb2.addEventListener('click',function(){openSpot('vow');});sBody.appendChild(vb2);
   var gz=el('<div class="box" style="background:#fff8e6;margin-top:8px"><h3>✨ 부처님 친견</h3><div class="note">조명이 잦아들고 부처님이 빛의 모습으로 떠올라요. 빛나는 점을 누르면 그 자리의 뜻을, 「여쭙기」로 한 말씀을 들어요.</div><button class="btn pink" style="margin-top:8px">🙏 빛으로 뵙기</button></div>');gz.querySelector('button').addEventListener('click',function(){startGaze();});sBody.appendChild(gz);
+  var aw=el('<div class="box" style="background:#f6f0ff;margin-top:8px"><h3>🖼️ 탱화가 깨어나는 밤</h3><div class="note">'+(isOpen('awake')?'조명이 잦아들고 탱화가 세 겹으로 열리며 관세음보살이 내려와요.':'법당에 온 날이 '+needDay('awake')+'일이 되면 열려요. 지금 '+visitDays()+'일.')+'</div><button class="btn ghost sm" style="margin-top:8px">'+(isOpen('awake')?'🌙 깨우기':'🔒 '+needDay('awake')+'일에 열려요')+'</button></div>');aw.querySelector('button').addEventListener('click',function(){if(isOpen('awake'))startAwake();else panelLocked('awake');});sBody.appendChild(aw);
   if(isGuest){sBody.appendChild(lock());return;}
   var ob=el('<div class="box"><h3>육법공양 올리기 '+offered.length+' / 6</h3><div class="note">불단에 여섯 가지 공양을 올려요. 두 손으로 올리고 합장 반배해요.</div><div class="choices" style="margin-top:8px"></div><div class="note" id="offerMsg" style="margin-top:8px;min-height:1.4em"></div></div>');
   offerings.forEach(function(o){var done=offered.indexOf(o.k)>-1;var b=el('<button class="choice" aria-pressed="'+done+'">'+o.n+' · '+o.t+(done?' ✓':'')+'</button>');
@@ -2599,10 +2600,11 @@ var UNLOCKS=[
  {d:15,keys:['ogye','samgwi','life','cham'],n:'오계 약속 카드 · 삼귀의 글판 · 부처님 생애 그림책 · 참회의 자리'},
  {d:20,keys:['study'],n:'나란다 공부방'},
  {d:30,keys:['garden'],n:'비밀 정원'},
- {d:45,keys:[],n:'???'},{d:60,keys:[],n:'???'},{d:90,keys:[],n:'???'},{d:120,keys:[],n:'???'},{d:150,keys:[],n:'???'},{d:190,keys:[],n:'한 해 회향'}
+ {d:45,keys:['awake'],n:'🖼️ 탱화가 깨어나는 밤'},
+ {d:190,keys:[],n:'한 해 회향'}
 ];
 UNLOCKS.forEach(function(u){u.d=dayN(u.d);});
-var LOCK_NAME={sagyeong:'사경대',lantern:'소원 연등',deco:'꾸미기',vow:'내 원력 족자',pet:'동반자 동물',dhp:'오늘의 법구경',play:'놀이터',samul:'사물 네 가지',ogye:'오계',samgwi:'삼귀의 글판',life:'부처님 생애 그림책',study:isAdult?'경전 공부방':'나란다 공부방',garden:'비밀 정원',cham:'참회의 자리'};
+var LOCK_NAME={sagyeong:'사경대',lantern:'소원 연등',deco:'꾸미기',vow:'내 원력 족자',pet:'동반자 동물',dhp:'오늘의 법구경',play:'놀이터',samul:'사물 네 가지',ogye:'오계',samgwi:'삼귀의 글판',life:'부처님 생애 그림책',study:isAdult?'경전 공부방':'나란다 공부방',garden:'비밀 정원',cham:'참회의 자리',awake:'탱화가 깨어나는 밤'};
 function needDay(k){for(var i=0;i<UNLOCKS.length;i++)if(UNLOCKS[i].keys.indexOf(k)>-1)return UNLOCKS[i].d;return 1;}
 function isOpen(k){return visitDays()>=needDay(k);}
 function nextUnlockEntry(){var dd=visitDays();for(var i=0;i<UNLOCKS.length;i++)if(UNLOCKS[i].d>dd)return UNLOCKS[i];return null;}
