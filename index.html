@@ -974,8 +974,8 @@ var ribbonMat=new THREE.MeshStandardMaterial({color:0xd9534f,roughness:.6});
 var HANBOK=[{n:'옥색 저고리·남색 치마',t:0x9fcfc0,b:0x2b3a67},{n:'연보라·자주',t:0xc9b7e0,b:0x7a2e4e},{n:'살구·쪽빛',t:0xf2cdb0,b:0x3c6fb0},{n:'회색 법복',t:0x9a9e98,b:0x6f746f}];
 var hanbokIdx=store.get('hanbok',isTeacher?3:0);
 var HAIR_NAME={bob:'단발',twin:'양갈래',short:'짧은 머리',crew:'스포츠 머리',bun:'쪽진 머리'};
-var HAIR_OF={girl:['bob','twin'],boy:['short','crew'],adult:['bun','bob','short']};
-var gender=store.get('gender','girl');if(gender!=='boy')gender='girl';if(isAdult)gender='adult';
+var HAIR_OF={girl:['bob','twin'],boy:['short','crew'],adult:['bun','bob','short'],adultM:['short','crew']};
+var gender=store.get('gender','girl');if(gender!=='boy')gender='girl';if(isAdult)gender=(store.get('agender','f')==='m'?'adultM':'adult'); // 어른도 여/남
 var hairStyle=store.get('hair',HAIR_OF[gender][0]);if(HAIR_OF[gender].indexOf(hairStyle)<0)hairStyle=HAIR_OF[gender][0];
 var hair=new THREE.Group();head.add(hair);
 function doHair(){
@@ -1024,7 +1024,8 @@ function dress(){
   else add(new THREE.Mesh(new THREE.SphereGeometry(.265,22,18),um(hb?hb.t:(s==='winter'?UNI.navy:UNI.sky))),0,.17,0).scale.set(1,.95,.82); // 둥근 몸통
   var collar=add(new THREE.Mesh(new THREE.TorusGeometry(.17,.035,8,20),um(UNI.white)),0,.4,0);collar.rotation.x=Math.PI/2;
   if(hb){add(new THREE.Mesh(new THREE.BoxGeometry(.05,.24,.02),um(hb.b)),.09,.24,.235).rotation.z=.15;add(new THREE.Mesh(new THREE.BoxGeometry(.05,.2,.02),um(hb.b)),.03,.22,.235).rotation.z=-.1; // 고름
-    add(new THREE.Mesh(new THREE.CylinderGeometry(.22,.46,.6,24),um(hb.b)),0,-.01,0);} // 치마
+    if(gender==='adultM'){[-.1,.1].forEach(function(x){add(new THREE.Mesh(new THREE.CylinderGeometry(.1,.12,.5,14),um(hb.b)),x,-.1,0);});add(new THREE.Mesh(new THREE.SphereGeometry(.275,22,18),um(hb.b)),0,.2,0).scale.set(.98,.72,.8);} // 바지·조끼
+    else add(new THREE.Mesh(new THREE.CylinderGeometry(.22,.46,.6,24),um(hb.b)),0,-.01,0);} // 치마
   if(s==='winter'&&!hb){[.3,.2,.1].forEach(function(y){add(new THREE.Mesh(new THREE.SphereGeometry(.018,8,6),um(UNI.gold)),0,y,.24);});}
   if(s==='spring'&&!hb){add(new THREE.Mesh(new THREE.BoxGeometry(.09,.09,.015),um(UNI.white)),0,.33,.215).rotation.z=Math.PI/4;}
   if(s==='summer'&&!hb){[.3,.22].forEach(function(y){add(new THREE.Mesh(new THREE.SphereGeometry(.012,6,6),um(UNI.navy)),0,y,.225);});}
@@ -1591,7 +1592,7 @@ function panelGuide(){
   var ps=ub.querySelector('#pSel');function fillPets(){var ok=visitDays()>=dayN(7);ps.innerHTML=PETS.map(function(x){return '<option value="'+x.k+'"'+(ok||x.k==='none'?'':' disabled')+'>'+(x.k==='none'?'동반자 없음':(ok?'🐾 '+x.n:'🔒 '+x.n+' · 7일'))+'</option>';}).join('');ps.value=petKey;}
   fillPets();ps.addEventListener('change',function(){petKey=this.value;store.set('pet',petKey);paintPet();toast(petKey==='none'?'동반자를 보냈어요':PETS.filter(function(x){return x.k===petKey})[0].n+'가 따라와요');});
   fillBeads();bs.addEventListener('change',function(){beadKey=this.value;store.set('beads',beadKey);dress();showOff=4;toast(beadKey==='none'?'염주를 풀었어요':BEADS.filter(function(b){return b.k===beadKey})[0].n+'를 걸었어요');});
-  if(isAdult){ub.querySelector('h3').textContent=isTeacher?'🧑‍🏫 선생님 바꾸기 — 머리·한복 색·염주':'👩 보살님 바꾸기 — 머리·한복 색·염주';ub.querySelector('.note').textContent=isTeacher?'선생님 코드로 들어오면 어른 아바타가 돼요. 열림표는 아이와 똑같아요.':'연화회 코드로 들어오면 보살님이 돼요. 생활한복 색과 머리 모양을 고를 수 있어요.';['#gGirl','#gBoy','#uSel','#uSkirt','#pSel'].forEach(function(q){var x=ub.querySelector(q);if(x)x.style.display='none';});
+  if(isAdult){ub.querySelector('h3').textContent=isTeacher?'🧑‍🏫 선생님 바꾸기 — 머리·한복 색·염주':'👩 보살님 바꾸기 — 머리·한복 색·염주';ub.querySelector('.note').textContent=isTeacher?'선생님 코드로 들어오면 어른 아바타가 돼요. 열림표는 아이와 똑같아요.':'연화회 코드로 들어오면 보살님이 돼요. 생활한복 색과 머리 모양을 고를 수 있어요.';['#uSel','#uSkirt','#pSel'].forEach(function(q){var x=ub.querySelector(q);if(x)x.style.display='none';});ub.querySelector('#gGirl').textContent='👩 여';ub.querySelector('#gBoy').textContent='👨 남';ub.querySelector('#gGirl').setAttribute('aria-pressed',String(gender==='adult'));ub.querySelector('#gBoy').setAttribute('aria-pressed',String(gender==='adultM'));
     var hbSel=el('<select aria-label="한복 색">'+HANBOK.map(function(h,i){return '<option value="'+i+'">'+h.n+'</option>'}).join('')+'</select>');hbSel.value=hanbokIdx;hbSel.addEventListener('change',function(){hanbokIdx=+this.value;store.set('hanbok',hanbokIdx);dress();showOff=4;});ub.querySelector('#hSel').parentNode.appendChild(hbSel);}
   var accRow=el('<div class="row" style="margin-top:8px"><span class="note">꾸밈</span></div>');
   ['head','neck','back'].forEach(function(slot){var sel=el('<select aria-label="꾸밈 '+slot+'"></select>');function fill(){sel.innerHTML=ACC[slot].map(function(a){var ok=accOpen(a);return '<option value="'+a.k+'"'+(ok?'':' disabled')+'>'+(a.k==='none'?({head:'머리 꾸밈 없음',neck:'목 꾸밈 없음',back:'등 꾸밈 없음'})[slot]:(ok?'✨ '+a.n:'🔒 '+a.n+' · '+accNeedText(a)))+'</option>';}).join('');sel.value=accPick(slot).k;}
@@ -1605,7 +1606,7 @@ function panelGuide(){
   var hs=ub.querySelector('#hSel'),sk=ub.querySelector('#uSkirt');
   function fillHair(){hs.innerHTML=HAIR_OF[gender].map(function(k){return '<option value="'+k+'">'+HAIR_NAME[k]+'</option>';}).join('');hs.value=hairStyle;sk.style.display=gender==='girl'?'':'none';}
   fillHair();
-  function setGender(g){if(g===gender)return;gender=g;store.set('gender',g);hairStyle=HAIR_OF[g][0];store.set('hair',hairStyle);ub.querySelector('#gGirl').setAttribute('aria-pressed',String(g==='girl'));ub.querySelector('#gBoy').setAttribute('aria-pressed',String(g==='boy'));fillHair();doHair();dress();showOff=4;toast(g==='girl'?'여자아이 연이예요':'남자아이 연이예요');}
+  function setGender(g){if(isAdult){store.set('agender',g==='boy'?'m':'f');g=g==='boy'?'adultM':'adult';}if(g===gender)return;gender=g;if(!isAdult)store.set('gender',g);hairStyle=HAIR_OF[g][0];store.set('hair',hairStyle);ub.querySelector('#gGirl').setAttribute('aria-pressed',String(g==='girl'||g==='adult'));ub.querySelector('#gBoy').setAttribute('aria-pressed',String(g==='boy'||g==='adultM'));fillHair();doHair();dress();showOff=4;toast(g==='girl'?'여자아이 연이예요':g==='boy'?'남자아이 연이예요':g==='adultM'?'남자 어른이에요':'여자 어른이에요');}
   ub.querySelector('#gGirl').addEventListener('click',function(){setGender('girl')});ub.querySelector('#gBoy').addEventListener('click',function(){setGender('boy')});
   hs.addEventListener('change',function(){hairStyle=this.value;store.set('hair',hairStyle);doHair();showOff=4;toast(HAIR_NAME[hairStyle]+' 머리로 바꿨어요');});
   ub.querySelector('#uSkirt').addEventListener('click',function(){uniSkirt=!uniSkirt;store.set('skirt',uniSkirt);this.setAttribute('aria-pressed',String(uniSkirt));dress();showOff=4;});
@@ -2960,14 +2961,14 @@ document.getElementById('gazeEnd').addEventListener('click',endGaze);
 // ===== Firebase 동기화(시험, 11-06): 학생 코드로 들어온 기기만. 같은 프로젝트(praise-stars-63, 실시간 DB) 아래 beopdang/ 가지 =====
 // 기록이 서버에도 저장돼 기기를 바꿔도 이어지고, 연등은 반 친구 것까지 보이고, 오늘 온 사람 수가 스크린에 뜬다. 이름은 저장하지 않는다(코드 해시만).
 var FB_CFG={apiKey:"AIzaSyCGnHYwxc5L94xPOHUorH9Iipgo_ZFoGbA",authDomain:"praise-stars-63.firebaseapp.com",databaseURL:"https://praise-stars-63-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"praise-stars-63"};
-var SID=store.get('sid',null),fbDb=null,fbUid=null,fbRev=store.get('rev',0),fbTimer=null,fbLnSent=store.get('lnSent',0),sharedLanterns=[],todayCount=0,fbState='off';
+var SID=store.get('sid',null),fbDb=null,fbUid=null,fbRev=store.get('rev',0),fbTimer=null,fbLnSent=store.get('lnSent',null),sharedLanterns=[],todayCount=0,fbState='off';
 function fbOn(){return !!(fbDb&&fbUid&&SID);}
 function collectStore(){var o={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k.indexOf('yeon3d-')!==0)continue;var s=k.slice(7);if(s==='sid'||s==='member'||s==='role'||s==='rev'||s==='lnSent'||s==='viewAs')continue;o[s]=localStorage.getItem(k);}return o;}
-function fbSave(){if(!fbOn())return;var rev=Date.now();fbRev=rev;store.set('rev',rev);var L=store.get('lanterns',[])||[];
+function fbSave(){if(!fbOn())return;var rev=Date.now();fbRev=rev;store.set('rev',rev);var L=store.get('lanterns',[])||[];if(fbLnSent===null){fbLnSent=L.length;store.set('lnSent',fbLnSent);} // 처음엔 지금 있는 연등(견본 포함)은 안 올림
   fbDb.ref('beopdang/students/'+SID).set({rev:rev,store:collectStore(),days:visitDays(),bows:store.get('bows',0),sg:store.get('sagyeong',0),ln:L.length,t:firebase.database.ServerValue.TIMESTAMP}).then(function(){fbState='ok';}).catch(function(e){fbState='err';console.warn('fb save',e);});
   if(L.length>fbLnSent){var n=L[0];if(n&&n.w){fbDb.ref('beopdang/lanterns').push({c:n.c|0,w:String(n.w).slice(0,40),g:String(n.g||'').slice(0,12),f:n.f||'self',to:String(n.to||'').slice(0,12),ts:Date.now(),s:SID.slice(0,8)}).catch(function(){});}fbLnSent=L.length;store.set('lnSent',fbLnSent);}}
 function fbSchedule(){if(!fbOn())return;clearTimeout(fbTimer);fbTimer=setTimeout(fbSave,6000);}
-function fbLoadLanterns(){fbDb.ref('beopdang/lanterns').limitToLast(60).once('value').then(function(s){var v=s.val()||{};var me=SID.slice(0,8);sharedLanterns=Object.keys(v).map(function(k){return v[k];}).filter(function(x){return x&&x.s!==me;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,36);if(typeof renderLanterns==='function')renderLanterns();}).catch(function(){});}
+function fbLoadLanterns(){fbDb.ref('beopdang/lanterns').limitToLast(60).once('value').then(function(s){var v=s.val()||{};var me=SID.slice(0,8);sharedLanterns=Object.keys(v).map(function(k){return v[k];}).filter(function(x){return x&&x.s!==me&&x.ts>1793927000000;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,36);if(typeof renderLanterns==='function')renderLanterns();}).catch(function(){});}
 function fbToday(){var r=fbDb.ref('beopdang/today/'+todayKey);r.child(SID).set(true).then(function(){return r.once('value');}).then(function(s){todayCount=s.numChildren();if(typeof drawBoard==='function')drawBoard();}).catch(function(){});}
 function fbLoad(){fbDb.ref('beopdang/students/'+SID).once('value').then(function(s){var v=s.val();
   if(v&&v.rev>fbRev&&v.store){for(var k in v.store){try{localStorage.setItem('yeon3d-'+k,v.store[k]);}catch(e){}}store.set('rev',v.rev);toast('다른 기기에서 쌓은 기록을 가져왔어요');setTimeout(function(){location.reload();},1500);return;}
