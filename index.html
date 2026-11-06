@@ -278,6 +278,7 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
     <button class="btn ghost sm" id="mindBtn">🌿 마음 쉼터</button>
     <button class="btn pink sm" id="sosBtn" style="background:#d9486f">지금 힘들어요</button>
     <button class="btn ghost sm" id="guideBtn">⚙️ 설정</button>
+    <button class="btn ghost sm" id="leaveBtn2">🚪 법당 나가기</button>
     <span id="hudMore" style="display:none" aria-hidden="true"><button id="decoBtn" tabindex="-1"></button><button id="sndBtn" aria-pressed="true" tabindex="-1"></button><button id="leaveBtn" tabindex="-1"></button><span id="nextOpen"></span></span>
   </div>
 </div>
@@ -1037,6 +1038,7 @@ var beadKey=store.get('beads','wood');
 function seasonOf(m){return (m>=6&&m<=9)?'summer':((m===4||m===5||m===10)?'spring':'winter');}
 var SEASON_NAME={winter:'동복',spring:'춘추복',summer:'하복'};
 var uniSeason=seasonOf(now0.getMonth()+1), uniSkirt=store.get('skirt',false);
+var robeOn=store.get('robe',true); // 11-06: 법복(기본 입음). 설정에서 벗을 수 있다
 var outfit=new THREE.Group();torsoG.add(outfit);var knees=[],hips=[],mokProps=[];
 var arms=[]; // 걸을 때 앞뒤로 흔들리고, 합장할 때는 가슴 앞으로 모인다
 function dress(){
@@ -1055,6 +1057,7 @@ function dress(){
   if(s==='spring'&&!hb){add(new THREE.Mesh(new THREE.BoxGeometry(.09,.09,.015),um(UNI.white)),0,.33,.215).rotation.z=Math.PI/4;}
   if(s==='summer'&&!hb){[.3,.22].forEach(function(y){add(new THREE.Mesh(new THREE.SphereGeometry(.012,6,6),um(UNI.navy)),0,y,.225);});}
   if(!hb)add(new THREE.Mesh(new THREE.CircleGeometry(.03,12),um(UNI.gold)),-.12,.28,.236); // 교표
+  if(robeOn){var robeM=um(0x8b8f86);add(new THREE.Mesh(new THREE.CylinderGeometry(.275,.335,.44,24),robeM),0,.18,0);add(new THREE.Mesh(new THREE.TorusGeometry(.205,.028,8,24),um(0xf4f1ea)),0,.395,0).rotation.x=Math.PI/2;add(new THREE.Mesh(new THREE.BoxGeometry(.09,.34,.012),um(0x8a6a3c)),.13,.22,.265).rotation.z=.6;} // 법복: 회색 두루마기·흰 동정·갈색 가사 끈
   var bc=BEADS.filter(function(b){return b.k===beadKey})[0], beadOn=bc&&bc.k!=='none'&&bc.need<=visitDays()+beadBonus;
   var beadMat=beadOn?new THREE.MeshStandardMaterial({color:bc.c,roughness:bc.k==='gold'?.3:(bc.k==='crystal'?.2:.5),metalness:bc.k==='gold'?.7:.05}):null;
   if(skirtOn)add(new THREE.Mesh(new THREE.CylinderGeometry(.2,.31,.22,20),um(UNI.navy)),0,-.04,0);
@@ -1070,7 +1073,7 @@ function dress(){
   // 팔: 어깨(pv)·팔꿈치(el) 관절. 동복 남색 소매, 춘추복 흰 긴팔, 하복 흰 반팔
   [-1,1].forEach(function(sd){var pv=new THREE.Group();pv.position.set(sd*.27,.34,0);
     var sleeve=um(hb?hb.t:(s==='winter'?UNI.navy:UNI.white)), shortS=s==='summer'&&!hb;
-    var up=new THREE.Mesh(new THREE.SphereGeometry(.062,12,10),sleeve);up.position.y=-.095;up.scale.set(hb?1.3:1,1.95,hb?1.3:1);up.castShadow=true;pv.add(up);
+    var up=new THREE.Mesh(new THREE.SphereGeometry(.062,12,10),sleeve);up.position.y=-.095;up.scale.set(hb?1.3:1,1.95,hb?1.3:1);up.castShadow=true;pv.add(up);if(robeOn){var sl=new THREE.Mesh(new THREE.CylinderGeometry(.085,.165,.32,14),um(0x8b8f86));sl.position.y=-.17;sl.castShadow=true;pv.add(sl);} // 법복 넓은 소매(팔꿈치를 덮는다)
     var el=new THREE.Group();el.position.y=-.18;pv.add(el);
     var fa=new THREE.Mesh(new THREE.SphereGeometry(.056,12,10),shortS?skin:sleeve);fa.position.y=-.095;fa.scale.set(1,2.0,1);fa.castShadow=true;el.add(fa);
     var h=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),skin);h.position.y=-.2;el.add(h);
@@ -1291,7 +1294,7 @@ document.getElementById('gateForm').addEventListener('submit',function(e){
 });
 if(ALL_HASHES.indexOf(store.get('member',''))>-1)openGate(true);
 else setTimeout(function(){try{gateCode.focus();}catch(e){}},100);
-document.getElementById('leaveBtn').addEventListener('click',function(){openSpot('leave');});
+document.getElementById('leaveBtn').addEventListener('click',function(){openSpot('leave');});document.getElementById('leaveBtn2').addEventListener('click',function(){openSpot('leave');});
 
 /* ---------------- 패널 ---------------- */
 var sheet=document.getElementById('sheet'),sBody=document.getElementById('sheetBody'),sTitle=document.getElementById('sheetTitle');
@@ -1624,7 +1627,7 @@ function nameBox(){var nb=el('<div class="box" style="background:#eef6ff"><h3>�
 paintNameTag();(function(){var bs=document.getElementById('brandSub');if(bs&&CN!=='연이')bs.textContent=CN+'의 마음법당';if(!store.get('cname',null))setTimeout(function(){if(typeof isGuest!=='undefined'&&isGuest)return;toast('설정(⚙)에서 내 이름을 지을 수 있어요');},7000);})();
 
 function panelGuide(){
-  sTitle.textContent='설정과 도움말';sBody.appendChild(nameBox());
+  sTitle.textContent='설정과 도움말';sBody.appendChild(nameBox());(function(){var rb=el('<div class="box"><h3>👘 법복</h3><div class="note">법당에서는 법복을 입어요. 관절이 보이지 않아 움직임이 자연스러워요.</div><button class="btn ghost sm" style="margin-top:8px">'+(robeOn?'법복 벗기 (교복 보기)':'법복 입기')+'</button></div>');rb.querySelector('button').addEventListener('click',function(){robeOn=!robeOn;store.set('robe',robeOn);dress();this.textContent=robeOn?'법복 벗기 (교복 보기)':'법복 입기';toast(robeOn?'법복을 입었어요':'법복을 벗었어요');});sBody.appendChild(rb);})();
   (function(){var ne=nextUnlockEntry();var hb=el('<div class="box" style="background:#eef9f1"><h3>법당 안에서</h3><div class="row" style="flex-wrap:wrap"><button class="btn ghost sm" id="gDeco">🏠 꾸미기</button><button class="btn ghost sm" id="gSnd">'+(soundOn?'🔔 소리 켜짐':'🔕 소리 꺼짐')+'</button><button class="btn ghost sm" id="gLeave">🚪 법당 나가기</button></div><div class="note" style="margin-top:8px">'+(ne?'🔓 다음 열림까지 '+(ne.d-visitDays())+'일'+(ne.n==='???'?' · 무엇이 열릴까요?':' · '+ne.n):'🔓 다 열렸어요')+' · 열림표는 내 수행록에</div></div>');
     hb.querySelector('#gDeco').addEventListener('click',function(){closeSheet();document.getElementById('decoBtn').click();});
     hb.querySelector('#gSnd').addEventListener('click',function(){document.getElementById('sndBtn').click();this.textContent=soundOn?'🔔 소리 켜짐':'🔕 소리 꺼짐';});
