@@ -270,7 +270,7 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
 </div>
 
 <div class="hud top">
-  <div class="pill brand"><b>은석 온라인 연화법당</b><span>연이의 마음법당</span></div>
+  <div class="pill brand"><b>은석 온라인 연화법당</b><span id="brandSub">연이의 마음법당</span></div>
   <div class="row">
     <div class="pill" id="who" style="font-size:14px"></div>
     <button class="btn pink sm" id="cerBtn">법회 모드</button>
@@ -1204,7 +1204,7 @@ var bows=store.get('bows',0),moks=0,bow108=store.get('bow108',0);
 function showCounts(){document.getElementById('bowCount').textContent=bows+' / 108'+(bow108?' · '+bow108+'회':'');document.getElementById('mokCount').textContent=moks+'번';}
 showCounts();
 var toastEl=document.getElementById('toast'),toastT=null;
-function toast(msg){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){toastEl.classList.remove('on')},1800);}
+function toast(msg){toastEl.textContent=(typeof nameize==='function')?nameize(msg):msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){toastEl.classList.remove('on')},1800);}
 document.getElementById('aHap').addEventListener('click',function(){hapAnim=2;toast('합장 · 고맙습니다');questEvent('hap');});
 document.getElementById('aBow').addEventListener('click',function(){if(bowT>=0)return;startBow();}); // 절이 끝나야 한 배
 document.getElementById('aMok').addEventListener('click',function(){moks++;showCounts();mokT=6;mokSeq=3;mokNext=0;questEvent('mok');}); // 똑·똑·똑 세 번, 소리는 칠 때마다
@@ -1236,7 +1236,7 @@ function panelRecord(){
 }
 
 var isGuest=false;
-function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">연화 정회원</b> · '+myClass+' · <span class="note">'+SEASON_NAME[uniSeason]+'</span>';}
+function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+(CN!=='연이'?CN+' · ':'')+'연화 정회원</b> · '+myClass+' · <span class="note">'+SEASON_NAME[uniSeason]+'</span>';}
 paintWho();
 
 /* ---------------- 법당 문 (회원 코드) ----------------
@@ -1608,8 +1608,23 @@ document.getElementById('cerEnd').addEventListener('click',endCer);
 window.addEventListener('keydown',function(e){if(!cer.on)return;if(e.code==='ArrowRight'||e.code==='Space'||e.code==='PageDown'){e.preventDefault();document.getElementById('cerNext').click();}else if(e.code==='ArrowLeft'||e.code==='PageUp'){e.preventDefault();showCer(cer.step-1);}else if(e.code==='Escape')endCer();});
 
 // 시안 안내
+// ===== 내 이름 짓기(11-06): 「연이」 대신 각자 지은 이름으로. 패널·토스트 글의 「연이」를 이름으로 바꾸고(조사 맞춤), 머리 위 이름표 =====
+var CN=store.get('cname','연이')||'연이';
+function hasBatchim(w){w=String(w||'');var c=w.charCodeAt(w.length-1);return c>=0xAC00&&c<=0xD7A3&&((c-0xAC00)%28)!==0;}
+function nameize(s){if(!s||CN==='연이'||s.indexOf('연이')<0)return s;var b=hasBatchim(CN);var P={'가':b?'이':'가','를':b?'을':'를','로':b?'으로':'로','예요':b?'이에요':'예요','는':b?'은':'는','와':b?'과':'와','야':b?'아':'야'};
+  return String(s).replace(/연이(가|를|의|로|예요|는|도|에게|야|와)?(?=[^\-A-Za-z0-9가-힣]|$)/g,function(m,p){return CN+(p?(P[p]!==undefined?P[p]:p):'');});}
+function nameizeNode(n){if(n.nodeType===3){if(n.nodeValue.indexOf('연이')>-1)n.nodeValue=nameize(n.nodeValue);return;}if(n.nodeType!==1)return;var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),x;while((x=w.nextNode())){if(x.nodeValue.indexOf('연이')>-1)x.nodeValue=nameize(x.nodeValue);}}
+(function(){var ob=new MutationObserver(function(ms){if(CN==='연이')return;ms.forEach(function(m){for(var i=0;i<m.addedNodes.length;i++)nameizeNode(m.addedNodes[i]);if(m.type==='characterData')nameizeNode(m.target);});});ob.observe(sBody,{childList:true,subtree:true,characterData:true});ob.observe(sTitle,{childList:true,subtree:true,characterData:true});})();
+var nameTag=null;
+function paintNameTag(){if(nameTag){yeoni.remove(nameTag);nameTag=null;}if(!CN||CN==='연이')return;nameTag=label(CN,'','#2d7356');nameTag.position.set(0,1.12,0);nameTag.scale.set(.5,.2,1);yeoni.add(nameTag);}
+function setMyName(v){CN=v;store.set('cname',v);paintNameTag();var bs=document.getElementById('brandSub');if(bs)bs.textContent=v+'의 마음법당';if(typeof paintWho==='function')try{paintWho();}catch(e){}if(typeof fbSchedule==='function')fbSchedule();}
+function nameBox(){var nb=el('<div class="box" style="background:#eef6ff"><h3>🙂 내 이름 짓기</h3><div class="note">법당 안에서 나를 부르는 이름이에요. 내 이름이나 별명, 6자까지. 지금: <b>'+CN+'</b></div><div class="row" style="margin-top:8px"><input id="cnIn" maxlength="6" placeholder="이름 또는 별명" style="flex:1;min-width:0;padding:8px;border-radius:10px;border:1px solid #cfd8d3;font:inherit"><button class="btn pink sm">정하기</button></div></div>');
+  nb.querySelector('button').addEventListener('click',function(){var v=nb.querySelector('#cnIn').value.trim().replace(/\s+/g,'').slice(0,6);if(!v){toast('이름을 써 주세요');return;}if(!/^[가-힣A-Za-z0-9]+$/.test(v)){toast('한글·영어·숫자만 써요');return;}if(/선생님|교법사|부처님|스님|관리자/.test(v)){toast('그 이름은 쓸 수 없어요');return;}if(typeof cleanOrToast==='function'&&!cleanOrToast(v,'이름'))return;setMyName(v);bell();closeSheet();toast(v+josa(v,'이','가')+' 되었어요. 이제 법당에서 '+v+josa(v,'이라고','라고')+' 불러요');});
+  return nb;}
+paintNameTag();(function(){var bs=document.getElementById('brandSub');if(bs&&CN!=='연이')bs.textContent=CN+'의 마음법당';if(!store.get('cname',null))setTimeout(function(){if(typeof isGuest!=='undefined'&&isGuest)return;toast('설정(⚙)에서 내 이름을 지을 수 있어요');},7000);})();
+
 function panelGuide(){
-  sTitle.textContent='설정과 도움말';
+  sTitle.textContent='설정과 도움말';sBody.appendChild(nameBox());
   (function(){var ne=nextUnlockEntry();var hb=el('<div class="box" style="background:#eef9f1"><h3>법당 안에서</h3><div class="row" style="flex-wrap:wrap"><button class="btn ghost sm" id="gDeco">🏠 꾸미기</button><button class="btn ghost sm" id="gSnd">'+(soundOn?'🔔 소리 켜짐':'🔕 소리 꺼짐')+'</button><button class="btn ghost sm" id="gLeave">🚪 법당 나가기</button></div><div class="note" style="margin-top:8px">'+(ne?'🔓 다음 열림까지 '+(ne.d-visitDays())+'일'+(ne.n==='???'?' · 무엇이 열릴까요?':' · '+ne.n):'🔓 다 열렸어요')+' · 열림표는 내 수행록에</div></div>');
     hb.querySelector('#gDeco').addEventListener('click',function(){closeSheet();document.getElementById('decoBtn').click();});
     hb.querySelector('#gSnd').addEventListener('click',function(){document.getElementById('sndBtn').click();this.textContent=soundOn?'🔔 소리 켜짐':'🔕 소리 꺼짐';});
@@ -2547,7 +2562,7 @@ function buildPet(k){var g=new THREE.Group();function m(geo,col,x,y,z){var mm=ne
   return g;}
 function paintPet(){if(pet){scene.remove(pet);pet=null;}if(isAdult||petKey==='none'||visitDays()<7)return;pet=buildPet(petKey);pet.position.copy(petPos);scene.add(pet);}
 paintPet();
-function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+(isAdmin?'교법사':isTeacher?'선생님':isAdult?'연화회 보살님':'연화 어린이')+'</b>'+((isAdult||isAdmin||isTeacher)?'':' · '+myClass+' · <span class="note">'+SEASON_NAME[uniSeason]+'</span>');}
+function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+(CN!=='연이'?CN+' · ':'')+(isAdmin?'교법사':isTeacher?'선생님':isAdult?'연화회 보살님':'연화 어린이')+'</b>'+((isAdult||isAdmin||isTeacher)?'':' · '+myClass+' · <span class="note">'+SEASON_NAME[uniSeason]+'</span>');}
 
 learnSpots.push({x:-5.9,z:-2,r:1.2,lock:'dhp',label:'오늘의 법구경 읽기',open:function(){var v=DHP[doy2%DHP.length];showLearn('오늘의 법구경','<div style="font-family:var(--font-display);font-size:20px;line-height:1.6">'+v[1]+'</div><div class="note" style="margin-top:8px">— 법구경 '+v[0]+' · 날마다 한 구절씩 바뀌어요</div>',function(){sBody.appendChild(pouchBtn(v[1],'법구경 '+v[0]));});questEvent('dhp');}});
 
