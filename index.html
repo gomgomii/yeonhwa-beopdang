@@ -1498,7 +1498,7 @@ function panelTaeng(){
   wrap.addEventListener('click',function(e){
     var r=wrap.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*1600,y=(e.clientY-r.top)/r.height*948,best=null,bd=1e9;
     taeng.forEach(function(t){var d=Math.hypot(t.x-x,t.y-y);if(d<t.r*1.15&&d/t.r<bd){bd=d/t.r;best=t;}});
-    if(!best){zoom.hidden=false;zoom.querySelector('.zoom').style.backgroundImage='none';zoom.querySelector('h3').textContent='여기에는 숨은 동자가 없어요';zoom.querySelector('.story').textContent='동그란 원 안이나 구름 위를 살펴보세요.';return;}
+    if(!best){zoom.hidden=false;var z0=zoom.querySelector('.zoom'),bw0=z0.clientWidth||380,bh0=300,sc0=Math.min(bw0,bh0*1.3)/(110*2.9);z0.style.backgroundImage='url('+(TAENG_HI.ok?TAENG_HI.src:IMG_ALTAR)+')';z0.style.backgroundSize=(1600*sc0)+'px auto';z0.style.backgroundPosition=(-(x*sc0-bw0/2))+'px '+(-(y*sc0-bh0/2))+'px';zoom.querySelector('h3').textContent='여기에는 숨은 인물이 없어요';zoom.querySelector('.story').textContent='그래도 가까이 보여 줄게요. 동그란 원 안이나 구름 위를 눌러 보세요.';return;} // 빈 자리도 그 자리를 확대해 보여 줌
     zoom.hidden=false;var z=zoom.querySelector('.zoom'),bw=z.clientWidth||380,bh=300,sc=Math.min(bw,bh*1.3)/(best.r*2.9);var hi=TAENG_HI.ok;
     z.style.backgroundImage='url('+(hi?TAENG_HI.src:IMG_ALTAR)+')';z.style.backgroundSize=(1600*sc)+'px auto';z.style.backgroundPosition=(-(best.x*sc-bw/2))+'px '+(-(best.y*sc-bh/2))+'px';
     zoom.querySelector('h3').textContent=best.n;zoom.querySelector('.story').textContent=best.s;
