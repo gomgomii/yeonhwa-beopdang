@@ -1233,7 +1233,7 @@ function panelRecord(){
 }
 
 var isGuest=false;
-function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">연화 정회원</b> · 6학년 2반 <span class="note">(예시)</span> · <span class="note">'+SEASON_NAME[uniSeason]+'</span>';}
+function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">연화 정회원</b> · '+myClass+' · <span class="note">'+SEASON_NAME[uniSeason]+'</span>';}
 paintWho();
 
 /* ---------------- 법당 문 (회원 코드) ----------------
@@ -1268,18 +1268,21 @@ function openGate(instant){
   gate.classList.add('open');bell();
   setTimeout(function(){gate.classList.add('gone');toast(isTeacher?'어서 오세요, 선생님':(isAdult?'어서 오세요, 연화회 보살님':'어서 와요, 연화 어린이!'));setTimeout(welcome,1200);},1100);
 }
+// 사람이 바뀌면(코드가 바뀌면) 이 기기에 남은 이전 사람의 기록을 지운다(11-06). 소리 설정만 남김. 개인 코드는 서버에서 자기 기록을 다시 받는다
+function wipePersonal(){var ks=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k.indexOf('yeon3d-')===0&&k!=='yeon3d-sound')ks.push(k);}ks.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});}
+function leavePerson(h,r){if(!store.get('sid',null))return false;wipePersonal();store.set('sid',null);store.set('member',h);store.set('role',r);location.reload();return true;}
 var tries=0;
 document.getElementById('gateForm').addEventListener('submit',function(e){
   e.preventDefault();
   var c=norm(gateCode.value);
   if(!c){gateMsg.textContent='회원증 뒷면의 코드를 넣어 주세요.';return;}
   sha(c).then(function(h){
-    if(STUDENT_HASHES.indexOf(h)>-1){var nw=store.get('sid',null)!==h;store.set('sid',h);store.set('member',h);store.set('role','child');if(nw){location.reload();return;}enterAs(h,'child');} // 학생 개인 코드: 서버 동기화
-    else if(STAFF_HASHES.indexOf(h)>-1){var nw=store.get('sid',null)!==h;store.set('sid',h);store.set('member',h);store.set('role','teacher');if(nw){location.reload();return;}enterAs(h,'teacher');} // 교직원 개인 코드: 어른 화면 + 서버 동기화
-    else if(MEMBER_HASHES.indexOf(h)>-1){store.set('sid',null);enterAs(h,'child');}
-    else if(ADULT_HASHES.indexOf(h)>-1){store.set('sid',null);enterAs(h,'adult');}
-    else if(TEACHER_HASHES.indexOf(h)>-1){store.set('sid',null);enterAs(h,'teacher');}
-    else if(ADMIN_HASHES.indexOf(h)>-1){store.set('sid',null);enterAs(h,'admin');}
+    if(STUDENT_HASHES.indexOf(h)>-1){var nw=store.get('sid',null)!==h;if(nw)wipePersonal();store.set('sid',h);store.set('member',h);store.set('role','child');if(nw){location.reload();return;}enterAs(h,'child');} // 학생 개인 코드: 서버 동기화
+    else if(STAFF_HASHES.indexOf(h)>-1){var nw=store.get('sid',null)!==h;if(nw)wipePersonal();store.set('sid',h);store.set('member',h);store.set('role','teacher');if(nw){location.reload();return;}enterAs(h,'teacher');} // 교직원 개인 코드: 어른 화면 + 서버 동기화
+    else if(MEMBER_HASHES.indexOf(h)>-1){if(leavePerson(h,'child'))return;store.set('sid',null);enterAs(h,'child');}
+    else if(ADULT_HASHES.indexOf(h)>-1){if(leavePerson(h,'adult'))return;store.set('sid',null);enterAs(h,'adult');}
+    else if(TEACHER_HASHES.indexOf(h)>-1){if(leavePerson(h,'teacher'))return;store.set('sid',null);enterAs(h,'teacher');}
+    else if(ADMIN_HASHES.indexOf(h)>-1){if(leavePerson(h,'admin'))return;store.set('sid',null);enterAs(h,'admin');}
     else{tries++;gateMsg.textContent=tries<3?'코드가 맞지 않아요. 회원증 뒷면을 다시 확인해 주세요.':'코드가 계속 맞지 않으면 연화 담당 선생님께 회원증을 보여 주세요.';gateCode.select();}
   }).catch(function(){gateMsg.textContent='이 기기에서는 코드를 확인할 수 없어요. 다른 기기로 들어와 주세요.';});
 });
@@ -2539,7 +2542,7 @@ function buildPet(k){var g=new THREE.Group();function m(geo,col,x,y,z){var mm=ne
   return g;}
 function paintPet(){if(pet){scene.remove(pet);pet=null;}if(isAdult||petKey==='none'||visitDays()<7)return;pet=buildPet(petKey);pet.position.copy(petPos);scene.add(pet);}
 paintPet();
-function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+(isAdmin?'교법사':isTeacher?'선생님':isAdult?'연화회 보살님':'연화 어린이')+'</b>'+(isAdult?'':' · 6학년 2반 <span class="note">(예시)</span> · <span class="note">'+SEASON_NAME[uniSeason]+'</span>');}
+function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+(isAdmin?'교법사':isTeacher?'선생님':isAdult?'연화회 보살님':'연화 어린이')+'</b>'+((isAdult||isAdmin||isTeacher)?'':' · '+myClass+' · <span class="note">'+SEASON_NAME[uniSeason]+'</span>');}
 
 learnSpots.push({x:-5.9,z:-2,r:1.2,lock:'dhp',label:'오늘의 법구경 읽기',open:function(){var v=DHP[doy2%DHP.length];showLearn('오늘의 법구경','<div style="font-family:var(--font-display);font-size:20px;line-height:1.6">'+v[1]+'</div><div class="note" style="margin-top:8px">— 법구경 '+v[0]+' · 날마다 한 구절씩 바뀌어요</div>',function(){sBody.appendChild(pouchBtn(v[1],'법구경 '+v[0]));});questEvent('dhp');}});
 
@@ -2795,8 +2798,9 @@ function loop(){
   var cp=new THREE.Vector3(pos.x-fx*4.2,2.7+lookUp*.2,pos.z-fz*4.2);
   // 벽은 한쪽 면만 그려서 카메라가 벽 밖으로 조금 나가도 안이 보인다. 뒷벽 가까이에서 연이가 화면 아래로 잘리지 않게.
   var inYard=pos.x<-hx+.3&&pos.z>=YARD.z0, inGarden=secretOpen&&pos.x<-hx+.3&&!inYard;
-  var hallMinX=cp.z>YARD.z0-.3?-hx+.3:-hx-1.2; // 마당 쪽(z 4.2~)은 벽 밖에 마당이 있어 카메라를 안에 둠
-  cp.x=Math.max(inGarden?-14.9:(inYard?YARD.x0-.4:hallMinX),Math.min(hx+1.2,cp.x));cp.z=Math.max(-hz+.3,Math.min(inYard?YARD.z1+.6:hz+1.6,cp.z));if(inYard)cp.x=Math.min(-hx-.5,cp.x);if(inGarden)cp.x=Math.min(-hx-.6,cp.x); // 마당·정원에 있으면 카메라도 그 안에(벽이 가리지 않게)
+  var hallMinX=(cp.z>YARD.z0-.3||(garden.visible&&cp.z>-.4))?-hx+.3:-hx-1.2; // 마당·정원 쪽(z -0.4부터)은 벽 밖에 다른 방이 있어 카메라를 법당 안에 둠(11-06: 정원 문 앞에서 벽 뚫림 수정)
+  cp.x=Math.max(inGarden?-14.9:(inYard?YARD.x0-.4:hallMinX),Math.min(hx+1.2,cp.x));cp.z=Math.max(-hz+.3,Math.min(inYard?YARD.z1+.6:hz+1.6,cp.z));if(inYard)cp.x=Math.min(-hx-.5,cp.x);if(inGarden){cp.x=Math.min(-hx-.6,cp.x);cp.z=Math.max(.35,Math.min(4.1,cp.z));} // 마당·정원에 있으면 카메라도 그 안에(벽이 가리지 않게)
+  var sqx=cp.x-pos.x,sqz=cp.z-pos.z,sqd=Math.sqrt(sqx*sqx+sqz*sqz);if(sqd<2.2)cp.y+=(2.2-sqd)*.9; // 벽에 눌려 카메라가 연이 바로 뒤까지 오면 위로 올려 머리가 화면을 가리지 않게
   var lk=new THREE.Vector3(pos.x+fx*2.5,1.2+(lookUp>0?2.6:0),pos.z+fz*2.5);
   if(showOff>0){cp.set(pos.x-fx*2.6,1.5,pos.z-fz*2.6);lk.set(pos.x,.75,pos.z);}
   else if(bowT>=0){var rx=Math.cos(heading),rz=-Math.sin(heading);cp.set(pos.x+rx*2.4+fx*.6,1.15,pos.z+rz*2.4+fz*.6);lk.set(pos.x+fx*.3,.5,pos.z+fz*.3);} // 절은 옆에서
