@@ -62,8 +62,8 @@ body.awake .jump,body.gaze .jump,body.gaze .prompt,body.gaze .prompt.on,body.gaz
 .act span{font-family:var(--font-display);font-size:15px}
 .act small{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 
-.prompt{position:fixed;left:50%;bottom:104px;transform:translateX(-50%);display:none}
-.prompt.on{display:block}
+.prompt{position:fixed;left:50%;bottom:104px;transform:translateX(-50%);display:none;gap:8px;justify-content:center;flex-wrap:wrap}
+.prompt.on{display:flex}
 .prompt button{box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:18px;padding:12px 22px}
 
 .dpad{position:fixed;left:14px;bottom:14px;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:4px}
@@ -311,7 +311,7 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
 <div id="tour" aria-live="polite"><div><div id="tourText"></div><div style="text-align:center;margin-top:14px;pointer-events:auto"><button class="btn ghost sm" id="tourSkip">그만 보기</button></div></div></div>
 <div id="med" role="region" aria-label="방석 명상"></div>
 <div id="deco" role="region" aria-label="내 법당 꾸미기"></div>
-<div class="prompt" id="prompt"><button class="btn pink" id="promptBtn"></button></div>
+<div class="prompt" id="prompt"><button class="btn pink" id="promptBtn"></button><button class="btn ghost" id="promptBtn2" style="display:none">🏮 내가 단 연등 보기</button></div>
 <div id="awakeBar" class="row" style="display:none;position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:30;background:var(--glass);border-radius:16px;padding:8px 12px;gap:8px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.18);max-width:94vw"><span id="awakeText" class="note"></span><button class="btn ghost sm" id="awakeGaze">🙏 가까이 뵙기</button><button class="btn ghost sm" id="awakeEnd">물러나기</button></div>
 <div id="gazeBar" class="row" style="display:none;position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:31;background:var(--glass);border-radius:16px;padding:8px 12px;gap:8px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.18);max-width:94vw"><span class="note">끌어서 돌려 보고, 빛나는 점을 눌러 보세요</span><button class="btn pink sm" id="gazeAsk">여쭙기</button><button class="btn ghost sm" id="gazeEnd">물러나기</button></div>
 
@@ -485,7 +485,7 @@ var thousand=canvasTex(512,1024,function(g,w,h){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(panelW,H-0.4),new THREE.MeshStandardMaterial({map:thousand,roughness:.6,metalness:.1}));
   m.position.set(s*(altarW/2+panelW/2),H/2,-hz+0.07);scene.add(m);learnMeshes.push(m);
   var m2=new THREE.Mesh(new THREE.PlaneGeometry(3,H-0.4),new THREE.MeshStandardMaterial({map:thousand,roughness:.6,metalness:.1}));
-  m2.position.set(s*(hx-0.02),H/2,-hz+1.5);m2.rotation.y=-s*Math.PI/2;scene.add(m2);
+  m2.position.set(s*(hx-0.06),H/2,-hz+1.5);m2.rotation.y=-s*Math.PI/2;scene.add(m2);
 });
 // 단(수미단)과 촛대
 var dan=new THREE.Mesh(new THREE.BoxGeometry(11,0.9,1.4),new THREE.MeshStandardMaterial({color:0x7a4527,roughness:.6}));
@@ -737,12 +737,22 @@ function lanternSpot(i){ // 천장 통로 위로 줄지어 달림
   var row=Math.floor(i/6), col=i%6;
   return new THREE.Vector3(-3.75+col*1.5,H-1.25-(row%2)*.35,-4+row*1.6);
 }
-function lanternTag(text){var tx=canvasTex(256,112,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.strokeStyle='#c9a86a';g.lineWidth=6;g.strokeRect(5,5,w-10,h-10);g.fillStyle='#8a4fa8';g.font='36px Jua, sans-serif';g.textAlign='center';g.textBaseline='middle';var s=text.length>9?text.slice(0,9)+'…':text;g.fillText(s,w/2,h/2);});
-  var g=new THREE.Group();var c=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.22,4),new THREE.MeshBasicMaterial({color:0xeeeeee}));c.position.y=-.5;g.add(c);
-  var pl=new THREE.Mesh(new THREE.PlaneGeometry(.46,.2),new THREE.MeshStandardMaterial({map:tx,side:THREE.DoubleSide}));pl.position.y=-.72;g.add(pl);return g;}
+function josa(w,a,b){w=String(w||'');var c=w.charCodeAt(w.length-1);return (c>=0xAC00&&c<=0xD7A3)?(((c-0xAC00)%28)?a:b):b;} // 받침 있으면 a(을/이), 없으면 b(를/가)
+function lanternTag(l){ // 세로 꼬리표: 소원 글귀를 세로로, 누구를 위한 것인지 옆 줄에
+  var wish=String(l.w||''),to=l.to?String(l.to)+(l.f==='other'?josa(l.to,'을','를')+' 위해':''):'';
+  var cols=[];if(wish){for(var i=0;i<wish.length&&cols.length<2;i+=12)cols.push(wish.slice(i,i+12));}
+  var W=cols.length>1?160:112,H=420;
+  var tx=canvasTex(W,H,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.strokeStyle='#c9a86a';g.lineWidth=5;g.strokeRect(4,4,w-8,h-8);g.fillStyle='#c9a86a';g.beginPath();g.arc(w/2,16,5,0,Math.PI*2);g.fill();
+    g.textAlign='center';g.textBaseline='middle';
+    var x0=cols.length>1?w*.3:w/2;cols.forEach(function(col,ci){g.fillStyle='#2b2b2b';g.font='24px Jua, sans-serif';var x=cols.length>1?(ci?w*.7:w*.3):w/2;for(var k=0;k<col.length;k++)g.fillText(col[k],x,46+k*28);});
+    if(to){g.fillStyle='#8a4fa8';g.font='19px "Gowun Dodum", sans-serif';var y0=h-16-to.length*21;for(var k=0;k<to.length;k++)g.fillText(to[k],cols.length?w-18:w/2,y0+k*21);}
+  });
+  var g=new THREE.Group();var c=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.3,4),new THREE.MeshBasicMaterial({color:0xeeeeee}));c.position.y=-.54;g.add(c);
+  var p=new THREE.Mesh(new THREE.PlaneGeometry(.22*W/112,.84),new THREE.MeshBasicMaterial({map:tx,side:THREE.DoubleSide}));p.position.y=-1.11;g.add(p);return g;
+}
 function renderLanterns(){
   while(lanternGroup.children.length)lanternGroup.remove(lanternGroup.children[0]);
-  savedLanterns.slice(0,36).concat(typeof sharedLanterns!=='undefined'?sharedLanterns:[]).slice(0,60).forEach(function(l,i){var m=makeLantern(lcolors[(l.c|0)%lcolors.length][1]);if(l.to)m.add(lanternTag(l.to+(l.f==='other'?'를 위해':'')));m.position.copy(lanternSpot(i));m.userData.phase=Math.random()*6;lanternGroup.add(m);});
+  savedLanterns.slice(0,36).concat(typeof sharedLanterns!=='undefined'?sharedLanterns:[]).slice(0,60).forEach(function(l,i){var m=makeLantern(lcolors[(l.c|0)%lcolors.length][1]);if(l.w||l.to)m.add(lanternTag(l));m.position.copy(lanternSpot(i));m.userData.phase=Math.random()*6;lanternGroup.add(m);});
 }
 renderLanterns();
 // 받침대는 연등을 만드는 자리. 만든 연등은 여기서 천장으로 올라간다
@@ -799,7 +809,7 @@ var DETAIL_ADULT=[
  {hj:'正業',mean:'생명을 해치지 않고(불살생), 주지 않은 것을 가지지 않으며(불투도), 삿된 음행을 하지 않는(불사음) 것입니다. 몸으로 짓는 업을 바르게 하는 일이에요.',ex:['벌레 한 마리도 가능하면 살려 내보냅니다','회사 물건·공금·시간을 내 것처럼 쓰지 않습니다','가족의 신뢰를 지키는 것이 곧 계입니다'],sutra:'산 것을 죽이는 일, 주지 않는 것을 가지는 일, 삿된 행을 떠나는 것이 바른 행위이다. — 분별성제경'},
  {hj:'正命',mean:'남을 속이거나 해치는 방법으로 생계를 얻지 않는 것입니다. 번 것을 어떻게 썼는가까지가 정명입니다. 정직하게 벌고, 고맙게 쓰고, 나눌 줄 아는 삶.',ex:['"다들 그런다"는 편법을 한 번 더 봅니다','돈과 사람을 대하는 태도가 아이의 교과서입니다','받은 것에 고마워하고 조금은 돌려보냅니다'],sutra:'삿된 생활을 버리고 바른 생활로 살아가는 것이 바른 생활이다. — 분별성제경'},
  {hj:'正精進',mean:'아직 안 생긴 나쁜 마음은 안 생기게, 생긴 나쁜 마음은 끊고, 안 생긴 좋은 마음은 생기게, 생긴 좋은 마음은 키우는 네 가지 노력(사정근)입니다. 열심히가 아니라 "방향 있는" 노력이에요.',ex:['화가 습관이 된 자리 하나에서만 먼저 멈춥니다','하루 10분 절이나 호흡을 빠지지 않는 날로','잘한 일을 스스로 알아주어 좋은 마음을 키웁니다'],sutra:'나쁜 것은 끊고 생기지 않게 하며, 좋은 것은 일으키고 자라게 하는 것이 바른 정진이다. — 분별성제경'},
- {hj:'正念',mean:'몸·느낌·마음·법(사념처)을 지금 있는 그대로 알아차리는 것입니다. 과거의 후회와 미래의 걱정에 끌려가지 않고, 이 숨·이 발걸음으로 돌아오는 힘이에요.',ex:['병실에서 숨이 가빠질 때 숨을 세며 돌아옵니다','화가 올라오면 "화가 났구나" 하고 몸을 봅니다','설거지·걷기·운전을 알아차림의 자리로 씁니다'],sutra:'몸·느낌·마음·법을 지금 그대로 알아차리며 머무는 것이 바른 마음챙김이다. — 분별성제경'},
+ {hj:'正念',mean:'몸·느낌·마음·법(사념처)을 지금 있는 그대로 알아차리는 것입니다. 과거의 후회와 미래의 걱정에 끌려가지 않고, 이 숨·이 발걸음으로 돌아오는 힘이에요.',ex:['회의가 길어져 답답할 때 숨 셋을 세고 돌아옵니다','화가 올라오면 "화가 났구나" 하고 몸을 봅니다','설거지·걷기·운전을 알아차림의 자리로 씁니다'],sutra:'몸·느낌·마음·법을 지금 그대로 알아차리며 머무는 것이 바른 마음챙김이다. — 분별성제경'},
  {hj:'正定',mean:'마음을 한곳에 고요히 모으는 것(선정)입니다. 흩어진 마음이 모이면 맑아지고, 맑아지면 바르게 보입니다. 팔정도의 끝이자 다시 정견으로 돌아가는 자리예요.',ex:['하루 3분, 숨 하나에만 머무는 시간을 둡니다','종소리가 사라질 때까지 듣습니다','잠들기 전 하루를 한 장면씩 고요히 돌아봅니다'],sutra:'마음을 하나로 모아 고요히 머무는 것이 바른 선정이다. — 분별성제경'}
 ];
 var OGYE_ADULT=[
@@ -1333,7 +1343,7 @@ function panelLantern(){
   sBody.appendChild(cbox);
   var go=el('<button class="btn pink">연등에 불 켜기</button>');
   go.addEventListener('click',function(){var own=wbox.querySelector('#lwish').value.trim(),to=tbox.querySelector('#lto').value.trim();var w=own||LANTERN_WISHES[mode][pw];if(/단톡|카톡|전화|\d{3,}/.test(w+to)){toast('연락처나 긴 숫자는 쓰지 않아요');return;}
-    savedLanterns.unshift({c:pc,w:w,g:sel.value,f:mode,to:to});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];LANTERN_START.set(pos.x+Math.sin(heading)*.55,.95,pos.z+Math.cos(heading)*.55);rising={m:nm,to:nm.position.clone(),t:0};questEvent('lantern');nm.position.copy(LANTERN_START);hapAnim=3;bell();toast(mode==='other'?(to?to+'를 위한 연등이 올라가요':'다른 사람을 위한 연등이 올라가요'):'내 연등이 천장으로 올라가요');closeSheet();lookUp=5;setTimeout(function(){if(!sheetOpen&&!cer.on){lanternFocus={m:nm};lookUp=0;toast('내 연등이 걸렸어요. 화면을 누르면 돌아와요');}},3600);});
+    savedLanterns.unshift({c:pc,w:w,g:sel.value,f:mode,to:to});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];LANTERN_START.set(pos.x+Math.sin(heading)*.55,.95,pos.z+Math.cos(heading)*.55);rising={m:nm,to:nm.position.clone(),t:0};questEvent('lantern');nm.position.copy(LANTERN_START);hapAnim=3;bell();toast(mode==='other'?(to?to+josa(to,'을','를')+' 위한 연등이 올라가요':'다른 사람을 위한 연등이 올라가요'):'내 연등이 천장으로 올라가요');closeSheet();lookUp=5;setTimeout(function(){if(!sheetOpen&&!cer.on){lanternFocus={m:nm};lookUp=0;toast('내 연등이 걸렸어요. 화면을 누르면 돌아와요');}},3600);});
   sBody.appendChild(go);
   var mine=savedLanterns.filter(function(l){return l.f}).length,others=savedLanterns.filter(function(l){return l.f==='other'}).length;
   var list=el('<div class="box"><h3>법당에 켜진 연등 '+savedLanterns.length+'개'+(others?' · 남을 위한 연등 '+others+'개':'')+'</h3><div class="note"></div></div>');
@@ -1341,15 +1351,22 @@ function panelLantern(){
   sBody.appendChild(list);
 }
 // 팔정도 액자
+function weekKey(){var d=new Date();var y=d.getFullYear(),j=new Date(y,0,1),w=Math.floor((d-j)/864e5/7);return y+'w'+w;}
 function panelStone(i){
   var p=paths[i],has=stampDone.indexOf(i)>-1;
   sTitle.textContent='팔정도 액자 '+(i+1)+' · '+p[0];
   sBody.appendChild(el('<div class="box"><h3>'+p[0]+' · '+p[1]+(i===weekIdx?' <span style="font-size:13px;color:#d9486f">이번 주</span>':'')+'</h3><div style="font-family:var(--font-display);font-size:20px;color:#d9486f">'+p[2]+'</div><div>이번 주 약속: '+p[3]+'</div></div>'));
   sBody.appendChild(pouchBtn(p[2],'팔정도 '+p[0]));
   if(isGuest){sBody.appendChild(lock());return;}
-  var b=el('<button class="btn pink"'+(has?' disabled':'')+'>'+(has?'도장 받았어요':'해냈어요! 도장 받기')+'</button>');
-  b.addEventListener('click',function(){if(stampDone.indexOf(i)<0){stampDone.push(i);store.set('stamps',stampDone);paintStones();bell();}openSpot('stone'+i);});
-  sBody.appendChild(b);
+  var pd=store.get('pathDays',{}),days=pd[i]||[],wk=weekKey(),wdays=days.filter(function(d){return d.indexOf(wk+':')===0}).map(function(d){return d.slice(wk.length+1)}),todayDone=wdays.indexOf(todayKey)>-1,NEED=3;
+  if(i===weekIdx){
+    var pb=el('<div class="box" style="background:#fff5f8"><h3>이번 주 실천 '+Math.min(NEED,wdays.length)+' / '+NEED+'일</h3><div class="note">이번 주 약속을 하루 한 번 체크해요. <b>'+NEED+'일</b>이 되면 이 액자 도장을 받아요. 읽기만으로는 안 돼요.</div><div class="row" style="gap:6px;margin:8px 0">'+[0,1,2].map(function(k){return '<span style="width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:'+(k<wdays.length?'#d9486f':'#f1e4e8')+';color:#fff">'+(k<wdays.length?'✓':'')+'</span>'}).join('')+'</div></div>');
+    var b=el('<button class="btn pink"'+(todayDone?' disabled':'')+'>'+(todayDone?'오늘은 체크했어요 · 내일 또':'✅ 오늘 "'+p[3]+'" 실천했어요')+'</button>');
+    b.addEventListener('click',function(){if(todayDone)return;days.push(wk+':'+todayKey);pd[i]=days;store.set('pathDays',pd);var n=days.filter(function(d){return d.indexOf(wk+':')===0}).length;questEvent('wall');
+      if(n>=NEED&&stampDone.indexOf(i)<0){stampDone.push(i);store.set('stamps',stampDone);paintStones();bell();toast(p[0]+' 도장! 한 주 동안 실천한 힘이에요');}else{moktak();toast('오늘 실천 체크 '+Math.min(NEED,n)+' / '+NEED);}
+      openSpot('stone'+i);});
+    pb.appendChild(b);sBody.appendChild(pb);
+  } else sBody.appendChild(el('<div class="note" style="margin-bottom:8px">'+(has?'이 길의 도장은 이미 받았어요. ':'')+'도장은 <b>이번 주 팔정도</b>('+paths[weekIdx][0]+') 액자에서 한 주 실천으로 받아요. 이 액자는 읽어 두기.</div>'));
   var grid=el('<div class="box"><h3>내 도장판 '+stampDone.length+' / 8</h3><div class="stamps"></div></div>');
   paths.forEach(function(q,j){grid.querySelector('.stamps').appendChild(el('<div class="st'+(stampDone.indexOf(j)>-1?' done':'')+(j===i?' cur':'')+'">'+q[0]+'</div>'));});
   sBody.appendChild(grid);
@@ -1631,6 +1648,7 @@ function panelGuide(){
 
 /* ---------------- 루프 ---------------- */
 var prompt=document.getElementById('prompt'),promptBtn=document.getElementById('promptBtn');
+document.getElementById('promptBtn2').addEventListener('click',function(){var m=lanternGroup.children[0];if(!m)return;closeSheet();lanternFocus={m:m};lookUp=0;toast('내 연등이에요. 화면을 누르면 돌아와요');});
 promptBtn.addEventListener('click',function(){if(nearSpot==='sit')sitHere();else if(nearSpot&&nearSpot.indexOf('learn')===0)(function(ls){if(ls.lock&&!isOpen(ls.lock))panelLocked(ls.lock);else ls.open();})(learnSpots[+nearSpot.slice(5)]);else if(nearSpot)openSpot(nearSpot);});
 document.getElementById('cerFile').addEventListener('change',function(){var f=this.files[0];if(!f)return;try{cerAudio.src=URL.createObjectURL(f);cerAudio.play();chantBeat(false);document.getElementById('cerMusicNote').textContent='재생 중: '+f.name;}catch(e){toast('이 파일은 틀 수 없어요');}});
 document.getElementById('cerStop').addEventListener('click',function(){try{cerAudio.pause();}catch(e){}chantBeat(false);});
@@ -2133,7 +2151,7 @@ function openPray(){sBody.innerHTML='';sTitle.textContent='기도터';currentSpo
   var ch=box.querySelector('.choices'),inp=box.querySelector('input');PRAY_FOR.forEach(function(p){var b=el(chip(p,false));b.addEventListener('click',function(){who=p;inp.value='';[].forEach.call(ch.children,function(x){x.setAttribute('aria-pressed',x===b)});});ch.appendChild(b);});
   inp.addEventListener('input',function(){who=inp.value.trim();[].forEach.call(ch.children,function(x){x.setAttribute('aria-pressed','false')});});
   [].forEach.call(box.querySelectorAll('[data-c]'),function(b){b.addEventListener('click',function(){col=+b.dataset.c;[].forEach.call(box.querySelectorAll('[data-c]'),function(x){x.setAttribute('aria-pressed',x===b)});});});
-  var go=el('<button class="btn pink" style="margin-top:10px">🙏 불 밝히기</button>');go.addEventListener('click',function(){if(!who){toast('누구를 위한 불인지 골라 주세요');return;}gCandles.push({to:who,c:col,d:todayKey});if(gCandles.length>21)gCandles.shift();store.set('gcandles',gCandles);renderGCandles();hapAnim=4;chime();bell();questEvent('mind');closeSheet();toast(who+'를 위해 불을 밝혔어요. '+who+'가 평안하기를.');});
+  var go=el('<button class="btn pink" style="margin-top:10px">🙏 불 밝히기</button>');go.addEventListener('click',function(){if(!who){toast('누구를 위한 불인지 골라 주세요');return;}gCandles.push({to:who,c:col,d:todayKey});if(gCandles.length>21)gCandles.shift();store.set('gcandles',gCandles);renderGCandles();hapAnim=4;chime();bell();questEvent('mind');closeSheet();toast(who+josa(who,'을','를')+' 위해 불을 밝혔어요. '+who+josa(who,'이','가')+' 평안하기를.');});
   box.appendChild(go);sBody.appendChild(box);
   if(gCandles.length){var lst=el('<div class="box"><h3>지금 켜져 있는 불 '+Math.min(7,gCandles.length)+'</h3><div class="note">'+gCandles.slice(-7).map(function(c){return '🕯 '+c.to+' ('+c.d.slice(5)+')';}).join(' · ')+'</div></div>');sBody.appendChild(lst);}
   sBody.appendChild(el('<div class="note" style="margin-top:8px">기도는 바라는 마음을 또렷이 하는 일이에요. 불을 밝힌 뒤 그 사람에게 말 한마디를 건네 보세요.</div>'));
@@ -2574,7 +2592,7 @@ var MANUAL_ADULT=[
 ];
 var MANUAL_CHILD=[
  ['👋 어서 와요','여기는 <b>은석 온라인 연화법당</b>이에요. 학교 법당을 그대로 옮겼고, <b>연이</b>가 되어 걸어 다녀요.<br><br>움직이기: 화살표 키·WASD, 바닥 누르기, 화면 왼쪽 아래 버튼. 화면을 옆으로 끌면 둘러봐요.<br>가까이 가면 분홍 버튼이 떠요 — 그걸 눌러요.'],
- ['🏛 법당 네 곳','<b>부처님 앞</b>: 공양 올리기, 절, 탱화 이야기<br><b>오른쪽 벽 팔정도</b>: 액자 앞 버튼을 밟으면 설명이 펼쳐져요. 이번 주 약속 하나!<br><b>사경대</b>: 글귀 따라 쓰기<br><b>연꽃 연못</b>: 도장마다 연꽃 한 송이<br>그리고 뒷벽 게시판 퀴즈, 왼쪽 벽 오늘의 법구경, 사물 네 가지, 오계 돌, 부처님 생애 그림책.'],
+ ['🏛 법당 네 곳','<b>부처님 앞</b>: 공양 올리기, 절, 탱화 이야기<br><b>오른쪽 벽 팔정도</b>: 액자 앞 버튼을 밟으면 설명이 펼쳐져요. 이번 주 팔정도 액자에서 「오늘 실천했어요」를 3일 체크하면 도장. 이번 주 약속 하나!<br><b>사경대</b>: 글귀 따라 쓰기<br><b>연꽃 연못</b>: 도장마다 연꽃 한 송이<br>그리고 뒷벽 게시판 퀴즈, 왼쪽 벽 오늘의 법구경, 사물 네 가지, 오계 돌, 부처님 생애 그림책.'],
  ['🌿 마음이 힘들 때','위쪽 <b>🌿 마음 쉼터</b>: 마음 날씨 → 감정 단어 → 바란 것 → 숨 고르기. 5분이면 돼요.<br><b>지금 힘들어요</b> 버튼: 숨 세 번부터 같이 해요.<br>방석 가까이 가면 <b>앉아서 명상</b>.<br><br>점수 없어요. 기록은 이 크롬북에만 남고 아무도 못 봐요.'],
  ['📅 날마다','오늘 한 일은 <b>내 수행록</b>과 법회 <b>회향</b>에 저절로 모여요.<br>왼쪽 벽 <b>법구경</b>은 날마다 바뀌어요.<br><b>하루에 몇 번 와도 하루</b>예요. 날이 쌓이면 꾸미기 물건·염주 색·동반자 동물이 열리고, 30일이면 왼쪽 벽 <b>비밀의 문</b>이 열려요.'],
  ['🏠 내 법당','<b>⚙️ 설정 → 🏠 꾸미기</b>로 방석·연꽃·석등을 놓고 내 법당 이름을 걸어요.<br>부처님 앞 족자에 <b>내 원력</b> 한 줄을 걸어요 — "내가 이렇게 하겠다"는 것.<br><br>그리고 <b>눈 감고 법당 떠올리기</b>: 이 법당을 마음속에 하나 지어 두면, 크롬북이 없어도 힘들 때 떠올릴 수 있어요.'],
@@ -2742,7 +2760,7 @@ function loop(){
   stones.forEach(function(s){var d=Math.hypot(pos.x-PX,pos.z-s.z);if(d<.6&&d<bd){bd=d;best='stone'+s.i;}});
   learnSpots.forEach(function(ls,i){var d=Math.hypot(pos.x-ls.x,pos.z-ls.z);if(d<ls.r&&d<bd){bd=d;best='learn'+i;}});
   if(!sitOn){var ncu=nearestCushion();if(ncu){var cdd=Math.hypot(pos.x-ncu[0],pos.z-ncu[1]);if(cdd<bd){bd=cdd;best='sit';}}}
-  if(best!==nearSpot){nearSpot=best;if(best&&best.indexOf('stone')===0)showWall(+best.slice(5));else hideWall();if(best){promptBtn.textContent=best==='sit'?'방석에 앉아 명상하기':best.indexOf('learn')===0?(function(ls){return ls.lock&&!isOpen(ls.lock)?'🔒 '+LOCK_NAME[ls.lock]+' · '+needDay(ls.lock)+'일째 열려요':ls.label})(learnSpots[+best.slice(5)]):best.indexOf('stone')===0?(paths[+best.slice(5)][0]+' 액자 · 도장 받기'):(SPOT_LOCK[best]&&!isOpen(SPOT_LOCK[best])?'🔒 '+LOCK_NAME[SPOT_LOCK[best]]+' · '+needDay(SPOT_LOCK[best])+'일째 열려요':spots[best].label);prompt.classList.add('on');}else prompt.classList.remove('on');}
+  if(best!==nearSpot){nearSpot=best;if(best&&best.indexOf('stone')===0)showWall(+best.slice(5));else hideWall();if(best){document.getElementById('promptBtn2').style.display=(best==='lantern'&&savedLanterns.length&&lanternGroup.children.length)?'':'none';promptBtn.textContent=best==='sit'?'방석에 앉아 명상하기':best.indexOf('learn')===0?(function(ls){return ls.lock&&!isOpen(ls.lock)?'🔒 '+LOCK_NAME[ls.lock]+' · '+needDay(ls.lock)+'일째 열려요':ls.label})(learnSpots[+best.slice(5)]):best.indexOf('stone')===0?(paths[+best.slice(5)][0]+' 액자 · '+(+best.slice(5)===weekIdx?'이번 주 실천 체크':'읽어 보기')):(SPOT_LOCK[best]&&!isOpen(SPOT_LOCK[best])?'🔒 '+LOCK_NAME[SPOT_LOCK[best]]+' · '+needDay(SPOT_LOCK[best])+'일째 열려요':spots[best].label);prompt.classList.add('on');}else prompt.classList.remove('on');}
   if(wallIdx>=0){wallT=Math.min(1,wallT+dt*2.2);var we=1-Math.pow(1-wallT,3);wallPanel.scale.x=.01+we*.99;wallPanel.material.opacity=we;}
   else if(wallPanel.visible){wallPanel.material.opacity-=dt*3;if(wallPanel.material.opacity<=0)wallPanel.visible=false;}
   if(glowT>0)glowT-=dt;var gk=Math.max(0,Math.min(1,glowT))*(.6+.4*Math.sin(t*14));
