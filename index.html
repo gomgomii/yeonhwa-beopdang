@@ -1359,7 +1359,8 @@ function panelLantern(){
   sBody.appendChild(tabs);sBody.appendChild(wbox);sBody.appendChild(tbox);fillWishes();
   var cbox=el('<div class="box"><h3>연등 색과 학년·반</h3><div class="row" style="gap:14px"><div class="choices"></div><select id="lgrade" aria-label="학년 반"></select></div></div>');
   lcolors.forEach(function(c,i){var b=el('<button class="sw" aria-label="'+c[0]+'" aria-pressed="'+(i===0)+'" style="background:'+c[2]+'"></button>');b.addEventListener('click',function(){pc=i;[].forEach.call(cbox.querySelectorAll('.sw'),function(x,j){x.setAttribute('aria-pressed',String(j===i))});});cbox.querySelector('.choices').appendChild(b);});
-  var sel=cbox.querySelector('select');for(var g=1;g<=6;g++)for(var c=1;c<=5;c++){var o=document.createElement('option');o.textContent=g+'학년 '+c+'반';if(g===6&&c===2)o.selected=true;sel.appendChild(o);}
+  var sel=cbox.querySelector('select'),staffSel=(typeof isStaff==='function'&&isStaff())||(typeof isTeacher!=='undefined'&&isTeacher)||(typeof isAdmin!=='undefined'&&isAdmin);for(var g=1;g<=6;g++)for(var c=1;c<=4;c++){var o=document.createElement('option');o.textContent=g+'학년 '+c+'반';if(!staffSel&&g===6&&c===3)o.selected=true;sel.appendChild(o);} // 은석초는 학년마다 4반까지(11-06)
+  var so=document.createElement('option');so.textContent='교직원';if(staffSel)so.selected=true;sel.appendChild(so);
   sBody.appendChild(cbox);
   var go=el('<button class="btn pink">연등에 불 켜기</button>');
   go.addEventListener('click',function(){var own=wbox.querySelector('#lwish').value.trim(),to=tbox.querySelector('#lto').value.trim();var w=own||LANTERN_WISHES[mode][pw];if(/단톡|카톡|전화|\d{3,}/.test(w+to)){toast('연락처나 긴 숫자는 쓰지 않아요');return;}if(!cleanOrToast(w+' '+to,'연등'))return;
@@ -1520,7 +1521,6 @@ function panelTaeng(){
 
 /* ---------------- 반 대항 연꽃 (시안: 예시 숫자 + 내 도장) ---------------- */
 var myClass='6학년 3반';
-var classLotus={'6학년 1반':42,'6학년 2반':37,'6학년 3반':51,'6학년 4반':29,'6학년 5반':33,'5학년 1반':47,'5학년 3반':40,'4학년 2반':55,'3학년 1반':61,'2학년 4반':58};
 
 /* ---------------- 기념일마다 바뀌는 법당 ----------------
    음력 기념일의 양력 날짜. 한국천문연구원 달력자료(2026~2028)로 확인함(2026.11). 해마다 이 표만 이어 붙이면 된다. */
