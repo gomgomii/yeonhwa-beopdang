@@ -557,17 +557,15 @@ function drawBoard(){
     var lh=ls.length>4?56:66,sy0=by+bh2/2+20-(ls.length-1)*lh/2;
     g.fillStyle='#fbf5e6';g.font=(ls.length>4?'40px':'46px')+' Jua, sans-serif';ls.forEach(function(l,i){g.fillText(l,cx,sy0+i*lh);});
   }else{
-    g.fillStyle='#8fd3b2';g.font='26px "Gowun Dodum", sans-serif';g.fillText('법회 스크린 · 오늘의 한 마디',cx,by+44);
-    var say=(typeof sy!=='undefined')?sy[0]:'마음을 둘 곳을 알면 어디서나 평안하다';
-    g.fillStyle='#fbf5e6';g.font='40px Jua, sans-serif';var sl=wrapLines(g,'“'+say+'”',bw-80);sl.forEach(function(l,i){g.fillText(l,cx,by+110+i*50);});
+    g.fillStyle='#8fd3b2';g.font='26px "Gowun Dodum", sans-serif';g.fillText('법회 스크린',cx,by+44); // 오늘의 한 마디는 법구경 전광판과 겹쳐 뺌(11-06)
     if(boardReady){ // 이달 행사
     var ev=[],t0=new Date();t0=new Date(t0.getFullYear(),t0.getMonth(),t0.getDate()).getTime();
     (typeof EVENTS!=='undefined'?EVENTS:[]).forEach(function(e){e.d.forEach(function(ds){var p=ds.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]).getTime(),df=Math.round((d-t0)/864e5);if(df>=-1&&df<=400)ev.push({n:e.n,df:df,m:+p[1],dd:+p[2]});});});
     ev.sort(function(a,b){return a.df-b.df;});ev=ev.slice(0,2);
-    g.fillStyle='#f4d58a';g.font='28px Jua, sans-serif';g.fillText('다가오는 날',cx,by+270);
-    g.fillStyle='#fbf5e6';g.font='30px "Gowun Dodum", sans-serif';
-    if(!ev.length)g.fillText('다음 행사를 기다려요',cx,by+312);
-    ev.forEach(function(e,i){g.fillText(e.n+'  '+e.m+'. '+e.dd+'.  '+(e.df===0?'오늘!':(e.df<0?'어제':'D-'+e.df)),cx,by+312+i*40);});
+    g.fillStyle='#f4d58a';g.font='34px Jua, sans-serif';g.fillText('다가오는 날',cx,by+130);
+    g.fillStyle='#fbf5e6';g.font='36px "Gowun Dodum", sans-serif';
+    if(!ev.length)g.fillText('다음 행사를 기다려요',cx,by+190);
+    ev.forEach(function(e,i){g.fillText(e.n+'  '+e.m+'. '+e.dd+'.  '+(e.df===0?'오늘!':(e.df<0?'어제':'D-'+e.df)),cx,by+190+i*52);});
     // 내 기록(이 기기)
     var rec=(typeof visitDays==='function')?('📅 온 날 '+visitDays()+'  🏮 연등 '+(typeof savedLanterns!=='undefined'?savedLanterns.length:0)+'  ✍️ 사경 '+store.get('sagyeong',0)+'  🙏 절 '+store.get('bows',0)+(typeof todayCount!=='undefined'&&todayCount>0?'  👥 오늘 '+todayCount+'명':'')):'';
     g.fillStyle='#8fd3b2';g.font='26px "Gowun Dodum", sans-serif';g.fillText(rec,cx,by+bh2-42);
@@ -1388,7 +1386,6 @@ function panelStone(i){
 // 게시판
 function panelBoard(){
   sTitle.textContent='법회 스크린';
-  sBody.appendChild(el('<div class="box"><h3>오늘의 한 마디</h3><div style="font-family:var(--font-display);font-size:20px">“'+sy[0]+'”</div><div class="note">'+sy[1]+'</div></div>'));
   if(isGuest){sBody.appendChild(lock());}
   else{
     var qbox=el('<div class="box"><h3>오늘의 교리 퀴즈</h3><div id="quiz"></div></div>');sBody.appendChild(qbox);
