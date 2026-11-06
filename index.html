@@ -718,6 +718,11 @@ function renderLotus(){
   });
 }
 
+// 반 전체 연꽃(11-06): 개인 코드로 들어온 사람들의 팔정도 도장 수(st)를 서버에서 모두 합해 연못 옆 표지에 보여 준다
+var classSt={n:0,k:0,ok:false},pondSign=null;
+function setPondSign(){if(pondSign){scene.remove(pondSign);pondSign=null;}var t=classSt.ok?'우리 반 연꽃 '+classSt.n+'송이':'연꽃 연못';var sub=classSt.ok?'함께 핀 사람 '+classSt.k+'명 · 팔정도 도장을 합한 수':'팔정도 도장마다 한 송이';pondSign=label(t,sub,'#d9486f');pondSign.position.set(-13.6,1.8,9.2);pondSign.scale.set(1.6,.63,1);scene.add(pondSign);}
+function fbLoadClass(){if(!(typeof fbOn==='function'&&fbOn()))return Promise.resolve();return fbDb.ref('beopdang/students').once('value').then(function(s){var v=s.val()||{},n=0,k=0,mine=false;Object.keys(v).forEach(function(h){var st=+(v[h]&&v[h].st||0);if(h===SID){mine=true;st=Math.max(st,stampDone.length);}if(st>0){n+=st;k++;}});if(!mine&&stampDone.length){n+=stampDone.length;k++;}classSt={n:n,k:k,ok:true};setPondSign();}).catch(function(){});}
+setPondSign();
 // 소원 연등 거는 곳(왼쪽 벽)
 var standMat=new THREE.MeshStandardMaterial({color:0x6b3e22,roughness:.7});
 // (연등 받침대는 뺐다. 연등은 연이 손에서 천장으로 올라간다)
@@ -731,7 +736,7 @@ function makeLantern(color){
   return g;
 }
 var lanternGroup=new THREE.Group();scene.add(lanternGroup);
-var savedLanterns=store.get('lanterns',[{c:0,w:'우리 가족 모두 건강하게',g:'1학년 3반'},{c:2,w:'모든 생명이 행복하게',g:'4학년 1반'},{c:4,w:'친구들과 사이좋게',g:'2학년 2반'},{c:1,w:'하고 싶은 일을 잘 해내게',g:'6학년 4반'}]);
+var savedLanterns=(function(){var L=store.get('lanterns',[])||[],F=L.filter(function(l){return l&&l.f;});if(F.length!==L.length){store.set('lanterns',F);store.set('lnSent',F.length);}return F;})(); // 견본 연등은 더 걸지 않음(11-06)
 function lanternSpot(i){ // 천장 통로 위로 줄지어 달림
   var row=Math.floor(i/6), col=i%6;
   return new THREE.Vector3(-3.75+col*1.5,H-1.25-(row%2)*.35,-4+row*1.6);
@@ -1171,7 +1176,7 @@ function bowPose(t){
   return{body:0,knee:0,torso:0,arm:'hap'};
 }
 function startBow(){if(bowT<0){bowT=0;bowCounted=false;}}
-function countBow(){questEvent('bow');bows=Math.min(108,bows+1);store.set('bows',bows);showCounts();if(bows===108)toast('108배를 모두 채웠어요!');}
+function countBow(){questEvent('bow');bows=bows+1;if((bow108>=1||bows>=108)){bow108++;store.set('bow108',bow108);bows=0;store.set('bows',0);showCounts();bell();toast('🙏 108배 '+bow108+'번째 완성! 다시 1배부터 이어가요');if(typeof fbSchedule==='function')fbSchedule();return;}store.set('bows',bows);showCounts();}
 var spots={
   altar:{p:new THREE.Vector3(0,0,-5.9),r:1.6,label:'부처님께 다가가기',title:'부처님 앞'},
   lantern:{p:new THREE.Vector3(-4.2,0,8.0),r:1.4,label:'소원 연등 달기',title:'소원 연등'},
@@ -1192,8 +1197,8 @@ document.getElementById('jumpToggle').addEventListener('click',function(){var j=
 var now=new Date(),doy=Math.floor((now-new Date(now.getFullYear(),0,0))/864e5),sy=sayings[doy%sayings.length];
 document.getElementById('sayDate').textContent='오늘의 한 마디 · '+(now.getMonth()+1)+'월 '+now.getDate()+'일';
 document.getElementById('sayQ').textContent='“'+sy[0]+'”';document.getElementById('saySrc').textContent=sy[1];
-var bows=store.get('bows',0),moks=0;
-function showCounts(){document.getElementById('bowCount').textContent=bows+' / 108';document.getElementById('mokCount').textContent=moks+'번';}
+var bows=store.get('bows',0),moks=0,bow108=store.get('bow108',0);
+function showCounts(){document.getElementById('bowCount').textContent=bows+' / 108'+(bow108?' · '+bow108+'회':'');document.getElementById('mokCount').textContent=moks+'번';}
 showCounts();
 var toastEl=document.getElementById('toast'),toastT=null;
 function toast(msg){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){toastEl.classList.remove('on')},1800);}
@@ -1215,7 +1220,7 @@ function panelRecord(){
   sTitle.textContent='내 수행록';
   (function(){var td=todayDone();sBody.appendChild(el('<div class="box" style="background:#f3faf5"><h3>오늘 한 일 '+td.length+'</h3><div class="note">'+(td.length?td.map(function(q){return '✅ '+q.n;}).join('<br>'):'아직 없어요. 절 한 번, 법구경 한 줄부터.')+'</div><div class="note" style="margin-top:6px">법회 모드 마지막 「회향」에서 오늘 한 일을 함께 돌려요.</div></div>'));})();
   var mind=store.get('mind',0),sg=store.get('sagyeong',0),nf=taengFound.filter(function(id){return taeng.some(function(t){return t.id===id&&!t.b})}).length;
-  var rows=[['법당에 온 날',visitDays()+'일'],['팔정도 도장',stampDone.length+' / 8'],['연꽃 연못',stampDone.length+' 송이'],['108배',bows+' / 108'],['내 법당 꾸미기',decor.length+'개'],['3분 마음챙김',mind+'번'],['마음 쉼터',store.get('rest',0)+'번'],['선생님 칭찬 도장',store.get('praise',0)+'번'],['눈 감고 법당 떠올리기',store.get('imagine',0)+'번'],['사경',sg+'번'],['육법공양',offered.length+' / 6'],['켜 둔 연등',savedLanterns.length+'개'],['찾은 동자승',nf+' / '+dongjaCount]];
+  var rows=[['법당에 온 날',visitDays()+'일'],['팔정도 도장',stampDone.length+' / 8'],['연꽃 연못',stampDone.length+' 송이'],['108배',bows+' / 108'+(bow108?' · 완성 '+bow108+'회':'')],['내 법당 꾸미기',decor.length+'개'],['3분 마음챙김',mind+'번'],['마음 쉼터',store.get('rest',0)+'번'],['선생님 칭찬 도장',store.get('praise',0)+'번'],['눈 감고 법당 떠올리기',store.get('imagine',0)+'번'],['사경',sg+'번'],['육법공양',offered.length+' / 6'],['켜 둔 연등',savedLanterns.length+'개'],['찾은 동자승',nf+' / '+dongjaCount]];
   (function(){var ne=nextUnlockEntry();sBody.appendChild(el('<div class="box" style="background:#f6f0ff"><h3>🏷️ 지금 칭호 · '+myTitle()+'</h3><div class="note">칭호는 한 일에 따라 저절로 바뀌어요. '+(ne?'다음 열림까지 '+(ne.d-visitDays())+'일.':'다 열렸어요.')+'</div></div>'));})();
   var box=el('<div class="box"><h3>'+(now0.getMonth()+1)+'월 '+now0.getDate()+'일까지</h3><div class="rank"></div></div>');
   rows.forEach(function(r){box.querySelector('.rank').appendChild(el('<div class="r" style="grid-template-columns:1fr auto"><span>'+r[0]+'</span><span class="n" style="font-family:var(--font-display);color:var(--leaf)">'+r[1]+'</span></div>'));});
@@ -1269,8 +1274,8 @@ document.getElementById('gateForm').addEventListener('submit',function(e){
   var c=norm(gateCode.value);
   if(!c){gateMsg.textContent='회원증 뒷면의 코드를 넣어 주세요.';return;}
   sha(c).then(function(h){
-    if(STUDENT_HASHES.indexOf(h)>-1){store.set('sid',h);enterAs(h,'child');} // 학생 개인 코드: 서버 동기화
-    else if(STAFF_HASHES.indexOf(h)>-1){store.set('sid',h);enterAs(h,'teacher');} // 교직원 개인 코드: 어른 화면 + 서버 동기화
+    if(STUDENT_HASHES.indexOf(h)>-1){var nw=store.get('sid',null)!==h;store.set('sid',h);store.set('member',h);store.set('role','child');if(nw){location.reload();return;}enterAs(h,'child');} // 학생 개인 코드: 서버 동기화
+    else if(STAFF_HASHES.indexOf(h)>-1){var nw=store.get('sid',null)!==h;store.set('sid',h);store.set('member',h);store.set('role','teacher');if(nw){location.reload();return;}enterAs(h,'teacher');} // 교직원 개인 코드: 어른 화면 + 서버 동기화
     else if(MEMBER_HASHES.indexOf(h)>-1){store.set('sid',null);enterAs(h,'child');}
     else if(ADULT_HASHES.indexOf(h)>-1){store.set('sid',null);enterAs(h,'adult');}
     else if(TEACHER_HASHES.indexOf(h)>-1){store.set('sid',null);enterAs(h,'teacher');}
@@ -1324,7 +1329,7 @@ function panelAltar(){
   sBody.appendChild(ob);
   var box=el('<div class="box"><h3>3분 마음챙김</h3><div class="note">원이 커지면 들이쉬고, 작아지면 내쉬어요.</div><div class="orbwrap"><div class="orb" id="orb"></div><div class="orbl" id="orbl">준비</div></div><div class="row" style="justify-content:space-between"><div class="row"><button class="btn" id="bStart">시작하기</button><button class="btn ghost" id="bStop" disabled>그만하기</button></div><span class="timer" id="bTime">3:00</span></div></div>');
   sBody.appendChild(box);
-  sBody.appendChild(el('<div class="box"><h3>108배 함께 채우기</h3><div class="bar"><i style="width:'+(bows/108*100)+'%"></i></div><div class="note" style="margin-top:6px">지금까지 '+bows+'배. 아래 절하기 버튼으로 한 번씩 절해요.</div></div>'));
+  sBody.appendChild(el('<div class="box"><h3>108배 함께 채우기</h3><div class="bar"><i style="width:'+(bows/108*100)+'%"></i></div><div class="note" style="margin-top:6px">지금까지 '+(bow108?'108배 '+bow108+'회 완성, 이어서 ':'')+bows+'배. 아래 절하기 버튼으로 한 번씩 절해요.</div></div>'));
   var left=180,inh=false,orb=box.querySelector('#orb'),ol=box.querySelector('#orbl'),bt=box.querySelector('#bTime'),bS=box.querySelector('#bStart'),bP=box.querySelector('#bStop');
   function fmt(x){return Math.floor(x/60)+':'+String(x%60).padStart(2,'0');}
   function br(){inh=!inh;orb.classList.toggle('in',inh);ol.textContent=inh?'들이쉬고':'내쉬고';}
@@ -1378,7 +1383,7 @@ function panelStone(i){
     var pb=el('<div class="box" style="background:#fff5f8"><h3>이번 주 실천 '+Math.min(NEED,wdays.length)+' / '+NEED+'일</h3><div class="note">이번 주 약속을 하루 한 번 체크해요. <b>'+NEED+'일</b>이 되면 이 액자 도장을 받아요. 읽기만으로는 안 돼요.</div><div class="row" style="gap:6px;margin:8px 0">'+[0,1,2].map(function(k){return '<span style="width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:'+(k<wdays.length?'#d9486f':'#f1e4e8')+';color:#fff">'+(k<wdays.length?'✓':'')+'</span>'}).join('')+'</div></div>');
     var b=el('<button class="btn pink"'+(todayDone?' disabled':'')+'>'+(todayDone?'오늘은 체크했어요 · 내일 또':'✅ 오늘 "'+p[3]+'" 실천했어요')+'</button>');
     b.addEventListener('click',function(){if(todayDone)return;days.push(wk+':'+todayKey);pd[i]=days;store.set('pathDays',pd);var n=days.filter(function(d){return d.indexOf(wk+':')===0}).length;questEvent('wall');
-      if(n>=NEED&&stampDone.indexOf(i)<0){stampDone.push(i);store.set('stamps',stampDone);paintStones();bell();toast(p[0]+' 도장! 한 주 동안 실천한 힘이에요');}else{moktak();toast('오늘 실천 체크 '+Math.min(NEED,n)+' / '+NEED);}
+      if(n>=NEED&&stampDone.indexOf(i)<0){stampDone.push(i);store.set('stamps',stampDone);paintStones();bell();if(typeof renderLotus==='function')renderLotus();if(typeof fbSchedule==='function')fbSchedule();toast(p[0]+' 도장! 한 주 동안 실천한 힘이에요');}else{moktak();toast('오늘 실천 체크 '+Math.min(NEED,n)+' / '+NEED);}
       openSpot('stone'+i);});
     pb.appendChild(b);sBody.appendChild(pb);
   } else sBody.appendChild(el('<div class="note" style="margin-bottom:8px">'+(has?'이 길의 도장은 이미 받았어요. ':'')+'도장은 <b>이번 주 팔정도</b>('+paths[weekIdx][0]+') 액자에서 한 주 실천으로 받아요. 이 액자는 읽어 두기.</div>'));
@@ -1457,12 +1462,8 @@ function panelPond(){questEvent('pond');
   sTitle.textContent='연꽃 연못';
   sBody.appendChild(el('<div class="box"><h3>내 연못에 핀 연꽃 '+stampDone.length+' / 8</h3>팔정도 액자에서 도장을 하나 받을 때마다 연꽃이 한 송이씩 피어요. 연꽃은 진흙에서 피어도 물들지 않아요. 우리 동아리 이름 연화(蓮華)가 바로 연꽃이에요.</div>'));
   var b=el('<button class="btn">팔정도 길로 가기</button>');b.addEventListener('click',function(){closeSheet();goTo('path');});sBody.appendChild(b);
-  var data=[];for(var k in classLotus)data.push([k,classLotus[k]+(k===myClass?stampDone.length:0)]);
-  data.sort(function(a,b){return b[1]-a[1]});var max=data[0][1];
-  var box=el('<div class="box"><h3>반 대항 연꽃 연못</h3><div class="note" style="margin-bottom:8px">우리 반 친구들이 받은 팔정도 도장만큼 연꽃이 피어요. 이번 달 연꽃이 가장 많이 핀 반은 법회 때 연등을 먼저 켜요.</div><div class="rank"></div></div>');
-  data.forEach(function(d,i){box.querySelector('.rank').appendChild(el('<div class="r'+(d[0]===myClass?' me':'')+'"><span>'+(i+1)+'. '+d[0].replace('학년 ','-').replace('반','')+(d[0]===myClass?' 우리반':'')+'</span><span class="b"><i style="width:'+(d[1]/max*100)+'%"></i></span><span class="n">'+d[1]+'</span></div>'));});
-  box.appendChild(el('<div class="note" style="margin-top:8px">시안: 다른 반 숫자는 예시이고, 우리 반에는 내 도장 '+stampDone.length+'개만 더해져요. 실제로 반별 숫자가 모이려면 공유 저장이 필요해요.</div>'));
-  sBody.appendChild(box);
+  var cb=el('<div class="box"><h3>우리 반 연꽃 연못 · '+myClass+'</h3><div class="note" id="pondClass">'+((typeof fbOn==='function'&&fbOn())?'서버에서 세는 중…':'개인 코드로 들어오면 반 친구들의 연꽃을 합해서 보여 줘요.')+'</div></div>');sBody.appendChild(cb);
+  if(typeof fbOn==='function'&&fbOn()){fbLoadClass().then(function(){var e=cb.querySelector('#pondClass');if(e)e.innerHTML='<b style="font-size:22px;color:var(--lotus)">🌸 '+classSt.n+'송이</b><br>함께 핀 사람 '+classSt.k+'명 · 개인 코드로 들어온 반 친구와 선생님의 팔정도 도장을 모두 합한 수예요. 연못 옆 표지에도 보여요.';});}
 }
 /* ---------------- 탱화 속 동자승 찾기 ----------------
    좌표는 정면 사진(1600×948) 기준 */
@@ -1518,7 +1519,7 @@ function panelTaeng(){
 }
 
 /* ---------------- 반 대항 연꽃 (시안: 예시 숫자 + 내 도장) ---------------- */
-var myClass='6학년 2반';
+var myClass='6학년 3반';
 var classLotus={'6학년 1반':42,'6학년 2반':37,'6학년 3반':51,'6학년 4반':29,'6학년 5반':33,'5학년 1반':47,'5학년 3반':40,'4학년 2반':55,'3학년 1반':61,'2학년 4반':58};
 
 /* ---------------- 기념일마다 바뀌는 법당 ----------------
@@ -1610,11 +1611,11 @@ function panelGuide(){
     sBody.appendChild(hb);})();
   (function(){var ab=el('<div class="box" style="background:#f6f0ff"><h3>🖼️ 탱화 깨우기 (시안)</h3><div class="note">조명이 잦아들고 탱화가 세 겹으로 열리며 관세음보살이 내려와요. 그 다음 「가까이 뵙기」로 부처님 친견. 시안이라 조건 없이 열려요.</div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn pink sm" id="gAwake">탱화 깨우기</button><button class="btn ghost sm" id="gGaze">부처님 친견만 보기</button></div></div>');
     ab.querySelector('#gAwake').addEventListener('click',function(){startAwake();});ab.querySelector('#gGaze').addEventListener('click',function(){startGaze();});sBody.appendChild(ab);})();
-  if(isAdmin){var fbx=el('<div class="box" style="background:#eef6ff"><h3>🧪 서버 시험 (6-2 코드 32개 · 교직원 코드 25개)</h3><div class="note">개인 코드로 들어온 기기의 기록이 서버(praise-stars-63)에 저장돼요. 코드표: 교학부 폴더 「연화법당 학생코드_6-2_시험.csv」·「연화법당 교직원코드_시범25.csv」. 연결 상태: '+(typeof fbState!=='undefined'?fbState:'-')+'</div><button class="btn ghost sm" style="margin-top:8px">반 현황 불러오기</button><div class="rank" style="margin-top:8px"></div></div>');
+  if(isAdmin){var fbx=el('<div class="box" style="background:#eef6ff"><h3>🧪 서버 시험 (6-3 코드 32개 · 교직원 코드 25개)</h3><div class="note">개인 코드로 들어온 기기의 기록이 서버(praise-stars-63)에 저장돼요. 코드표: 교학부 폴더 「연화법당 학생코드_6-3_시험.csv」·「연화법당 교직원코드_시범25.csv」. 연결 상태: '+(typeof fbState!=='undefined'?fbState:'-')+'</div><button class="btn ghost sm" style="margin-top:8px">반 현황 불러오기</button><div class="rank" style="margin-top:8px"></div></div>');
     fbx.querySelector('button').addEventListener('click',function(){if(!fbDb){toast('서버 연결이 안 됐어요');return;}fbDb.ref('beopdang/students').once('value').then(function(s){var v=s.val()||{},rk=fbx.querySelector('.rank');rk.innerHTML='';var keys=Object.keys(v);if(!keys.length)rk.innerHTML='<div class="note">아직 아무도 안 들어왔어요</div>';keys.sort(function(a,b){return STUDENT_HASHES.indexOf(a)-STUDENT_HASHES.indexOf(b)}).forEach(function(h){var d=v[h],n=STUDENT_HASHES.indexOf(h)+1,sn=STAFF_HASHES.indexOf(h)+1;rk.appendChild(el('<div class="r"><span>'+(n?n+'번':sn?'교사'+sn:'?')+'</span><b>'+(d.days||0)+'일 · 절 '+(d.bows||0)+' · 사경 '+(d.sg||0)+' · 연등 '+(d.ln||0)+'</b></div>'));});}).catch(function(e){toast('불러오기 실패: '+e.message);});});
     var mb=el('<button class="btn ghost sm" style="margin-top:8px">공유 글 보기 (연등·낙서, 누구 것인지)</button>');mb.addEventListener('click',function(){if(!fbDb){toast('서버 연결이 안 됐어요');return;}function who(s8){var i=-1;STUDENT_HASHES.forEach(function(h,k){if(h.indexOf(s8)===0)i=k;});if(i>-1)return (i+1)+'번';var j=-1;STAFF_HASHES.forEach(function(h,k){if(h.indexOf(s8)===0)j=k;});return j>-1?'교사'+(j+1):(s8||'?');}
       Promise.all([fbDb.ref('beopdang/lanterns').limitToLast(40).once('value'),fbDb.ref('beopdang/garden/notes').limitToLast(40).once('value'),fbLoadMod()]).then(function(rs){var rk=fbx.querySelector('.rank');rk.innerHTML='';var L=rs[0].val()||{},N=rs[1].val()||{};
-        Object.keys(L).reverse().forEach(function(k){var x=L[k],hid=!!fbHidden.lanterns[k];var row=el('<div class="r" style="grid-template-columns:auto 1fr auto'+(hid?';opacity:.45':'')+'"><span style="color:#d9486f;white-space:nowrap">🏮 '+who(x.s)+'</span><span>'+(x.w||'')+(x.to?' · '+x.to:'')+'</span><button class="btn ghost sm">'+(hid?'숨김':'숨기기')+'</button></div>');row.querySelector('button').addEventListener('click',function(){var b=this;fbDb.ref('beopdang/mod/lanterns/'+k).set(!hid).then(function(){fbHidden.lanterns[k]=!hid;b.textContent=!hid?'숨김':'숨기기';row.style.opacity=!hid?.45:1;toast(!hid?'숨겼어요. 다음부터 아무 천장에도 안 걸려요':'다시 보여요');}).catch(function(e){toast('안 돼요: 규칙에 mod를 아직 안 넣었어요');});});rk.appendChild(row);});
+        Object.keys(L).reverse().forEach(function(k){var x=L[k],hid=!!fbHidden.lanterns[k];var row=el('<div class="r" style="grid-template-columns:auto 1fr auto'+(hid?';opacity:.45':'')+'"><span style="color:#d9486f;white-space:nowrap">🏮 '+who(x.s)+'</span><span>'+(x.w||'')+(x.to?' · '+x.to:'')+'</span><button class="btn ghost sm">'+(hid?'숨김':'숨기기')+'</button></div>');row.querySelector('button').addEventListener('click',function(){var b=this;fbDb.ref('beopdang/mod/lanterns/'+k).set(!hid).then(function(){fbHidden.lanterns[k]=!hid;b.textContent=!hid?'숨김':'숨기기';row.style.opacity=!hid?.45:1;toast(!hid?'숨겼어요':'다시 보여요');}).catch(function(e){toast('안 돼요: 규칙에 mod를 아직 안 넣었어요');});});rk.appendChild(row);});
         Object.keys(N).reverse().forEach(function(k){var x=N[k];if(x.s==='test')return;var hid=!!fbHidden.notes[k];var row=el('<div class="r" style="grid-template-columns:auto 1fr auto'+(hid?';opacity:.45':'')+'"><span style="color:#8a4fa8;white-space:nowrap">✍️ '+who(x.s)+'</span><span>'+(x.a||'')+(x.b?' → '+x.b:'')+'</span><button class="btn ghost sm">'+(hid?'숨김':'숨기기')+'</button></div>');row.querySelector('button').addEventListener('click',function(){var b=this;fbDb.ref('beopdang/mod/notes/'+k).set(!hid).then(function(){fbHidden.notes[k]=!hid;b.textContent=!hid?'숨김':'숨기기';row.style.opacity=!hid?.45:1;toast(!hid?'숨겼어요':'다시 보여요');}).catch(function(e){toast('안 돼요: 규칙에 mod를 아직 안 넣었어요');});});rk.appendChild(row);});
         if(!rk.children.length)rk.innerHTML='<div class="note">아직 공유된 글이 없어요</div>';}).catch(function(e){toast('불러오기 실패: '+e.message);});});
     fbx.appendChild(mb);
@@ -2485,7 +2486,7 @@ function panelQuest(){
 }
 // --- 뱃지 ---
 function badges(){var nf=taengFound.length;return [
- ['🙏','첫 절',bows>=1],['💯','백팔배 완성',bows>=108],['☸️','팔정도 여덟 액자',stampDone.length>=8],['✍️','사경 열 줄',store.get('sagyeong',0)>=10],
+ ['🙏','첫 절',bows>=1],['💯','백팔배 완성',(bow108>=1||bows>=108)],['☸️','팔정도 여덟 액자',stampDone.length>=8],['✍️','사경 열 줄',store.get('sagyeong',0)>=10],
  ['🏮','첫 연등',savedLanterns.length>=1],['🌿','마음 쉼터 첫 방문',store.get('rest',0)>=1],['🧘','마음챙김 다섯 번',store.get('mind',0)>=5],['🏠','꾸미기 열 개',decor.length>=10],
  ['📅','법당 '+dayN(7)+'일',visitDays()>=dayN(7)],['🌙','법당 '+dayN(30)+'일',visitDays()>=dayN(30)],['🚪','비밀 정원 발견',secretOpen],['🧒','하루에 다섯 가지',todayDone().length>=5],['🪷','참회 세 번',cham.n>=3],['🪨','오계 지킴이',gyeKept.slice(0,5).every(function(n){return n>=3})],['🔍','탱화 동자승 다 찾기',nf>=dongjaCount&&dongjaCount>0]
 ];}
@@ -2498,7 +2499,7 @@ function calendarBox(){var y=now0.getFullYear(),m=now0.getMonth();var first=new 
   for(var d=1;d<=days;d++){var on=visits.indexOf(y+'-'+(m+1)+'-'+d)>-1;html+='<div style="padding:5px 0;border-radius:8px;'+(on?'background:#f7b3c6;color:#7a1f38;font-weight:700':'background:#f4f1ea;color:#999')+'">'+(on?'🪷':d)+'</div>';}
   return el(html+'</div><div class="note" style="margin-top:6px">하루에 몇 번 와도 하루. 연꽃이 핀 날이 법당에 온 날이에요.</div></div>');}
 // --- 칭호 ---
-function myTitle(){if(isAdmin)return '교법사';if(isTeacher)return visitDays()>=dayN(30)?'꾸준한 선생님':'선생님';if(isAdult){return visitDays()>=dayN(30)?'꾸준한 보살님':(bows>=108?'백팔배 보살님':(stampDone.length>=8?'팔정도 보살님':'연화회 보살님'));}if(visitDays()>=30)return '꾸준한 연화 어린이';if(bows>=108)return '백팔배 수행자';if(gyeKept.slice(0,5).every(function(n){return n>=3}))return '오계 지킴이';if(stampDone.length>=8)return '팔정도 길잡이';if(questDays.length>=3)return '동자승의 친구';if(store.get('rest',0)>=3)return '마음을 아는 어린이';if(visitDays()>=7)return '일주일 연화 어린이';return '연화 어린이';}
+function myTitle(){if(isAdmin)return '교법사';if(isTeacher)return visitDays()>=dayN(30)?'꾸준한 선생님':'선생님';if(isAdult){return visitDays()>=dayN(30)?'꾸준한 보살님':((bow108>=1||bows>=108)?'백팔배 보살님':(stampDone.length>=8?'팔정도 보살님':'연화회 보살님'));}if(visitDays()>=30)return '꾸준한 연화 어린이';if((bow108>=1||bows>=108))return '백팔배 수행자';if(gyeKept.slice(0,5).every(function(n){return n>=3}))return '오계 지킴이';if(stampDone.length>=8)return '팔정도 길잡이';if(questDays.length>=3)return '동자승의 친구';if(store.get('rest',0)>=3)return '마음을 아는 어린이';if(visitDays()>=7)return '일주일 연화 어린이';return '연화 어린이';}
 // --- 놀이터: 목탁 리듬 (짝 맞추기는 11-05 정리 때 뺌, pairGame 코드만 남김) ---
 var playRaf=null;
 function stopPlay(){if(playRaf){cancelAnimationFrame(playRaf);playRaf=null;}}
@@ -2647,7 +2648,8 @@ var UNLOCKS=[
 ];
 UNLOCKS.forEach(function(u){u.d=dayN(u.d);});
 var LOCK_NAME={sagyeong:'사경대',lantern:'소원 연등',deco:'꾸미기',vow:'내 원력 족자',pet:'동반자 동물',dhp:'오늘의 법구경',play:'놀이터',samul:'사물 네 가지',ogye:'오계',samgwi:'삼귀의 글판',life:'부처님 생애 그림책',study:isAdult?'경전 공부방':'나란다 공부방',garden:'비밀 정원',cham:'참회의 자리',awake:'탱화가 깨어나는 밤'};
-function needDay(k){for(var i=0;i<UNLOCKS.length;i++)if(UNLOCKS[i].keys.indexOf(k)>-1)return UNLOCKS[i].d;return 1;}
+function isStaff(){return !!(SID&&typeof STAFF_HASHES!=='undefined'&&STAFF_HASHES.indexOf(SID)>-1);}
+function needDay(k){if(k==='lantern'&&isStaff())return 1;for(var i=0;i<UNLOCKS.length;i++)if(UNLOCKS[i].keys.indexOf(k)>-1)return UNLOCKS[i].d;return 1;}
 function isOpen(k){return visitDays()>=needDay(k);}
 function nextUnlockEntry(){var dd=visitDays();for(var i=0;i<UNLOCKS.length;i++)if(UNLOCKS[i].d>dd)return UNLOCKS[i];return null;}
 var SPOT_LOCK={sagyeong:'sagyeong',lantern:'lantern',play:'play',study:'study',vow:'vow'};
@@ -3005,10 +3007,11 @@ var SID=store.get('sid',null),fbDb=null,fbUid=null,fbRev=store.get('rev',0),fbTi
 function fbOn(){return !!(fbDb&&fbUid&&SID);}
 function collectStore(){var o={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k.indexOf('yeon3d-')!==0)continue;var s=k.slice(7);if(s==='sid'||s==='member'||s==='role'||s==='rev'||s==='lnSent'||s==='viewAs')continue;o[s]=localStorage.getItem(k);}return o;}
 function fbSave(){if(!fbOn())return;var rev=Date.now();fbRev=rev;store.set('rev',rev);var L=store.get('lanterns',[])||[];if(fbLnSent===null){fbLnSent=L.length;store.set('lnSent',fbLnSent);} // 처음엔 지금 있는 연등(견본 포함)은 안 올림
-  fbDb.ref('beopdang/students/'+SID).set({rev:rev,store:collectStore(),days:visitDays(),bows:store.get('bows',0),sg:store.get('sagyeong',0),ln:L.length,t:firebase.database.ServerValue.TIMESTAMP}).then(function(){fbState='ok';}).catch(function(e){fbState='err';console.warn('fb save',e);});
+  fbDb.ref('beopdang/students/'+SID).set({rev:rev,store:collectStore(),days:visitDays(),bows:store.get('bows',0)+108*store.get('bow108',0),st:stampDone.length,sg:store.get('sagyeong',0),ln:L.length,t:firebase.database.ServerValue.TIMESTAMP}).then(function(){fbState='ok';}).catch(function(e){fbState='err';console.warn('fb save',e);});
   if(L.length>fbLnSent){var n=L[0];if(n&&n.w){fbDb.ref('beopdang/lanterns').push({c:n.c|0,w:String(n.w).slice(0,40),g:String(n.g||'').slice(0,12),f:n.f||'self',to:String(n.to||'').slice(0,12),ts:Date.now(),s:SID.slice(0,8)}).catch(function(){});}fbLnSent=L.length;store.set('lnSent',fbLnSent);}}
 function fbSchedule(){if(!fbOn())return;clearTimeout(fbTimer);fbTimer=setTimeout(fbSave,6000);}
-function fbLoadLanterns(){var me=SID.slice(0,8),t0=Date.now();fbLoadMod().then(function(){fbDb.ref('beopdang/lanterns').orderByChild('ts').startAt(t0).on('child_added',function(s){var x=s.val();if(!x||x.s===me)return;x.k=s.key;if(fbHidden.lanterns[x.k])return;sharedLanterns.unshift(x);if(sharedLanterns.length>36)sharedLanterns.pop();if(typeof renderLanterns==='function')renderLanterns();chime();toast('친구가 연등을 달았어요 — '+x.w);}); // 지금부터 새로 달리는 연등은 바로 보임
+var SHOW_SHARED_LANTERNS=false; // 11-06 결정: 각자 법당에는 각자 연등만(서버에는 올려 교법사 「공유 글 보기」로만 확인)
+function fbLoadLanterns(){if(!SHOW_SHARED_LANTERNS)return;var me=SID.slice(0,8),t0=Date.now();fbLoadMod().then(function(){fbDb.ref('beopdang/lanterns').orderByChild('ts').startAt(t0).on('child_added',function(s){var x=s.val();if(!x||x.s===me)return;x.k=s.key;if(fbHidden.lanterns[x.k])return;sharedLanterns.unshift(x);if(sharedLanterns.length>36)sharedLanterns.pop();if(typeof renderLanterns==='function')renderLanterns();chime();toast('친구가 연등을 달았어요 — '+x.w);}); // 지금부터 새로 달리는 연등은 바로 보임
   fbDb.ref('beopdang/lanterns').limitToLast(60).once('value').then(function(s){var v=s.val()||{};sharedLanterns=Object.keys(v).map(function(k){var x=v[k];if(x)x.k=k;return x;}).filter(function(x){return x&&x.s!==me&&x.ts>1793927000000&&!fbHidden.lanterns[x.k];}).sort(function(a,b){return b.ts-a.ts;}).slice(0,36);if(typeof renderLanterns==='function')renderLanterns();}).catch(function(){});}
   );}
 function fbToday(){var r=fbDb.ref('beopdang/today/'+todayKey);r.child(SID).set(true).then(function(){return r.once('value');}).then(function(s){todayCount=s.numChildren();if(typeof drawBoard==='function')drawBoard();}).catch(function(){});}
@@ -3016,7 +3019,7 @@ function fbLoad(){fbDb.ref('beopdang/students/'+SID).once('value').then(function
   if(v&&v.rev>fbRev&&v.store){for(var k in v.store){try{localStorage.setItem('yeon3d-'+k,v.store[k]);}catch(e){}}store.set('rev',v.rev);toast('다른 기기에서 쌓은 기록을 가져왔어요');setTimeout(function(){location.reload();},1500);return;}
   fbState='ok';fbToday();fbLoadLanterns();fbSchedule();}).catch(function(e){fbState='err';console.warn('fb load',e);});}
 (function(){if((!SID&&!isAdmin)||!window.firebase||!firebase.initializeApp)return;try{firebase.initializeApp(FB_CFG);fbDb=firebase.database();fbState='auth';
-  firebase.auth().signInAnonymously().then(function(u){fbUid=u.user.uid;if(SID)fbLoad();else fbState='ok';}).catch(function(e){fbState='err';console.warn('fb auth',e);});
+  firebase.auth().signInAnonymously().then(function(u){fbUid=u.user.uid;if(SID)fbLoad();else fbState='ok';setTimeout(fbLoadClass,2500);}).catch(function(e){fbState='err';console.warn('fb auth',e);});
   var _set=store.set;store.set=function(k,v){_set(k,v);if(k!=='rev'&&k!=='lnSent')fbSchedule();};
   window.addEventListener('pagehide',function(){if(fbTimer){clearTimeout(fbTimer);fbTimer=null;fbSave();}});
 }catch(e){fbState='err';console.warn('fb init',e);}})();
