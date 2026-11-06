@@ -3046,7 +3046,7 @@ function paintGBoard(){drawGBoard(gBoardTex.image.getContext('2d'),gBoardTex.ima
 function gardenVisit(){ // 첫 방문 번호 받기
   if(gardenNo>0)return;if(typeof fbOn==='function'&&fbOn()){var r=fbDb.ref('beopdang/garden/visitors');r.once('value').then(function(s){var n=s.numChildren()+1;return r.child(SID).set({no:n,ts:Date.now()}).then(function(){gardenNo=n;store.set('gardenNo',n);});}).catch(function(){});}
   else{gardenNo=1;store.set('gardenNo',1);}}
-function loadGNotes(){if(!(typeof fbOn==='function'&&fbOn()))return;fbDb.ref('beopdang/garden/notes').limitToLast(30).once('value').then(function(s){var v=s.val()||{};gNotesAll=Object.keys(v).map(function(k){return v[k];}).sort(function(a,b){return b.ts-a.ts;});paintGBoard();}).catch(function(){});}
+function loadGNotes(){if(!(typeof fbOn==='function'&&fbOn()))return;fbDb.ref('beopdang/garden/notes').limitToLast(30).once('value').then(function(s){var v=s.val()||{};gNotesAll=Object.keys(v).map(function(k){return v[k];}).filter(function(x){return x&&x.s!=='test';}).sort(function(a,b){return b.ts-a.ts;});paintGBoard();}).catch(function(){});}
 function openGraffiti(){sBody.innerHTML='';sTitle.textContent='비밀 정원 낙서판';currentSpot='graffiti';gardenVisit();loadGNotes();
   sBody.appendChild(el('<div class="box" style="background:#f6f0ff"><h3>'+(gardenNo>0?'너는 '+gardenNo+'번째 방문자':'비밀 정원 방문자')+'</h3><div class="note">'+SECRET_DAYS+'일 동안 법당에 온 사람만 이 벽을 봐요. 이름은 쓰지 않아요.</div></div>'));
   var wrote=gNotes.some(function(n){return n.d===todayKey});
