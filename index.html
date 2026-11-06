@@ -1152,9 +1152,9 @@ function faceRoom(){ // 코앞(1.4m)이 벽이면 방 가운데를 보게. 불�
 }
 function clampPos(p){
   if(p.z>5.35&&p.z<6.65&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(5.35,Math.min(6.65,p.z));return;} // 출입문 문턱
-  if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));return;} // 마당
+  if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));[[-17.8,7.0,2.0],[-13.6,9.2,1.7]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 마당(범종각·연못은 못 들어감)
   if(secretOpen&&p.z>1.95&&p.z<3.25&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(1.95,Math.min(3.25,p.z));return;} // 문턱
-  if(secretOpen&&p.x<-hx){p.x=Math.max(-14.5+.6,p.x);p.z=Math.max(.5,Math.min(4.5,p.z));return;} // 비밀 정원 안
+  if(secretOpen&&p.x<-hx){p.x=Math.max(-14.5+.6,p.x);p.z=Math.max(.5,Math.min(4.5,p.z));if(p.x<-13.3&&p.z>1.3&&p.z<3.7)p.x=-13.3;[[GC.x,GC.z,.75],[-8.4,4.0,.75]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 비밀 정원 안(기도터 상·수반·돌탑은 못 들어감)
   p.x=Math.max(-hx+.6,Math.min(hx-.6,p.x));p.z=Math.max(-hz+2.0,Math.min(hz-.7,p.z));}
 var walkT=0, hapAnim=0, bowT=-1, bowCounted=false, mokT=0, mokHit=0, mokSeq=0, mokNext=0, BOW_END=4.0;
 /* 절: 절에서 하는 큰절 순서 — 합장 → 무릎 꿇기 → 엎드려 이마 대기 → 손바닥 올리기(접족례) → 상체 세우기 → 일어나 합장 */
@@ -2127,7 +2127,7 @@ var GC={x:-10.4,z:2.3}; // 정원 가운데(나무·걷기 길)
   var ptop=new THREE.Mesh(new THREE.BoxGeometry(1.8,.06,.6),new THREE.MeshStandardMaterial({color:0xb5aea2,roughness:.85}));ptop.position.set(-13.9,.53,2.5);ptop.rotation.y=Math.PI/2;g.add(ptop);
   var bud=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),new THREE.MeshStandardMaterial({color:0xe9e2d2,roughness:.6}));bud.position.set(-14.05,.75,2.5);bud.scale.set(.7,1.2,.7);g.add(bud);
   g.add(gCandleGroup);
-  var psign=label('기도터','누군가를 위해 불 밝히기','#8a4fa8');psign.position.set(-13.7,2.0,2.5);psign.scale.set(1.2,.47,1);g.add(psign);
+  var psign=label('기도터','누군가를 위해 불 밝히기','#8a4fa8');psign.position.set(-14.4,2.4,2.5);psign.scale.set(1.2,.47,1);g.add(psign);
   // 마음 돌탑(앞쪽 구석)
   var tb=new THREE.Mesh(new THREE.CylinderGeometry(.42,.46,.08,12),new THREE.MeshStandardMaterial({color:0x8f8a80,roughness:.95}));tb.position.set(-8.4,.04,4.0);g.add(tb);gTowerGroup.position.set(-8.4,.08,4.0);g.add(gTowerGroup);
   var tsign=label('마음 돌탑','하루에 돌 하나','#2d7356');tsign.position.set(-8.4,1.9,4.0);tsign.scale.set(1.0,.39,1);g.add(tsign);
