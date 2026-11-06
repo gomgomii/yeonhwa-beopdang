@@ -454,6 +454,9 @@ floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
 var wallMat=new THREE.MeshStandardMaterial({color:0xf3efe8,roughness:.95});
 function wall(w,h,x,y,z,ry,mat){var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat||wallMat);m.position.set(x,y,z);m.rotation.y=ry;scene.add(m);return m;}
 wall(hz+5.3,H,-hx,H/2,(-hz+5.3)/2,Math.PI/2);wall(hz-6.7,H,-hx,H/2,(6.7+hz)/2,Math.PI/2);wall(1.4,H-2.7,-hx,2.7+(H-2.7)/2,6.0,Math.PI/2); // 왼쪽 벽: z 5.3~6.7은 출입문
+// 왼쪽 벽의 바깥 면(11-06): 마당·정원에서 법당을 볼 때 한쪽 면만 그린 벽이 뚫려 보이던 것을 막는다. 문(z 5.3~6.7)만 비움
+var outMat=new THREE.MeshStandardMaterial({color:0xe8e1d4,roughness:.95});
+wall(hz+5.3,H,-hx-.03,H/2,(-hz+5.3)/2,-Math.PI/2,outMat);wall(14.3-6.7,H,-hx-.03,H/2,(6.7+14.3)/2,-Math.PI/2,outMat);wall(1.4,H-2.7,-hx-.03,2.7+(H-2.7)/2,6.0,-Math.PI/2,outMat);
 wall(D,H,hx,H/2,0,-Math.PI/2);
 wall(W,H,0,H/2,-hz,0,new THREE.MeshStandardMaterial({color:0x6b3e22,roughness:.8}));
 wall(W,H,0,H/2,hz,Math.PI);
@@ -638,9 +641,9 @@ var offerings=[
   {k:'cha',n:'차',t:'감로다',m:'맑은 차가 목마름을 풀어 주듯, 맑은 마음을 올려요. 다례 시간에 배운 두 손 예절로 올려요.'},
   {k:'ssal',n:'쌀',t:'선열미',m:'쌀이 몸의 양식이듯, 부지런한 수행은 마음의 양식이 돼요.'}
 ];
-var offerSlots=[-4.4,-2.4,-.8,.8,2.4,4.4];
+var offerSlots=[0,-4.4,-2.6,2.6,-1.2,1.2]; // 11-06: 향이 가운데(배열 순서 향·등·꽃·과일·차·쌀)
 var offerGroup=new THREE.Group();scene.add(offerGroup);
-var offered=store.get('offered',[]);
+var _tk=now0.getFullYear()+'-'+(now0.getMonth()+1)+'-'+now0.getDate();var offered=(store.get('offeredDay','')===_tk)?(store.get('offered',[])||[]):[];if(store.get('offeredDay','')!==_tk){store.set('offeredDay',_tk);store.set('offered',[]);} // 육법공양은 날마다 새로 올린다(11-06)
 var smoke=[];
 function mat(c,e){return new THREE.MeshStandardMaterial({color:c,roughness:.6,emissive:e||0x000000});}
 function lathe(pts,m,seg){return new THREE.Mesh(new THREE.LatheGeometry(pts.map(function(p){return new THREE.Vector2(p[0],p[1]);}),seg||28),m);}
@@ -686,7 +689,7 @@ function buildOffering(k){
 }
 
 function renderOfferings(){
-  while(offerGroup.children.length)offerGroup.remove(offerGroup.children[0]);smoke=[];
+  while(offerGroup.children.length)offerGroup.remove(offerGroup.children[0]);smoke=[];if(typeof bowl!=='undefined')bowl.position.x=offered.indexOf('hyang')>-1?4.4:0;
   offerings.forEach(function(o,i){if(offered.indexOf(o.k)<0)return;var m=buildOffering(o.k);m.userData.k=o.k;m.position.set(offerSlots[i],.9,-hz+1.25);m.scale.setScalar(1.6);offerGroup.add(m);});
 }
 renderOfferings();
@@ -1176,7 +1179,7 @@ function bowPose(t){
   return{body:0,knee:0,torso:0,arm:'hap'};
 }
 function startBow(){if(bowT<0){bowT=0;bowCounted=false;}}
-function countBow(){questEvent('bow');bows=bows+1;if((bow108>=1||bows>=108)){bow108++;store.set('bow108',bow108);bows=0;store.set('bows',0);showCounts();bell();toast('🙏 108배 '+bow108+'번째 완성! 다시 1배부터 이어가요');if(typeof fbSchedule==='function')fbSchedule();return;}store.set('bows',bows);showCounts();}
+function countBow(){questEvent('bow');bows=bows+1;if(bows>=108){bow108++;store.set('bow108',bow108);bows=0;store.set('bows',0);showCounts();bell();toast('🙏 108배 '+bow108+'번째 완성! 다시 1배부터 이어가요');if(typeof fbSchedule==='function')fbSchedule();return;}store.set('bows',bows);showCounts();}
 var spots={
   altar:{p:new THREE.Vector3(0,0,-5.9),r:1.6,label:'부처님께 다가가기',title:'부처님 앞'},
   lantern:{p:new THREE.Vector3(-4.2,0,8.0),r:1.4,label:'소원 연등 달기',title:'소원 연등'},
@@ -1320,13 +1323,13 @@ function panelAltar(){
   var gz=el('<div class="box" style="background:#fff8e6;margin-top:8px"><h3>✨ 부처님 친견</h3><div class="note">조명이 잦아들고 부처님이 빛의 모습으로 떠올라요. 빛나는 점을 누르면 그 자리의 뜻을 알려줘요. 말씀은 없어요. 조용히 함께 있어요.</div><button class="btn pink" style="margin-top:8px">🙏 빛으로 뵙기</button></div>');gz.querySelector('button').addEventListener('click',function(){startGaze();});sBody.appendChild(gz);
   var aw=el('<div class="box" style="background:#f6f0ff;margin-top:8px"><h3>🖼️ 탱화가 깨어나는 밤</h3><div class="note">'+(isOpen('awake')?'조명이 잦아들고 탱화가 세 겹으로 열리며 관세음보살이 내려와요.':'법당에 온 날이 '+needDay('awake')+'일이 되면 열려요. 지금 '+visitDays()+'일.')+'</div><button class="btn ghost sm" style="margin-top:8px">'+(isOpen('awake')?'🌙 깨우기':'🔒 '+needDay('awake')+'일에 열려요')+'</button></div>');aw.querySelector('button').addEventListener('click',function(){if(isOpen('awake'))startAwake();else panelLocked('awake');});sBody.appendChild(aw);
   if(isGuest){sBody.appendChild(lock());return;}
-  var ob=el('<div class="box"><h3>육법공양 올리기 '+offered.length+' / 6</h3><div class="note">불단에 여섯 가지 공양을 올려요. 두 손으로 올리고 합장 반배해요.</div><div class="choices" style="margin-top:8px"></div><div class="note" id="offerMsg" style="margin-top:8px;min-height:1.4em"></div></div>');
+  var ob=el('<div class="box"><h3>육법공양 올리기 '+offered.length+' / 6</h3><div class="note">불단에 여섯 가지 공양을 올려요. 두 손으로 올리고 합장 반배해요. 날마다 새로 올려요.</div><div class="choices" style="margin-top:8px"></div><div class="note" id="offerMsg" style="margin-top:8px;min-height:1.4em"></div></div>');
   offerings.forEach(function(o){var done=offered.indexOf(o.k)>-1;var b=el('<button class="choice" aria-pressed="'+done+'">'+o.n+' · '+o.t+(done?' ✓':'')+'</button>');
     b.addEventListener('click',function(){var msg=ob.querySelector('#offerMsg');
       if(offered.indexOf(o.k)<0){offered.push(o.k);store.set('offered',offered);renderOfferings();bell();hapAnim=2;questEvent('offer');
         var nm=null;offerGroup.children.forEach(function(c){if(c.userData.k===o.k)nm=c;});if(nm){var t0=performance.now();nm.scale.setScalar(.01);(function gr(){var k=Math.min(1,(performance.now()-t0)/900),e=1-Math.pow(1-k,3);nm.scale.setScalar(.01+1.59*e);nm.position.y=.9+(1-e)*.6;if(k<1)requestAnimationFrame(gr);})();}
         closeSheet();toast(o.n+' 공양을 올렸어요 — '+o.t+'. '+o.m+(offered.length===6?' · 육법공양 완성!':''));}
-      else msg.textContent=o.t+': '+o.m;});
+      else{msg.textContent=o.t+': '+o.m;toast('오늘 '+o.n+' 공양은 이미 올렸어요. 내일 다시 올릴 수 있어요');}});
     ob.querySelector('.choices').appendChild(b);});
   if(offered.length&&isAdmin){var rs=el('<button class="btn ghost sm" style="margin-top:8px">공양 거두기 (교법사 확인용)</button>');rs.addEventListener('click',function(){offered=[];store.set('offered',[]);renderOfferings();openSpot('altar');});ob.appendChild(rs);}
   sBody.appendChild(ob);
@@ -1622,6 +1625,7 @@ function panelGuide(){
         Object.keys(N).reverse().forEach(function(k){var x=N[k];if(x.s==='test')return;var hid=!!fbHidden.notes[k];var row=el('<div class="r" style="grid-template-columns:auto 1fr auto'+(hid?';opacity:.45':'')+'"><span style="color:#8a4fa8;white-space:nowrap">✍️ '+who(x.s)+'</span><span>'+(x.a||'')+(x.b?' → '+x.b:'')+'</span><button class="btn ghost sm">'+(hid?'숨김':'숨기기')+'</button></div>');row.querySelector('button').addEventListener('click',function(){var b=this;fbDb.ref('beopdang/mod/notes/'+k).set(!hid).then(function(){fbHidden.notes[k]=!hid;b.textContent=!hid?'숨김':'숨기기';row.style.opacity=!hid?.45:1;toast(!hid?'숨겼어요':'다시 보여요');}).catch(function(e){toast('안 돼요: 규칙에 mod를 아직 안 넣었어요');});});rk.appendChild(row);});
         if(!rk.children.length)rk.innerHTML='<div class="note">아직 공유된 글이 없어요</div>';}).catch(function(e){toast('불러오기 실패: '+e.message);});});
     fbx.appendChild(mb);
+    var wb=el('<button class="btn ghost sm" style="margin-top:8px">🧹 이 기기의 기록 지우기 (연등·날수·꾸미기, 교법사 확인용)</button>');wb.addEventListener('click',function(){if(!confirm('이 기기에 남은 기록을 모두 지우고 새로 열까요? (서버 기록은 그대로예요)'))return;var m=store.get('member',''),r=store.get('role','');wipePersonal();store.set('member',m);store.set('role',r);store.set('sid',null);location.reload();});fbx.appendChild(wb);
     sBody.appendChild(fbx);}
   var sv=el('<div class="box"><h3>기념일 법당 미리보기</h3><div class="note">날짜가 되면 법당이 저절로 바뀌어요. 지금: '+(liveEvent?liveEvent.e.n:'평소 법당')+'</div><div class="row" style="margin-top:8px"><select id="sPrev" aria-label="기념일 미리보기"><option value="">평소 법당 (오늘 날짜 기준)</option></select></div><div class="note" style="margin-top:6px">음력 기념일 날짜는 해마다 달력으로 확인해 표만 고치면 돼요.</div></div>');
   EVENTS.forEach(function(e){var o=document.createElement('option');o.value=e.k;o.textContent=e.n+' ('+e.d.join(', ')+')';sv.querySelector('select').appendChild(o);});
