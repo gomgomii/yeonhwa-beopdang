@@ -625,8 +625,8 @@ var latticeMat=new THREE.MeshStandardMaterial({map:lattice,roughness:.9});
   var ry=-s*Math.PI/2, wx=s*(hx-.01);
   var band=new THREE.Mesh(new THREE.PlaneGeometry(D,.6),new THREE.MeshStandardMaterial({map:dancheong}));band.position.set(wx,H-.3,0);band.rotation.y=ry;scene.add(band);
   (s>0?[[D,0]]:[[hz+5.3,(-hz+5.3)/2],[hz-6.7,(6.7+hz)/2]]).forEach(function(q){var wain=new THREE.Mesh(new THREE.PlaneGeometry(q[0],.9),wainMat);wain.position.set(s*(hx-.02),.45,q[1]);wain.rotation.y=ry;scene.add(wain);}); // 왼쪽은 출입문(z 5.3~6.7)에서 끊김
-  (s>0?[8]:[-4,0,4,8]).forEach(function(z){var p=new THREE.Mesh(new THREE.CylinderGeometry(.22,.25,H,16),pillarMat);p.position.set(s*(hx-.25),H/2,z);p.castShadow=true;scene.add(p);});
-  (s>0?[6]:[-2]).forEach(function(z){var pn=new THREE.Mesh(new THREE.PlaneGeometry(3.1,3),latticeMat);pn.position.set(s*(hx-.03),2.5,z);pn.rotation.y=ry;scene.add(pn);});
+  // 벽 기둥 제거(11-06): 삼귀의 글판·액자를 가려서
+  // 벽 격자창 제거(11-06)
 });
 var bandBack=new THREE.Mesh(new THREE.PlaneGeometry(W,.6),new THREE.MeshStandardMaterial({map:dancheong}));bandBack.position.set(0,H-.3,hz-.01);bandBack.rotation.y=Math.PI;scene.add(bandBack);
 
