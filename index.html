@@ -1001,11 +1001,13 @@ function um(c){return new THREE.MeshStandardMaterial({color:c,roughness:.65});}
 var checkTex=canvasTex(128,128,function(g,w,h){g.fillStyle='#e9e9e4';g.fillRect(0,0,w,h);g.fillStyle='rgba(95,95,95,.5)';for(var x=0;x<w;x+=16)g.fillRect(x,0,8,h);for(var y=0;y<h;y+=16)g.fillRect(0,y,w,8);});
 checkTex.wrapS=checkTex.wrapT=THREE.RepeatWrapping;checkTex.repeat.set(4,1);
 /* 법당에 온 날수: 하루에 몇 번 와도 하루. 횟수가 아니라 날수로 열린다 */
+var DAY_SCALE=store.get('sid',null)?1/3:1;function D(n){return n?Math.max(1,Math.ceil(n*DAY_SCALE)):0;} // 개인 코드(시험반)는 열림 날수 1/3
 var visits=store.get('visits',[]),todayKey=now0.getFullYear()+'-'+(now0.getMonth()+1)+'-'+now0.getDate();
 if(visits.indexOf(todayKey)<0){visits.push(todayKey);store.set('visits',visits);}
 var visitBonus=store.get('visitBonus',0),giftDays=store.get('giftDays',0),beadBonus=store.get('beadBonus',0);function visitDays(){return visits.length+visitBonus+giftDays;}
 /* 염주: 출석 날수에 따라 고를 수 있는 색이 늘어난다 */
 var BEADS=[{k:'none',n:'안 해요',c:0,need:0},{k:'wood',n:'나무 염주',c:0x8a5a2b,need:0},{k:'ebony',n:'흑단 염주',c:0x1e1a17,need:3},{k:'amber',n:'호박 염주',c:0xe8912a,need:5},{k:'amethyst',n:'자수정 염주',c:0x8a4fa8,need:7},{k:'jade',n:'비취 염주',c:0x3f9a6a,need:10},{k:'crystal',n:'수정 염주',c:0xeef4ff,need:15},{k:'coral',n:'산호 염주',c:0xf07a8a,need:20},{k:'gold',n:'금 염주',c:0xe3b04a,need:30}];
+BEADS.forEach(function(b){b.need=D(b.need);});
 var beadKey=store.get('beads','wood');
 function seasonOf(m){return (m>=6&&m<=9)?'summer':((m===4||m===5||m===10)?'spring':'winter');}
 var SEASON_NAME={winter:'동복',spring:'춘추복',summer:'하복'};
@@ -1583,7 +1585,7 @@ function panelGuide(){
   ub.querySelector('#uSel').value=uniSeason;
   ub.querySelector('#uSel').addEventListener('change',function(){uniSeason=this.value;dress();paintWho();showOff=4;toast(SEASON_NAME[uniSeason]+'으로 갈아입었어요');});
   var bs=ub.querySelector('#bSel');function fillBeads(){bs.innerHTML=BEADS.map(function(b){var ok=b.need<=visitDays()+beadBonus;return '<option value="'+b.k+'"'+(ok?'':' disabled')+'>'+(ok?'📿 '+b.n:'🔒 '+b.n+' · '+b.need+'일')+'</option>';}).join('');bs.value=beadKey;}
-  var ps=ub.querySelector('#pSel');function fillPets(){var ok=visitDays()>=7;ps.innerHTML=PETS.map(function(x){return '<option value="'+x.k+'"'+(ok||x.k==='none'?'':' disabled')+'>'+(x.k==='none'?'동반자 없음':(ok?'🐾 '+x.n:'🔒 '+x.n+' · 7일'))+'</option>';}).join('');ps.value=petKey;}
+  var ps=ub.querySelector('#pSel');function fillPets(){var ok=visitDays()>=D(7);ps.innerHTML=PETS.map(function(x){return '<option value="'+x.k+'"'+(ok||x.k==='none'?'':' disabled')+'>'+(x.k==='none'?'동반자 없음':(ok?'🐾 '+x.n:'🔒 '+x.n+' · 7일'))+'</option>';}).join('');ps.value=petKey;}
   fillPets();ps.addEventListener('change',function(){petKey=this.value;store.set('pet',petKey);paintPet();toast(petKey==='none'?'동반자를 보냈어요':PETS.filter(function(x){return x.k===petKey})[0].n+'가 따라와요');});
   fillBeads();bs.addEventListener('change',function(){beadKey=this.value;store.set('beads',beadKey);dress();showOff=4;toast(beadKey==='none'?'염주를 풀었어요':BEADS.filter(function(b){return b.k===beadKey})[0].n+'를 걸었어요');});
   if(isAdult){ub.querySelector('h3').textContent=isTeacher?'🧑‍🏫 선생님 바꾸기 — 머리·한복 색·염주':'👩 보살님 바꾸기 — 머리·한복 색·염주';ub.querySelector('.note').textContent=isTeacher?'선생님 코드로 들어오면 어른 아바타가 돼요. 열림표는 아이와 똑같아요.':'연화회 코드로 들어오면 보살님이 돼요. 생활한복 색과 머리 모양을 고를 수 있어요.';['#gGirl','#gBoy','#uSel','#uSkirt','#pSel'].forEach(function(q){var x=ub.querySelector(q);if(x)x.style.display='none';});
@@ -1778,6 +1780,7 @@ var DECO_TYPES=[
  {k:'statue',n:'동자승 석상',e:'🧘',need:10},{k:'bigBell',n:'범종',e:'🔔',need:10},
  {k:'goldLotus',n:'금빛 연꽃',e:'🌟',need:15},{k:'rainbowLantern',n:'무지개 연등',e:'🌈',need:20},{k:'bodhi',n:'금빛 탑',e:'🏆',need:30}
 ];
+DECO_TYPES.forEach(function(t){t.need=D(t.need);});
 
 function unlocked(t){return (t.need||0)<=visitDays();}
 function nextUnlock(){var n=DECO_TYPES.filter(function(t){return !unlocked(t)}).sort(function(a,b){return a.need-b.need})[0];return n?(n.need-visitDays())+'일 더 오면 '+n.e+' '+n.n:'모두 열렸어요';}
@@ -2030,7 +2033,7 @@ var yard=new THREE.Group();scene.add(yard);var yardGround=null; // 마당 바닥
   [[-8.3,7.4],[-10.9,7.4]].forEach(function(p){g.add(buildDeco({t:'stoneLantern',x:p[0],z:p[1],r:0,c:0}));});
 })();
 
-var SECRET_DAYS=30, secretOpen=false;
+var SECRET_DAYS=D(30), secretOpen=false;
 var doorFrameMat=new THREE.MeshStandardMaterial({color:0x4a2d16,roughness:.7});
 [[2.5,2.55,1.9,.3],[1.65,1.25,.14,2.5],[3.35,1.25,.14,2.5]].forEach(function(f,i){var m=new THREE.Mesh(new THREE.BoxGeometry(.16,i?f[3]:f[3],i?f[2]:f[2]),doorFrameMat);m.position.set(-hx+.08,f[1],f[0]);m.scale.set(1,i?1:1,1);scene.add(m);});
 var door=new THREE.Group();door.position.set(-hx+.06,0,1.72);scene.add(door);
@@ -2441,7 +2444,7 @@ function panelQuest(){
 function badges(){var nf=taengFound.length;return [
  ['🙏','첫 절',bows>=1],['💯','백팔배 완성',bows>=108],['☸️','팔정도 여덟 액자',stampDone.length>=8],['✍️','사경 열 줄',store.get('sagyeong',0)>=10],
  ['🏮','첫 연등',savedLanterns.length>=1],['🌿','마음 쉼터 첫 방문',store.get('rest',0)>=1],['🧘','마음챙김 다섯 번',store.get('mind',0)>=5],['🏠','꾸미기 열 개',decor.length>=10],
- ['📅','법당 7일',visitDays()>=7],['🌙','법당 30일',visitDays()>=30],['🚪','비밀 정원 발견',secretOpen],['🧒','하루에 다섯 가지',todayDone().length>=5],['🪷','참회 세 번',cham.n>=3],['🪨','오계 지킴이',gyeKept.slice(0,5).every(function(n){return n>=3})],['🔍','탱화 동자승 다 찾기',nf>=dongjaCount&&dongjaCount>0]
+ ['📅','법당 '+D(7)+'일',visitDays()>=D(7)],['🌙','법당 '+D(30)+'일',visitDays()>=D(30)],['🚪','비밀 정원 발견',secretOpen],['🧒','하루에 다섯 가지',todayDone().length>=5],['🪷','참회 세 번',cham.n>=3],['🪨','오계 지킴이',gyeKept.slice(0,5).every(function(n){return n>=3})],['🔍','탱화 동자승 다 찾기',nf>=dongjaCount&&dongjaCount>0]
 ];}
 function badgeBox(){var bs=badges(),got=bs.filter(function(b){return b[2]}).length;var box=el('<div class="box"><h3>뱃지 '+got+' / '+bs.length+'</h3><div class="choices"></div></div>');
   bs.forEach(function(b){box.querySelector('.choices').appendChild(el('<span class="choice" style="'+(b[2]?'background:#fff5f8;border-color:#d9486f':'opacity:.45')+'">'+b[0]+' '+b[1]+'</span>'));});return box;}
@@ -2452,7 +2455,7 @@ function calendarBox(){var y=now0.getFullYear(),m=now0.getMonth();var first=new 
   for(var d=1;d<=days;d++){var on=visits.indexOf(y+'-'+(m+1)+'-'+d)>-1;html+='<div style="padding:5px 0;border-radius:8px;'+(on?'background:#f7b3c6;color:#7a1f38;font-weight:700':'background:#f4f1ea;color:#999')+'">'+(on?'🪷':d)+'</div>';}
   return el(html+'</div><div class="note" style="margin-top:6px">하루에 몇 번 와도 하루. 연꽃이 핀 날이 법당에 온 날이에요.</div></div>');}
 // --- 칭호 ---
-function myTitle(){if(isAdmin)return '교법사';if(isTeacher)return visitDays()>=30?'꾸준한 선생님':'선생님';if(isAdult){return visitDays()>=30?'꾸준한 보살님':(bows>=108?'백팔배 보살님':(stampDone.length>=8?'팔정도 보살님':'연화회 보살님'));}if(visitDays()>=30)return '꾸준한 연화 어린이';if(bows>=108)return '백팔배 수행자';if(gyeKept.slice(0,5).every(function(n){return n>=3}))return '오계 지킴이';if(stampDone.length>=8)return '팔정도 길잡이';if(questDays.length>=3)return '동자승의 친구';if(store.get('rest',0)>=3)return '마음을 아는 어린이';if(visitDays()>=7)return '일주일 연화 어린이';return '연화 어린이';}
+function myTitle(){if(isAdmin)return '교법사';if(isTeacher)return visitDays()>=D(30)?'꾸준한 선생님':'선생님';if(isAdult){return visitDays()>=D(30)?'꾸준한 보살님':(bows>=108?'백팔배 보살님':(stampDone.length>=8?'팔정도 보살님':'연화회 보살님'));}if(visitDays()>=30)return '꾸준한 연화 어린이';if(bows>=108)return '백팔배 수행자';if(gyeKept.slice(0,5).every(function(n){return n>=3}))return '오계 지킴이';if(stampDone.length>=8)return '팔정도 길잡이';if(questDays.length>=3)return '동자승의 친구';if(store.get('rest',0)>=3)return '마음을 아는 어린이';if(visitDays()>=7)return '일주일 연화 어린이';return '연화 어린이';}
 // --- 놀이터: 목탁 리듬 (짝 맞추기는 11-05 정리 때 뺌, pairGame 코드만 남김) ---
 var playRaf=null;
 function stopPlay(){if(playRaf){cancelAnimationFrame(playRaf);playRaf=null;}}
@@ -2598,6 +2601,7 @@ var UNLOCKS=[
  {d:30,keys:['garden'],n:'비밀 정원'},
  {d:45,keys:[],n:'???'},{d:60,keys:[],n:'???'},{d:90,keys:[],n:'???'},{d:120,keys:[],n:'???'},{d:150,keys:[],n:'???'},{d:190,keys:[],n:'한 해 회향'}
 ];
+UNLOCKS.forEach(function(u){u.d=D(u.d);});
 var LOCK_NAME={sagyeong:'사경대',lantern:'소원 연등',deco:'꾸미기',vow:'내 원력 족자',pet:'동반자 동물',dhp:'오늘의 법구경',play:'놀이터',samul:'사물 네 가지',ogye:'오계',samgwi:'삼귀의 글판',life:'부처님 생애 그림책',study:isAdult?'경전 공부방':'나란다 공부방',garden:'비밀 정원',cham:'참회의 자리'};
 function needDay(k){for(var i=0;i<UNLOCKS.length;i++)if(UNLOCKS[i].keys.indexOf(k)>-1)return UNLOCKS[i].d;return 1;}
 function isOpen(k){return visitDays()>=needDay(k);}
