@@ -1084,7 +1084,7 @@ yeoni.position.copy(pos);yeoni.rotation.y=heading;
 /* ---------------- 이동 ---------------- */
 var keys={up:0,down:0,left:0,right:0}, target=null;
 var keyMap={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
-window.addEventListener('keydown',function(e){if(sheetOpen||!gate.classList.contains('gone')||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;var k=keyMap[e.code];if(k){keys[k]=1;target=null;e.preventDefault();}if((e.code==='Enter'||e.code==='KeyE')&&nearSpot){openSpot(nearSpot);}});
+window.addEventListener('keydown',function(e){if(sheetOpen||!gate.classList.contains('gone'))return;if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){var tg=e.target;if(tg.closest&&tg.closest('#sheet')&&!sheetOpen){try{tg.blur();}catch(x){}}else return;}var k=keyMap[e.code];if(k){keys[k]=1;target=null;e.preventDefault();}if((e.code==='Enter'||e.code==='KeyE')&&nearSpot){openSpot(nearSpot);}});
 window.addEventListener('keyup',function(e){var k=keyMap[e.code];if(k)keys[k]=0;});
 [].forEach.call(document.querySelectorAll('.dpad button'),function(b){
   var k=b.dataset.k;
@@ -1275,7 +1275,7 @@ document.getElementById('leaveBtn').addEventListener('click',function(){openSpot
 /* ---------------- 패널 ---------------- */
 var sheet=document.getElementById('sheet'),sBody=document.getElementById('sheetBody'),sTitle=document.getElementById('sheetTitle');
 var sheetOpen=false,currentSpot=null;
-function closeSheet(){lanternFocus=null;if(typeof stopMind==='function')stopMind();if(typeof stopPlay==='function'){stopPlay();window.__rhythmHit=null;}sheet.classList.remove('on');sheet.setAttribute('aria-hidden','true');sheetOpen=false;currentSpot=null;stopBreath(false);}
+function closeSheet(){lanternFocus=null;try{if(document.activeElement&&document.activeElement!==document.body)document.activeElement.blur();}catch(e){}if(typeof stopMind==='function')stopMind();if(typeof stopPlay==='function'){stopPlay();window.__rhythmHit=null;}sheet.classList.remove('on');sheet.setAttribute('aria-hidden','true');sheetOpen=false;currentSpot=null;stopBreath(false);}
 document.getElementById('sheetClose').addEventListener('click',closeSheet);
 window.addEventListener('keydown',function(e){if(e.code==='Escape'&&sheetOpen)closeSheet();});
 function el(html){var d=document.createElement('div');d.innerHTML=html;return d.firstElementChild;}
