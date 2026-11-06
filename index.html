@@ -1133,7 +1133,7 @@ function walkTo(x,z,then){
   function region(px,pz){return px<-hx?(pz>=YARD.z0?'yard':'garden'):'hall';}
   var from=region(pos.x,pos.z),to=region(x,z);
   routeQ=[];onArrive=then||null;
-  var dest=new THREE.Vector3(x,0,z);clampPos(dest); // 벽 너머를 눌렀으면 갈 수 있는 자리까지만
+  var dest=new THREE.Vector3(x,0,z);clampPos(dest,true); // 벽 너머를 눌렀으면 갈 수 있는 자리까지만
   var dY=[new THREE.Vector3(-hx+.7,0,6.0),new THREE.Vector3(-hx-.7,0,6.0)],dG=[new THREE.Vector3(-hx+.7,0,2.6),new THREE.Vector3(-hx-.7,0,2.6)];
   var way=[];
   if(from==='hall'&&to==='yard')way=[dY[0],dY[1]];else if(from==='yard'&&to==='hall')way=[dY[1],dY[0]];
@@ -1145,12 +1145,15 @@ function walkTo(x,z,then){
 var turnTo=null,stuckT=0; // 도착 뒤 천천히 돌아설 방향 / 막힌 시간
 function faceRoom(){ // 코앞(1.4m)이 벽이면 방 가운데를 보게. 불단(앞벽) 쪽을 보고 있을 땐 그대로
   if(Math.cos(heading)<-.5&&pos.x>-hx)return;
-  var p=new THREE.Vector3(pos.x+Math.sin(heading)*1.4,0,pos.z+Math.cos(heading)*1.4),q=p.clone();clampPos(q);
+  var p=new THREE.Vector3(pos.x+Math.sin(heading)*1.4,0,pos.z+Math.cos(heading)*1.4),q=p.clone();clampPos(q,true);
   if(Math.hypot(q.x-p.x,q.z-p.z)<.35)return;
   var cx=0,cz=0;if(pos.x<-hx&&pos.z>=YARD.z0){cx=(YARD.x0+YARD.x1)/2;cz=(YARD.z0+YARD.z1)/2;}else if(pos.x<-hx){cx=-9.5;cz=2.5;}
   turnTo=Math.atan2(cx-pos.x,cz-pos.z);
 }
-function clampPos(p){
+var zone='hall'; // 지금 있는 구역(hall/yard/garden): 정원↔마당 담을 통과 못 하게
+function clampPos(p,dry){
+  if(!dry&&p.x<-hx){if(zone==='garden'&&p.z>=4.3&&p.z<5.4)p.z=4.3;else if(zone==='yard'&&p.z<4.9&&p.z>3.6)p.z=4.9;}
+  if(!dry){zone=p.x<-hx?(p.z>=4.5?'yard':'garden'):'hall';}
   if(p.z>5.35&&p.z<6.65&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(5.35,Math.min(6.65,p.z));return;} // 출입문 문턱
   if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));[[-17.8,7.0,2.0],[-13.6,9.2,1.7]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 마당(범종각·연못은 못 들어감)
   if(secretOpen&&p.z>1.95&&p.z<3.25&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(1.95,Math.min(3.25,p.z));return;} // 문턱
@@ -2729,7 +2732,7 @@ function loop(){
   knees.forEach(function(k){k.rotation.x+=(tk-k.rotation.x)*kb;});
   hips.forEach(function(h,i){h.rotation.x+=(thx-h.rotation.x)*kb;h.rotation.y+=((i?1:-1)*thy-h.rotation.y)*kb;});
   door.rotation.y+=((secretOpen?-1.9:0)-door.rotation.y)*Math.min(1,dt*1.5);garden.visible=gardenSeen();
-  samulAnim(dt,t);if(garden.visible)gardenWalk();
+  samulAnim(dt,t);if(garden.visible)gardenWalk();if(typeof birdTick==='function')birdTick(dt,t);
   if(garden.visible){var ffp=garden.userData.ff,pa=ffp.geometry.attributes.position,bsv=ffp.userData.base;for(var q=0;q<30;q++){pa.array[q*3]=bsv[q*3]+Math.sin(t*.7+q)*.3;pa.array[q*3+1]=bsv[q*3+1]+Math.sin(t*1.3+q*2)*.2;pa.array[q*3+2]=bsv[q*3+2]+Math.cos(t*.9+q)*.3;}pa.needsUpdate=true;ffp.material.opacity=.6+.4*Math.sin(t*3);}
   if(hapAnim>0)hapAnim-=dt;if(mokT>0)mokT-=dt;if(mokHit>0)mokHit-=dt;
   if(mokSeq>0){mokNext-=dt;if(mokNext<=0){mokSeq--;mokNext=.5;mokHit=.42;moktak();}}
@@ -3004,6 +3007,60 @@ function fbLoad(){fbDb.ref('beopdang/students/'+SID).once('value').then(function
   var _set=store.set;store.set=function(k,v){_set(k,v);if(k!=='rev'&&k!=='lnSent')fbSchedule();};
   window.addEventListener('pagehide',function(){if(fbTimer){clearTimeout(fbTimer);fbTimer=null;fbSave();}});
 }catch(e){fbState='err';console.warn('fb init',e);}})();
+// ===== 비밀 정원: 파랑새 안내 + 숨은 낙서판 (11-06) =====
+var bird=(function(){var g=new THREE.Group();function m(geo,col){return new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:col,roughness:.7}));}
+  var body=m(new THREE.SphereGeometry(.07,12,10),0x3b8fd9);body.scale.set(1,.85,1.3);g.add(body);var head=m(new THREE.SphereGeometry(.045,10,8),0x4aa3ea);head.position.set(0,.06,.07);g.add(head);
+  var beak=m(new THREE.ConeGeometry(.012,.035,6),0xf2b134);beak.rotation.x=Math.PI/2;beak.position.set(0,.055,.12);g.add(beak);
+  [-1,1].forEach(function(k){var e=m(new THREE.SphereGeometry(.008,6,6),0x111111);e.position.set(k*.025,.075,.1);g.add(e);var w=m(new THREE.SphereGeometry(.05,10,8),0x2f78c4);w.scale.set(.35,.25,1);w.position.set(k*.07,.01,0);w.userData.wing=k;g.add(w);});
+  var tail=m(new THREE.ConeGeometry(.03,.07,6),0x2f78c4);tail.rotation.x=-Math.PI/2;tail.position.set(0,0,-.1);g.add(tail);
+  var belly=m(new THREE.SphereGeometry(.05,10,8),0xfff1c9);belly.scale.set(.9,.7,1.1);belly.position.set(0,-.03,.02);g.add(belly);
+  g.visible=false;scene.add(g);return g;})();
+var birdState={on:false,t:0,phase:'off',said:false},birdFrom=new THREE.Vector3();
+function birdTarget(){var rx=Math.cos(heading),rz=-Math.sin(heading),fx=Math.sin(heading),fz=Math.cos(heading);return new THREE.Vector3(pos.x+rx*.3+fx*.05,1.18,pos.z+rz*.3+fz*.05);}
+function birdStart(){if(birdState.on)return;birdState.on=true;birdState.t=0;birdState.phase='fly';bird.visible=true;birdFrom.set(pos.x-3,4.8,pos.z+2);bird.position.copy(birdFrom);chime();}
+function birdStop(){birdState.on=false;birdState.phase='off';bird.visible=false;}
+function birdTick(dt,t){
+  var inG=garden.visible&&secretOpen&&pos.x<-hx&&pos.z<YARD.z0;
+  if(inG&&!birdState.on)birdStart();if(!inG&&birdState.on)birdStop();if(!birdState.on)return;
+  var tg=birdTarget();
+  if(birdState.phase==='fly'){birdState.t+=dt;var k=Math.min(1,birdState.t/2.4),e=k*k*(3-2*k);bird.position.lerpVectors(birdFrom,tg,e);bird.position.y+=Math.sin(k*Math.PI)*.9;bird.rotation.y=Math.atan2(tg.x-bird.position.x,tg.z-bird.position.z);
+    bird.children.forEach(function(c){if(c.userData.wing)c.rotation.z=c.userData.wing*Math.sin(t*28)*.9;});
+    if(k>=1){birdState.phase='sit';if(!birdState.said){birdState.said=true;setTimeout(birdSay,300);}}}
+  else{bird.position.lerp(tg,Math.min(1,dt*10));bird.position.y=tg.y+Math.sin(t*3)*.01;bird.rotation.y=heading+.4;bird.children.forEach(function(c){if(c.userData.wing)c.rotation.z=c.userData.wing*.15;});}
+}
+function birdSay(){var n=(typeof gardenNo==='number'&&gardenNo>0)?'<b>'+gardenNo+'번째 방문자</b>':'<b>방문자</b>';
+  showLearn('🐦 파랑새','<div class="box" style="background:#eef6ff"><h3>안녕, 여기까지 왔구나!</h3><div class="note">법당에 '+SECRET_DAYS+'일을 와서 열린 정원이야. 너는 이 정원의 '+n+'야. 내가 어깨에 앉아 같이 다닐게.</div></div><div class="box"><h3>여기서 할 수 있는 것</h3><ul class="list"><li>🕯 <b>기도터</b> — 누군가를 위해 불 밝히기</li><li>🪨 <b>마음 돌탑</b> — 하루에 돌 하나</li><li>👣 <b>걷기 길</b> — 수반 둘레 디딤돌 한 바퀴, 돌마다 숨 하나</li><li>🎵 <b>놀이터</b> — 목탁 리듬</li><li>🧘 <b>명상</b> — 아래 바의 명상을 누르면 잔디에 앉아요</li><li>✍️ <b>낙서판</b> — 왼쪽 벽에 숨어 있어요. 여기까지 온 이야기와 다음 사람에게 한마디</li></ul></div>');}
+// 낙서판: 정원 왼쪽 벽(z -0.1)에 숨은 판. 방문 번호·이야기·다음 사람에게 한마디(서버가 있으면 모두의 낙서가 보임)
+var gardenNo=store.get('gardenNo',0),gNotes=store.get('gnotes',[]),gNotesAll=[];
+var gBoardTex=canvasTex(640,400,function(g,w,h){drawGBoard(g,w,h);});
+function drawGBoard(g,w,h){g.fillStyle='#f3ead6';g.fillRect(0,0,w,h);for(var i=0;i<60;i++){g.fillStyle='rgba(120,90,60,'+(Math.random()*.12)+')';g.fillRect(Math.random()*w,Math.random()*h,3,3);}
+  g.strokeStyle='#8a6a44';g.lineWidth=5;g.strokeRect(8,8,w-16,h-16);g.fillStyle='#8a4fa8';g.font='30px Jua, sans-serif';g.textAlign='left';g.textBaseline='middle';g.fillText('비밀 정원 낙서판',24,38);
+  g.fillStyle='#5b7166';g.font='17px "Gowun Dodum", sans-serif';g.fillText('여기까지 온 사람들이 남긴 말',24,66);
+  var list=(gNotesAll.length?gNotesAll:gNotes).slice(0,6);var cols=['#2b2b2b','#8a4fa8','#2d7356','#b5462f','#2f78c4','#7a4b1e'];
+  list.forEach(function(nt,i){g.fillStyle=cols[i%cols.length];g.font='19px Jua, sans-serif';var s=(nt.no?nt.no+'번째 · ':'')+String(nt.b||nt.a||'').slice(0,22);g.save();g.translate(28,100+i*46);g.rotate((i%2?1:-1)*.02);g.fillText(s,0,0);g.restore();});
+  if(!list.length){g.fillStyle='#9a9488';g.font='20px Jua, sans-serif';g.fillText('아직 아무도 안 썼어요. 첫 낙서를 남겨 봐요.',28,120);}}
+function paintGBoard(){drawGBoard(gBoardTex.image.getContext('2d'),gBoardTex.image.width,gBoardTex.image.height);gBoardTex.needsUpdate=true;}
+(function(){var bd=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.2),new THREE.MeshStandardMaterial({map:gBoardTex,roughness:.9}));bd.position.set(-11.6,1.55,-0.04);garden.add(bd);
+  var fr=new THREE.Mesh(new THREE.BoxGeometry(2.0,1.3,.04),new THREE.MeshStandardMaterial({color:0x6b4e2e,roughness:.8}));fr.position.set(-11.6,1.55,-0.07);garden.add(fr);
+  var sg=label('낙서판','숨은 벽 · 한마디 남기기','#8a4fa8');sg.position.set(-11.6,2.5,-0.02);sg.scale.set(1.1,.43,1);garden.add(sg);})();
+function gardenVisit(){ // 첫 방문 번호 받기
+  if(gardenNo>0)return;if(typeof fbOn==='function'&&fbOn()){var r=fbDb.ref('beopdang/garden/visitors');r.once('value').then(function(s){var n=s.numChildren()+1;return r.child(SID).set({no:n,ts:Date.now()}).then(function(){gardenNo=n;store.set('gardenNo',n);});}).catch(function(){});}
+  else{gardenNo=1;store.set('gardenNo',1);}}
+function loadGNotes(){if(!(typeof fbOn==='function'&&fbOn()))return;fbDb.ref('beopdang/garden/notes').limitToLast(30).once('value').then(function(s){var v=s.val()||{};gNotesAll=Object.keys(v).map(function(k){return v[k];}).sort(function(a,b){return b.ts-a.ts;});paintGBoard();}).catch(function(){});}
+function openGraffiti(){sBody.innerHTML='';sTitle.textContent='비밀 정원 낙서판';currentSpot='graffiti';gardenVisit();loadGNotes();
+  sBody.appendChild(el('<div class="box" style="background:#f6f0ff"><h3>'+(gardenNo>0?'너는 '+gardenNo+'번째 방문자':'비밀 정원 방문자')+'</h3><div class="note">'+SECRET_DAYS+'일 동안 법당에 온 사람만 이 벽을 봐요. 이름은 쓰지 않아요.</div></div>'));
+  var wrote=gNotes.some(function(n){return n.d===todayKey});
+  var fm=el('<div class="box"><h3>낙서 남기기</h3><div class="note">여기까지 오면서 어땠어요? (80자)</div><textarea id="gA" maxlength="80" rows="2" style="width:100%;box-sizing:border-box;padding:8px;border-radius:10px;border:1px solid #cfd8d3;font:inherit"></textarea><div class="note" style="margin-top:6px">다음에 올 사람에게 한마디 (40자)</div><input id="gB" maxlength="40" style="width:100%;box-sizing:border-box;padding:8px;border-radius:10px;border:1px solid #cfd8d3;font:inherit"><button class="btn pink" style="margin-top:8px"'+(wrote?' disabled':'')+'>'+(wrote?'오늘은 남겼어요 · 내일 또':'✍️ 벽에 남기기')+'</button></div>');
+  fm.querySelector('button').addEventListener('click',function(){var a=fm.querySelector('#gA').value.trim().slice(0,80),b=fm.querySelector('#gB').value.trim().slice(0,40);if(!a&&!b){toast('한 줄만이라도 써 주세요');return;}var nt={no:gardenNo||0,a:a,b:b,ts:Date.now(),d:todayKey};gNotes.unshift(nt);if(gNotes.length>20)gNotes.pop();store.set('gnotes',gNotes);
+    if(typeof fbOn==='function'&&fbOn()){fbDb.ref('beopdang/garden/notes').push({no:nt.no,a:a,b:b,ts:nt.ts,s:SID.slice(0,8)}).catch(function(){});}
+    gNotesAll.unshift(nt);paintGBoard();questEvent('mind');bell();closeSheet();toast('벽에 남겼어요. 다음 사람이 읽을 거예요');});
+  sBody.appendChild(fm);
+  var lst=el('<div class="box"><h3>벽에 적힌 말들</h3><div class="rank" id="gList"><div class="note">불러오는 중…</div></div></div>');sBody.appendChild(lst);
+  function paintList(){var L=(gNotesAll.length?gNotesAll:gNotes).slice(0,30),r=lst.querySelector('#gList');r.innerHTML='';if(!L.length){r.innerHTML='<div class="note">아직 아무도 안 썼어요. 첫 낙서를 남겨 봐요.</div>';return;}L.forEach(function(n){r.appendChild(el('<div class="r" style="grid-template-columns:auto 1fr"><span style="color:#8a4fa8;white-space:nowrap">'+(n.no?n.no+'번째':'·')+'</span><span>'+(n.a?n.a:'')+(n.b?'<br><b>→ '+n.b+'</b>':'')+'</span></div>'));});}
+  paintList();if(typeof fbOn==='function'&&fbOn())setTimeout(paintList,1200);
+  sheet.classList.add('on');sheet.setAttribute('aria-hidden','false');sheetOpen=true;for(var k in keys)keys[k]=0;}
+learnSpots.push({x:-11.6,z:1.0,r:.9,lock:'garden',label:'낙서판 · 벽에 한마디',open:openGraffiti});
+if(typeof fbOn==='function'){setTimeout(function(){if(fbOn()){loadGNotes();if(visitDays()>=SECRET_DAYS)gardenVisit();}},4000);}
 loop();
 if(location.hostname==='localhost')window.__y=function(c){return eval(c)}; // 로컬 확인용
 })();
