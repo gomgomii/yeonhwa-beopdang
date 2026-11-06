@@ -1626,6 +1626,7 @@ function panelGuide(){
         if(!rk.children.length)rk.innerHTML='<div class="note">아직 공유된 글이 없어요</div>';}).catch(function(e){toast('불러오기 실패: '+e.message);});});
     fbx.appendChild(mb);
     var wb=el('<button class="btn ghost sm" style="margin-top:8px">🧹 이 기기의 기록 지우기 (연등·날수·꾸미기, 교법사 확인용)</button>');wb.addEventListener('click',function(){if(!confirm('이 기기에 남은 기록을 모두 지우고 새로 열까요? (서버 기록은 그대로예요)'))return;var m=store.get('member',''),r=store.get('role','');wipePersonal();store.set('member',m);store.set('role',r);store.set('sid',null);location.reload();});fbx.appendChild(wb);
+    var ab=el('<a class="btn ghost sm" style="margin-top:8px;display:inline-block;text-decoration:none" href="admin.html" target="_blank" rel="noopener">🖥️ 큰 화면 현황판 열기 (새 창)</a>');fbx.appendChild(ab);
     sBody.appendChild(fbx);}
   var sv=el('<div class="box"><h3>기념일 법당 미리보기</h3><div class="note">날짜가 되면 법당이 저절로 바뀌어요. 지금: '+(liveEvent?liveEvent.e.n:'평소 법당')+'</div><div class="row" style="margin-top:8px"><select id="sPrev" aria-label="기념일 미리보기"><option value="">평소 법당 (오늘 날짜 기준)</option></select></div><div class="note" style="margin-top:6px">음력 기념일 날짜는 해마다 달력으로 확인해 표만 고치면 돼요.</div></div>');
   EVENTS.forEach(function(e){var o=document.createElement('option');o.value=e.k;o.textContent=e.n+' ('+e.d.join(', ')+')';sv.querySelector('select').appendChild(o);});
