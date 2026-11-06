@@ -1316,6 +1316,7 @@ function panelAltar(){
 function panelLantern(){
   sTitle.textContent='소원 연등 달기';
   sBody.appendChild(el('<div class="note">연등 하나에 기도 하나. <b>나를 위해</b> 빌 수도, <b>다른 사람을 위해</b> 빌 수도 있어요. 고르거나 직접 써요. 이름은 쓰지 않고 "엄마"·"3반 친구들"처럼 써요.</div>'));
+  if(savedLanterns.length&&lanternGroup.children.length){var vb=el('<button class="btn ghost sm" style="margin-bottom:8px">🏮 내가 단 연등 보기</button>');vb.addEventListener('click',function(){var m=lanternGroup.children[0];closeSheet();lanternFocus={m:m};lookUp=0;toast('방금 단 연등이에요. 화면을 누르면 돌아와요');});sBody.appendChild(vb);}
   if(isGuest){sBody.appendChild(lock());return;}
   var mode='self',pw=0,pc=0;
   var tabs=el('<div class="row" style="margin-bottom:8px"><button class="btn pink sm" data-m="self">🙏 나를 위해</button><button class="btn ghost sm" data-m="other">💗 남을 위해</button></div>');
@@ -1332,7 +1333,7 @@ function panelLantern(){
   sBody.appendChild(cbox);
   var go=el('<button class="btn pink">연등에 불 켜기</button>');
   go.addEventListener('click',function(){var own=wbox.querySelector('#lwish').value.trim(),to=tbox.querySelector('#lto').value.trim();var w=own||LANTERN_WISHES[mode][pw];if(/단톡|카톡|전화|\d{3,}/.test(w+to)){toast('연락처나 긴 숫자는 쓰지 않아요');return;}
-    savedLanterns.unshift({c:pc,w:w,g:sel.value,f:mode,to:to});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];LANTERN_START.set(pos.x+Math.sin(heading)*.55,.95,pos.z+Math.cos(heading)*.55);rising={m:nm,to:nm.position.clone(),t:0};questEvent('lantern');nm.position.copy(LANTERN_START);hapAnim=3;bell();toast(mode==='other'?(to?to+'를 위한 연등이 올라가요':'다른 사람을 위한 연등이 올라가요'):'내 연등이 천장으로 올라가요');closeSheet();lookUp=5;});
+    savedLanterns.unshift({c:pc,w:w,g:sel.value,f:mode,to:to});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];LANTERN_START.set(pos.x+Math.sin(heading)*.55,.95,pos.z+Math.cos(heading)*.55);rising={m:nm,to:nm.position.clone(),t:0};questEvent('lantern');nm.position.copy(LANTERN_START);hapAnim=3;bell();toast(mode==='other'?(to?to+'를 위한 연등이 올라가요':'다른 사람을 위한 연등이 올라가요'):'내 연등이 천장으로 올라가요');closeSheet();lookUp=5;setTimeout(function(){if(!sheetOpen&&!cer.on){lanternFocus={m:nm};lookUp=0;toast('내 연등이 걸렸어요. 화면을 누르면 돌아와요');}},3600);});
   sBody.appendChild(go);
   var mine=savedLanterns.filter(function(l){return l.f}).length,others=savedLanterns.filter(function(l){return l.f==='other'}).length;
   var list=el('<div class="box"><h3>법당에 켜진 연등 '+savedLanterns.length+'개'+(others?' · 남을 위한 연등 '+others+'개':'')+'</h3><div class="note"></div></div>');
@@ -2968,7 +2969,8 @@ function fbSave(){if(!fbOn())return;var rev=Date.now();fbRev=rev;store.set('rev'
   fbDb.ref('beopdang/students/'+SID).set({rev:rev,store:collectStore(),days:visitDays(),bows:store.get('bows',0),sg:store.get('sagyeong',0),ln:L.length,t:firebase.database.ServerValue.TIMESTAMP}).then(function(){fbState='ok';}).catch(function(e){fbState='err';console.warn('fb save',e);});
   if(L.length>fbLnSent){var n=L[0];if(n&&n.w){fbDb.ref('beopdang/lanterns').push({c:n.c|0,w:String(n.w).slice(0,40),g:String(n.g||'').slice(0,12),f:n.f||'self',to:String(n.to||'').slice(0,12),ts:Date.now(),s:SID.slice(0,8)}).catch(function(){});}fbLnSent=L.length;store.set('lnSent',fbLnSent);}}
 function fbSchedule(){if(!fbOn())return;clearTimeout(fbTimer);fbTimer=setTimeout(fbSave,6000);}
-function fbLoadLanterns(){fbDb.ref('beopdang/lanterns').limitToLast(60).once('value').then(function(s){var v=s.val()||{};var me=SID.slice(0,8);sharedLanterns=Object.keys(v).map(function(k){return v[k];}).filter(function(x){return x&&x.s!==me&&x.ts>1793927000000;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,36);if(typeof renderLanterns==='function')renderLanterns();}).catch(function(){});}
+function fbLoadLanterns(){var me=SID.slice(0,8),t0=Date.now();fbDb.ref('beopdang/lanterns').orderByChild('ts').startAt(t0).on('child_added',function(s){var x=s.val();if(!x||x.s===me)return;sharedLanterns.unshift(x);if(sharedLanterns.length>36)sharedLanterns.pop();if(typeof renderLanterns==='function')renderLanterns();chime();toast('친구가 연등을 달았어요 — '+x.w);}); // 지금부터 새로 달리는 연등은 바로 보임
+  fbDb.ref('beopdang/lanterns').limitToLast(60).once('value').then(function(s){var v=s.val()||{};sharedLanterns=Object.keys(v).map(function(k){return v[k];}).filter(function(x){return x&&x.s!==me&&x.ts>1793927000000;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,36);if(typeof renderLanterns==='function')renderLanterns();}).catch(function(){});}
 function fbToday(){var r=fbDb.ref('beopdang/today/'+todayKey);r.child(SID).set(true).then(function(){return r.once('value');}).then(function(s){todayCount=s.numChildren();if(typeof drawBoard==='function')drawBoard();}).catch(function(){});}
 function fbLoad(){fbDb.ref('beopdang/students/'+SID).once('value').then(function(s){var v=s.val();
   if(v&&v.rev>fbRev&&v.store){for(var k in v.store){try{localStorage.setItem('yeon3d-'+k,v.store[k]);}catch(e){}}store.set('rev',v.rev);toast('다른 기기에서 쌓은 기록을 가져왔어요');setTimeout(function(){location.reload();},1500);return;}
