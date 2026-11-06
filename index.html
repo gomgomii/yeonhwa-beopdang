@@ -1333,6 +1333,11 @@ function panelAltar(){
   bP.addEventListener('click',function(){stopBreath(false);orb.classList.remove('in');ol.textContent='준비';bS.disabled=false;bP.disabled=true;bt.textContent='3:00';});
 }
 // 소원 연등
+// ===== 고운 말 지킴이(11-06): 연등·꼬리표·기도·낙서에 쓰는 글을 올리기 전에 거른다. 서버에 올라간 글에는 코드 앞자리가 붙어 교법사가 누구 것인지 안다 =====
+var BAD_WORDS=['시발','씨발','씨팔','ㅅㅂ','ㅆㅂ','병신','ㅂㅅ','지랄','ㅈㄹ','꺼져','닥쳐','미친','개새','개색','새끼','년아','놈아','죽어','죽여','자살','바보','멍청','등신','찐따','존나','ㅈㄴ','좆','섹스','야동','보지','자지','fuck','shit','bitch','sex','porn','담배','술먹'];
+function cleanCheck(t){t=String(t||'');var s=t.replace(/[\s.\-_*~!?,]/g,'').toLowerCase();for(var i=0;i<BAD_WORDS.length;i++){if(s.indexOf(BAD_WORDS[i].toLowerCase())>-1)return BAD_WORDS[i];}
+  if(/(.)\1{4,}/.test(s))return '같은 글자 반복';if(/\d{6,}/.test(s))return '긴 숫자(전화번호?)';return null;}
+function cleanOrToast(t,where){var bad=cleanCheck(t);if(bad){toast('고운 말로 다시 써 주세요 ('+where+'). 쓴 글은 선생님도 볼 수 있어요');try{moktak();}catch(e){}return false;}return true;}
 function panelLantern(){
   sTitle.textContent='소원 연등 달기';
   sBody.appendChild(el('<div class="note">연등 하나에 기도 하나. <b>나를 위해</b> 빌 수도, <b>다른 사람을 위해</b> 빌 수도 있어요. 고르거나 직접 써요. 이름은 쓰지 않고 "엄마"·"3반 친구들"처럼 써요.</div>'));
@@ -1352,7 +1357,7 @@ function panelLantern(){
   var sel=cbox.querySelector('select');for(var g=1;g<=6;g++)for(var c=1;c<=5;c++){var o=document.createElement('option');o.textContent=g+'학년 '+c+'반';if(g===6&&c===2)o.selected=true;sel.appendChild(o);}
   sBody.appendChild(cbox);
   var go=el('<button class="btn pink">연등에 불 켜기</button>');
-  go.addEventListener('click',function(){var own=wbox.querySelector('#lwish').value.trim(),to=tbox.querySelector('#lto').value.trim();var w=own||LANTERN_WISHES[mode][pw];if(/단톡|카톡|전화|\d{3,}/.test(w+to)){toast('연락처나 긴 숫자는 쓰지 않아요');return;}
+  go.addEventListener('click',function(){var own=wbox.querySelector('#lwish').value.trim(),to=tbox.querySelector('#lto').value.trim();var w=own||LANTERN_WISHES[mode][pw];if(/단톡|카톡|전화|\d{3,}/.test(w+to)){toast('연락처나 긴 숫자는 쓰지 않아요');return;}if(!cleanOrToast(w+' '+to,'연등'))return;
     savedLanterns.unshift({c:pc,w:w,g:sel.value,f:mode,to:to});if(savedLanterns.length>36)savedLanterns.pop();store.set('lanterns',savedLanterns);renderLanterns();var nm=lanternGroup.children[0];LANTERN_START.set(pos.x+Math.sin(heading)*.55,.95,pos.z+Math.cos(heading)*.55);rising={m:nm,to:nm.position.clone(),t:0};questEvent('lantern');nm.position.copy(LANTERN_START);hapAnim=3;bell();toast(mode==='other'?(to?to+josa(to,'을','를')+' 위한 연등이 올라가요':'다른 사람을 위한 연등이 올라가요'):'내 연등이 천장으로 올라가요');closeSheet();lookUp=5;setTimeout(function(){if(!sheetOpen&&!cer.on){lanternFocus={m:nm};lookUp=0;toast('내 연등이 걸렸어요. 화면을 누르면 돌아와요');}},3600);});
   sBody.appendChild(go);
   var mine=savedLanterns.filter(function(l){return l.f}).length,others=savedLanterns.filter(function(l){return l.f==='other'}).length;
@@ -1607,6 +1612,12 @@ function panelGuide(){
     ab.querySelector('#gAwake').addEventListener('click',function(){startAwake();});ab.querySelector('#gGaze').addEventListener('click',function(){startGaze();});sBody.appendChild(ab);})();
   if(isAdmin){var fbx=el('<div class="box" style="background:#eef6ff"><h3>🧪 서버 시험 (6-2 코드 32개 · 교직원 코드 10개)</h3><div class="note">개인 코드로 들어온 기기의 기록이 서버(praise-stars-63)에 저장돼요. 코드표: 교학부 폴더 「연화법당 학생코드_6-2_시험.csv」·「연화법당 교직원코드_시험.csv」. 연결 상태: '+(typeof fbState!=='undefined'?fbState:'-')+'</div><button class="btn ghost sm" style="margin-top:8px">반 현황 불러오기</button><div class="rank" style="margin-top:8px"></div></div>');
     fbx.querySelector('button').addEventListener('click',function(){if(!fbDb){toast('서버 연결이 안 됐어요');return;}fbDb.ref('beopdang/students').once('value').then(function(s){var v=s.val()||{},rk=fbx.querySelector('.rank');rk.innerHTML='';var keys=Object.keys(v);if(!keys.length)rk.innerHTML='<div class="note">아직 아무도 안 들어왔어요</div>';keys.sort(function(a,b){return STUDENT_HASHES.indexOf(a)-STUDENT_HASHES.indexOf(b)}).forEach(function(h){var d=v[h],n=STUDENT_HASHES.indexOf(h)+1,sn=STAFF_HASHES.indexOf(h)+1;rk.appendChild(el('<div class="r"><span>'+(n?n+'번':sn?'교사'+sn:'?')+'</span><b>'+(d.days||0)+'일 · 절 '+(d.bows||0)+' · 사경 '+(d.sg||0)+' · 연등 '+(d.ln||0)+'</b></div>'));});}).catch(function(e){toast('불러오기 실패: '+e.message);});});
+    var mb=el('<button class="btn ghost sm" style="margin-top:8px">공유 글 보기 (연등·낙서, 누구 것인지)</button>');mb.addEventListener('click',function(){if(!fbDb){toast('서버 연결이 안 됐어요');return;}function who(s8){var i=-1;STUDENT_HASHES.forEach(function(h,k){if(h.indexOf(s8)===0)i=k;});if(i>-1)return (i+1)+'번';var j=-1;STAFF_HASHES.forEach(function(h,k){if(h.indexOf(s8)===0)j=k;});return j>-1?'교사'+(j+1):(s8||'?');}
+      Promise.all([fbDb.ref('beopdang/lanterns').limitToLast(40).once('value'),fbDb.ref('beopdang/garden/notes').limitToLast(40).once('value')]).then(function(rs){var rk=fbx.querySelector('.rank');rk.innerHTML='';var L=rs[0].val()||{},N=rs[1].val()||{};
+        Object.keys(L).reverse().forEach(function(k){var x=L[k];rk.appendChild(el('<div class="r" style="grid-template-columns:auto 1fr"><span style="color:#d9486f;white-space:nowrap">🏮 '+who(x.s)+'</span><span>'+(x.w||'')+(x.to?' · '+x.to:'')+'</span></div>'));});
+        Object.keys(N).reverse().forEach(function(k){var x=N[k];if(x.s==='test')return;rk.appendChild(el('<div class="r" style="grid-template-columns:auto 1fr"><span style="color:#8a4fa8;white-space:nowrap">✍️ '+who(x.s)+'</span><span>'+(x.a||'')+(x.b?' → '+x.b:'')+'</span></div>'));});
+        if(!rk.children.length)rk.innerHTML='<div class="note">아직 공유된 글이 없어요</div>';}).catch(function(e){toast('불러오기 실패: '+e.message);});});
+    fbx.appendChild(mb);
     sBody.appendChild(fbx);}
   var sv=el('<div class="box"><h3>기념일 법당 미리보기</h3><div class="note">날짜가 되면 법당이 저절로 바뀌어요. 지금: '+(liveEvent?liveEvent.e.n:'평소 법당')+'</div><div class="row" style="margin-top:8px"><select id="sPrev" aria-label="기념일 미리보기"><option value="">평소 법당 (오늘 날짜 기준)</option></select></div><div class="note" style="margin-top:6px">음력 기념일 날짜는 해마다 달력으로 확인해 표만 고치면 돼요.</div></div>');
   EVENTS.forEach(function(e){var o=document.createElement('option');o.value=e.k;o.textContent=e.n+' ('+e.d.join(', ')+')';sv.querySelector('select').appendChild(o);});
@@ -2160,7 +2171,7 @@ function openPray(){sBody.innerHTML='';sTitle.textContent='기도터';currentSpo
   var ch=box.querySelector('.choices'),inp=box.querySelector('input');PRAY_FOR.forEach(function(p){var b=el(chip(p,false));b.addEventListener('click',function(){who=p;inp.value='';[].forEach.call(ch.children,function(x){x.setAttribute('aria-pressed',x===b)});});ch.appendChild(b);});
   inp.addEventListener('input',function(){who=inp.value.trim();[].forEach.call(ch.children,function(x){x.setAttribute('aria-pressed','false')});});
   [].forEach.call(box.querySelectorAll('[data-c]'),function(b){b.addEventListener('click',function(){col=+b.dataset.c;[].forEach.call(box.querySelectorAll('[data-c]'),function(x){x.setAttribute('aria-pressed',x===b)});});});
-  var go=el('<button class="btn pink" style="margin-top:10px">🙏 불 밝히기</button>');go.addEventListener('click',function(){if(!who){toast('누구를 위한 불인지 골라 주세요');return;}gCandles.push({to:who,c:col,d:todayKey});if(gCandles.length>21)gCandles.shift();store.set('gcandles',gCandles);renderGCandles();hapAnim=4;chime();bell();questEvent('mind');closeSheet();toast(who+josa(who,'을','를')+' 위해 불을 밝혔어요. '+who+josa(who,'이','가')+' 평안하기를.');});
+  var go=el('<button class="btn pink" style="margin-top:10px">🙏 불 밝히기</button>');go.addEventListener('click',function(){if(!who){toast('누구를 위한 불인지 골라 주세요');return;}if(!cleanOrToast(who,'기도터'))return;gCandles.push({to:who,c:col,d:todayKey});if(gCandles.length>21)gCandles.shift();store.set('gcandles',gCandles);renderGCandles();hapAnim=4;chime();bell();questEvent('mind');closeSheet();toast(who+josa(who,'을','를')+' 위해 불을 밝혔어요. '+who+josa(who,'이','가')+' 평안하기를.');});
   box.appendChild(go);sBody.appendChild(box);
   if(gCandles.length){var lst=el('<div class="box"><h3>지금 켜져 있는 불 '+Math.min(7,gCandles.length)+'</h3><div class="note">'+gCandles.slice(-7).map(function(c){return '🕯 '+c.to+' ('+c.d.slice(5)+')';}).join(' · ')+'</div></div>');sBody.appendChild(lst);}
   sBody.appendChild(el('<div class="note" style="margin-top:8px">기도는 바라는 마음을 또렷이 하는 일이에요. 불을 밝힌 뒤 그 사람에게 말 한마디를 건네 보세요.</div>'));
@@ -3051,7 +3062,7 @@ function openGraffiti(){sBody.innerHTML='';sTitle.textContent='비밀 정원 낙
   sBody.appendChild(el('<div class="box" style="background:#f6f0ff"><h3>'+(gardenNo>0?'너는 '+gardenNo+'번째 방문자':'비밀 정원 방문자')+'</h3><div class="note">'+SECRET_DAYS+'일 동안 법당에 온 사람만 이 벽을 봐요. 이름은 쓰지 않아요.</div></div>'));
   var wrote=gNotes.some(function(n){return n.d===todayKey});
   var fm=el('<div class="box"><h3>낙서 남기기</h3><div class="note">여기까지 오면서 어땠어요? (80자)</div><textarea id="gA" maxlength="80" rows="2" style="width:100%;box-sizing:border-box;padding:8px;border-radius:10px;border:1px solid #cfd8d3;font:inherit"></textarea><div class="note" style="margin-top:6px">다음에 올 사람에게 한마디 (40자)</div><input id="gB" maxlength="40" style="width:100%;box-sizing:border-box;padding:8px;border-radius:10px;border:1px solid #cfd8d3;font:inherit"><button class="btn pink" style="margin-top:8px"'+(wrote?' disabled':'')+'>'+(wrote?'오늘은 남겼어요 · 내일 또':'✍️ 벽에 남기기')+'</button></div>');
-  fm.querySelector('button').addEventListener('click',function(){var a=fm.querySelector('#gA').value.trim().slice(0,80),b=fm.querySelector('#gB').value.trim().slice(0,40);if(!a&&!b){toast('한 줄만이라도 써 주세요');return;}var nt={no:gardenNo||0,a:a,b:b,ts:Date.now(),d:todayKey};gNotes.unshift(nt);if(gNotes.length>20)gNotes.pop();store.set('gnotes',gNotes);
+  fm.querySelector('button').addEventListener('click',function(){var a=fm.querySelector('#gA').value.trim().slice(0,80),b=fm.querySelector('#gB').value.trim().slice(0,40);if(!a&&!b){toast('한 줄만이라도 써 주세요');return;}if(!cleanOrToast(a+' '+b,'낙서판'))return;var nt={no:gardenNo||0,a:a,b:b,ts:Date.now(),d:todayKey};gNotes.unshift(nt);if(gNotes.length>20)gNotes.pop();store.set('gnotes',gNotes);
     if(typeof fbOn==='function'&&fbOn()){fbDb.ref('beopdang/garden/notes').push({no:nt.no,a:a,b:b,ts:nt.ts,s:SID.slice(0,8)}).catch(function(){});}
     gNotesAll.unshift(nt);paintGBoard();questEvent('mind');bell();closeSheet();toast('벽에 남겼어요. 다음 사람이 읽을 거예요');});
   sBody.appendChild(fm);
