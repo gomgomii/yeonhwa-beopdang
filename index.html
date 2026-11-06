@@ -3010,7 +3010,8 @@ function fbSave(){if(!fbOn())return;var rev=Date.now();fbRev=rev;store.set('rev'
 function fbSchedule(){if(!fbOn())return;clearTimeout(fbTimer);fbTimer=setTimeout(fbSave,6000);}
 function fbLoadLanterns(){var me=SID.slice(0,8),t0=Date.now();fbLoadMod().then(function(){fbDb.ref('beopdang/lanterns').orderByChild('ts').startAt(t0).on('child_added',function(s){var x=s.val();if(!x||x.s===me)return;x.k=s.key;if(fbHidden.lanterns[x.k])return;sharedLanterns.unshift(x);if(sharedLanterns.length>36)sharedLanterns.pop();if(typeof renderLanterns==='function')renderLanterns();chime();toast('친구가 연등을 달았어요 — '+x.w);}); // 지금부터 새로 달리는 연등은 바로 보임
   fbDb.ref('beopdang/lanterns').limitToLast(60).once('value').then(function(s){var v=s.val()||{};sharedLanterns=Object.keys(v).map(function(k){var x=v[k];if(x)x.k=k;return x;}).filter(function(x){return x&&x.s!==me&&x.ts>1793927000000&&!fbHidden.lanterns[x.k];}).sort(function(a,b){return b.ts-a.ts;}).slice(0,36);if(typeof renderLanterns==='function')renderLanterns();}).catch(function(){});}
-  });function fbToday(){var r=fbDb.ref('beopdang/today/'+todayKey);r.child(SID).set(true).then(function(){return r.once('value');}).then(function(s){todayCount=s.numChildren();if(typeof drawBoard==='function')drawBoard();}).catch(function(){});}
+  });}
+function fbToday(){var r=fbDb.ref('beopdang/today/'+todayKey);r.child(SID).set(true).then(function(){return r.once('value');}).then(function(s){todayCount=s.numChildren();if(typeof drawBoard==='function')drawBoard();}).catch(function(){});}
 function fbLoad(){fbDb.ref('beopdang/students/'+SID).once('value').then(function(s){var v=s.val();
   if(v&&v.rev>fbRev&&v.store){for(var k in v.store){try{localStorage.setItem('yeon3d-'+k,v.store[k]);}catch(e){}}store.set('rev',v.rev);toast('다른 기기에서 쌓은 기록을 가져왔어요');setTimeout(function(){location.reload();},1500);return;}
   fbState='ok';fbToday();fbLoadLanterns();fbSchedule();}).catch(function(e){fbState='err';console.warn('fb load',e);});}
