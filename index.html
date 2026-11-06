@@ -750,6 +750,14 @@ function lanternTag(l){ // 세로 꼬리표: 소원 글귀를 세로로, 누구�
   var g=new THREE.Group();var c=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.3,4),new THREE.MeshBasicMaterial({color:0xeeeeee}));c.position.y=-.54;g.add(c);
   var p=new THREE.Mesh(new THREE.PlaneGeometry(.22*W/112,.84),new THREE.MeshBasicMaterial({map:tx,side:THREE.DoubleSide}));p.position.y=-1.11;g.add(p);return g;
 }
+// 연등 가까이 보기: 카드에서 ◀ ▶로 옆 연등으로 넘기고, 내 연등은 내릴 수 있다
+function lanternList(){return savedLanterns.slice(0,36).concat(typeof sharedLanterns!=='undefined'?sharedLanterns:[]).slice(0,60);}
+function focusLantern(li){var list=lanternList(),n=Math.min(list.length,lanternGroup.children.length);if(!n)return;li=((li%n)+n)%n;var L=list[li],m=lanternGroup.children[li],own=li<Math.min(36,savedLanterns.length);
+  lanternFocus={m:m};lookUp=0;chime();
+  showLearn('연등 가까이 보기 '+(li+1)+' / '+n,'<div class="vow-card" style="background:linear-gradient(160deg,'+lcolors[(L.c|0)%lcolors.length][2]+',#7a4b1e)"><div class="ic">🏮</div><div class="t">'+L.w+'</div><div class="v">'+(L.to?L.to+josa(L.to,'을','를')+' 위해 · ':'')+(L.g||'')+(own?'':' · 친구 연등')+'</div></div>',function(){
+    var row=el('<div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost sm">◀ 이전</button><button class="btn ghost sm">다음 ▶</button></div>');var bs=row.querySelectorAll('button');bs[0].addEventListener('click',function(){focusLantern(li-1);});bs[1].addEventListener('click',function(){focusLantern(li+1);});sBody.appendChild(row);
+    if(own){var rm=el('<button class="btn ghost sm" style="margin-top:8px;border-color:#d9486f;color:#d9486f">🧹 이 연등 내리기</button>');rm.addEventListener('click',function(){if(rm.dataset.ok!=='1'){rm.dataset.ok='1';rm.textContent='정말 내릴까요? 한 번 더 누르면 내려요';return;}savedLanterns.splice(li,1);store.set('lanterns',savedLanterns);if(typeof fbLnSent==='number'&&fbLnSent>savedLanterns.length){fbLnSent=savedLanterns.length;store.set('lnSent',fbLnSent);}renderLanterns();lanternFocus=null;closeSheet();toast('연등을 내렸어요'+(typeof fbOn==='function'&&fbOn()?' (친구들 천장의 사본은 남아요)':''));});sBody.appendChild(rm);}
+    sBody.appendChild(el('<div class="note" style="margin-top:8px">닫거나 화면을 누르면 제자리로 돌아와요.</div>'));});}
 function renderLanterns(){
   while(lanternGroup.children.length)lanternGroup.remove(lanternGroup.children[0]);
   savedLanterns.slice(0,36).concat(typeof sharedLanterns!=='undefined'?sharedLanterns:[]).slice(0,60).forEach(function(l,i){var m=makeLantern(lcolors[(l.c|0)%lcolors.length][1]);if(l.w||l.to)m.add(lanternTag(l));m.position.copy(lanternSpot(i));m.userData.phase=Math.random()*6;lanternGroup.add(m);});
@@ -1115,7 +1123,7 @@ renderer.domElement.addEventListener('pointerup',function(e){
   if(decoClick())return;
   if(learnClick())return;
   if(lanternFocus){lanternFocus=null;closeSheet();return;}
-  var hl=ray.intersectObjects(lanternGroup.children,true);if(hl.length){var lo=hl[0].object;while(lo.parent&&lo.parent!==lanternGroup)lo=lo.parent;var li=lanternGroup.children.indexOf(lo),L=savedLanterns[li];if(L){lanternFocus={m:lo};chime();showLearn('연등 가까이 보기','<div class="vow-card" style="background:linear-gradient(160deg,'+lcolors[L.c][2]+',#7a4b1e)"><div class="ic">🏮</div><div class="t">'+L.w+'</div><div class="v">'+(L.to?L.to+'를 위해 · ':'')+L.g+'</div></div><div class="note" style="margin-top:8px">닫거나 화면을 누르면 제자리로 돌아와요.</div>');return;}}
+  var hl=ray.intersectObjects(lanternGroup.children,true);if(hl.length){var lo=hl[0].object;while(lo.parent&&lo.parent!==lanternGroup)lo=lo.parent;var li=lanternGroup.children.indexOf(lo);if(li>-1){focusLantern(li);return;}}
   if(ray.intersectObject(altar).length){openSpot('taeng');return;}
   var hit=ray.intersectObjects([floor].concat(yardGround?[yardGround]:[]).concat(garden.visible&&gardenGround?[gardenGround]:[]));
   if(hit.length){walkTo(hit[0].point.x,hit[0].point.z);}
@@ -1326,7 +1334,7 @@ function panelAltar(){
 function panelLantern(){
   sTitle.textContent='소원 연등 달기';
   sBody.appendChild(el('<div class="note">연등 하나에 기도 하나. <b>나를 위해</b> 빌 수도, <b>다른 사람을 위해</b> 빌 수도 있어요. 고르거나 직접 써요. 이름은 쓰지 않고 "엄마"·"3반 친구들"처럼 써요.</div>'));
-  if(savedLanterns.length&&lanternGroup.children.length){var vb=el('<button class="btn ghost sm" style="margin-bottom:8px">🏮 내가 단 연등 보기</button>');vb.addEventListener('click',function(){var m=lanternGroup.children[0];closeSheet();lanternFocus={m:m};lookUp=0;toast('방금 단 연등이에요. 화면을 누르면 돌아와요');});sBody.appendChild(vb);}
+  if(savedLanterns.length&&lanternGroup.children.length){var vb=el('<button class="btn ghost sm" style="margin-bottom:8px">🏮 내가 단 연등 보기</button>');vb.addEventListener('click',function(){focusLantern(0);});sBody.appendChild(vb);}
   if(isGuest){sBody.appendChild(lock());return;}
   var mode='self',pw=0,pc=0;
   var tabs=el('<div class="row" style="margin-bottom:8px"><button class="btn pink sm" data-m="self">🙏 나를 위해</button><button class="btn ghost sm" data-m="other">💗 남을 위해</button></div>');
@@ -1648,7 +1656,7 @@ function panelGuide(){
 
 /* ---------------- 루프 ---------------- */
 var prompt=document.getElementById('prompt'),promptBtn=document.getElementById('promptBtn');
-document.getElementById('promptBtn2').addEventListener('click',function(){var m=lanternGroup.children[0];if(!m)return;closeSheet();lanternFocus={m:m};lookUp=0;toast('내 연등이에요. 화면을 누르면 돌아와요');});
+document.getElementById('promptBtn2').addEventListener('click',function(){if(!lanternGroup.children.length)return;focusLantern(0);});
 promptBtn.addEventListener('click',function(){if(nearSpot==='sit')sitHere();else if(nearSpot&&nearSpot.indexOf('learn')===0)(function(ls){if(ls.lock&&!isOpen(ls.lock))panelLocked(ls.lock);else ls.open();})(learnSpots[+nearSpot.slice(5)]);else if(nearSpot)openSpot(nearSpot);});
 document.getElementById('cerFile').addEventListener('change',function(){var f=this.files[0];if(!f)return;try{cerAudio.src=URL.createObjectURL(f);cerAudio.play();chantBeat(false);document.getElementById('cerMusicNote').textContent='재생 중: '+f.name;}catch(e){toast('이 파일은 틀 수 없어요');}});
 document.getElementById('cerStop').addEventListener('click',function(){try{cerAudio.pause();}catch(e){}chantBeat(false);});
