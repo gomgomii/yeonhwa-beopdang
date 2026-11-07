@@ -227,6 +227,7 @@ body.deco .hud.bottom,body.deco .prompt,body.deco .hint,body.deco .jump,body.cer
 .saying{display:none !important}
 #med{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(760px,calc(100% - 28px));z-index:6;background:var(--glass);border-radius:18px;padding:12px 16px;display:none;gap:10px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 body.sit #med{display:grid}
+body.sit.medFold #med>:nth-child(n+3),body.sit.medFold #med .row .note,body.sit.medFold #med [data-min]{display:none} /* 11-07 명상 창 접기: 연이가 보이게 */
 body.sit .hud.bottom,body.sit .prompt,body.sit .dpad,body.sit .jump,body.sit .hint{display:none !important}
 #tv{position:fixed;inset:0;z-index:16;background:#fbf5e6;display:none;padding:3vh 6vw;overflow:auto}
 body.tv #tv{display:block}
@@ -2037,7 +2038,7 @@ function decoClick(){ // 꾸미기 모드에서 화면을 눌렀을 때. 처리�
 // ===== 좌복 명상: 방석 가까이에서 「앉아 명상하기」 → 연이가 가부좌로 앉고, 숨 바라보기 타이머 =====
 var sitOn=false, sitLeft=0, sitTimer=null, sitBreath=null, halfBow=0, bowQueue=0;
 var medEl=document.getElementById('med');
-medEl.innerHTML='<div class="row" style="justify-content:space-between"><b style="font-family:var(--font-display);font-size:18px;color:#2d7356">🧘 방석에 앉아 숨 바라보기</b><button class="btn ghost sm" id="medUp">일어나기</button></div>'
+medEl.innerHTML='<div class="row" style="justify-content:space-between"><b style="font-family:var(--font-display);font-size:18px;color:#2d7356">🧘 방석에 앉아 숨 바라보기</b><span class="row" style="gap:6px;margin-left:auto"><button class="btn ghost sm" id="medFold">접기 ▾</button><button class="btn ghost sm" id="medUp">일어나기</button></span></div>'
  +'<div class="row" style="gap:16px;align-items:center"><div id="medCircle"></div><div><div id="medWord" style="font-family:var(--font-display);font-size:22px;color:#2d7356">들이쉬고</div><div class="note">코로 천천히. 딴생각이 나면 "아, 딴생각" 하고 다시 숨으로 돌아와요.</div></div><div style="margin-left:auto;text-align:right"><div class="cer-timer" id="medT" style="font-size:30px">0:00</div><div class="row" style="gap:6px;justify-content:flex-end"><button class="btn pink sm" data-min="1">1분</button><button class="btn pink sm" data-min="3">3분</button><button class="btn pink sm" data-min="5">5분</button></div></div></div>'
  +'<div class="note" id="medNote">시간을 고르면 시작해요. 끝나면 종이 울리고 마음챙김 기록이 하나 늘어요.</div>'
  +'<div class="row" style="margin-top:6px"><span class="note">마음을 둘 곳</span><div class="choices" id="medAnchor"></div></div><div class="note" id="medGuide" style="margin-top:4px"></div>'
@@ -2059,13 +2060,15 @@ function startSit(){
   sitReturns=0;document.getElementById('medRet').textContent='마음은 원래 돌아다녀요. 돌아다닌 걸 알아차리고 몸으로 데려오는 게 명상이에요.';paintAnchor();startBreathLoop();
   bell();
 }
-function endSit(){sitOn=false;document.body.classList.remove('sit');clearInterval(sitTimer);sitTimer=null;clearInterval(sitBreath);sitBreath=null;clearInterval(sitRemind);sitRemind=null;}
+function endSit(){sitOn=false;document.body.classList.remove('sit');document.body.classList.remove('medFold');var mfb=document.getElementById('medFold');if(mfb)mfb.textContent='접기 ▾';clearInterval(sitTimer);sitTimer=null;clearInterval(sitBreath);sitBreath=null;clearInterval(sitRemind);sitRemind=null;}
 document.getElementById('medUp').addEventListener('click',endSit);
+function setMedFold(f){document.body.classList.toggle('medFold',f);var b=document.getElementById('medFold');if(b)b.textContent=f?'펴기 ▴':'접기 ▾';}
+document.getElementById('medFold').addEventListener('click',function(){setMedFold(!document.body.classList.contains('medFold'));}); // 11-07
 if(isAdult){var mrow=medEl.querySelector('[data-min]').parentNode;['10','20','30'].forEach(function(m){mrow.appendChild(el('<button class="btn pink sm" data-min="'+m+'">'+m+'분</button>'));});}
 [].forEach.call(medEl.querySelectorAll('[data-min]'),function(b){b.addEventListener('click',function(){
   clearInterval(sitTimer);sitLeft=+b.dataset.min*60;var tEl=document.getElementById('medT');
   function paint(){tEl.textContent=Math.floor(sitLeft/60)+':'+String(sitLeft%60).padStart(2,'0');}
-  paint();bell();document.getElementById('medNote').textContent='눈을 반쯤 감고 숨만 바라봐요.';
+  paint();bell();document.getElementById('medNote').textContent='눈을 반쯤 감고 숨만 바라봐요.';if(innerWidth<900||innerHeight<600)setMedFold(true); // 11-07 좁은 화면은 시작하면 접어서 연이가 보이게
   sitTimer=setInterval(function(){sitLeft--;paint();if(sitLeft<=0){clearInterval(sitTimer);sitTimer=null;bell();questEvent('sit');var n=store.get('mind',0)+1;store.set('mind',n);document.getElementById('medNote').textContent='잘했어요. 마음챙김 '+n+'번째예요. 오늘 '+sitReturns+'번 돌아왔어요 — 돌아온 만큼 알아차린 거예요. 일어나도 되고 더 앉아 있어도 돼요.';toast('마음챙김 '+n+'번째 · '+sitReturns+'번 돌아왔어요');}},1000);
 });});
 // 방석 자리(바닥에 깔린 40장 + 내가 놓은 방석)
@@ -2986,7 +2989,7 @@ function loop(){
   if(showOff>0){cp.set(pos.x-fx*2.6,1.5,pos.z-fz*2.6);lk.set(pos.x,.75,pos.z);}
   else if(bowT>=0){var rx=Math.cos(heading),rz=-Math.sin(heading);cp.set(pos.x+rx*2.4+fx*.6,1.15,pos.z+rz*2.4+fz*.6);lk.set(pos.x+fx*.3,.5,pos.z+fz*.3);} // 절은 옆에서
   else if(mokT>0){cp.set(pos.x+fx*2.6,1.4,pos.z+fz*2.6);lk.set(pos.x,.75,pos.z);} // 목탁은 앞에서
-  else if(sitOn){var rx3=Math.cos(heading),rz3=-Math.sin(heading);cp.set(pos.x+fx*2.3+rx3*1.5,1.25,pos.z+fz*2.3+rz3*1.5);lk.set(pos.x,.55,pos.z);} // 명상은 앞옆에서
+  else if(sitOn){var rx3=Math.cos(heading),rz3=-Math.sin(heading);cp.set(pos.x+fx*2.4+rx3*1.5,1.5,pos.z+fz*2.4+rz3*1.5);lk.set(pos.x+fx*.2,0,pos.z+fz*.2);} // 명상은 앞옆에서. 11-07: 아래 명상 창에 가리지 않게 연이를 화면 위쪽에
   else if(wallIdx>=0){var bz=bayZ(wallIdx);cp.set(PX-6.6,3.0,pos.z*.15);lk.set(hx,3.35,0);} // 액자 설명판은 정면에서
   if(typeof playCam==='function')playCam(cp,lk);
   if(typeof birdState!=='undefined'&&birdState.cam>0&&birdState.phase==='sit'&&!sitOn&&bowT<0&&!(typeof playLock==='function'&&playLock())){var bp2=birdTarget(),sx=-Math.cos(heading),sz=Math.sin(heading);cp.set(pos.x+sx*1.25+fx*1.0,bp2.y+.3,pos.z+sz*1.25+fz*1.0);lk.set(bp2.x,bp2.y-.05,bp2.z);} // 11-07: 파랑새가 앉으면 3초 동안 옆에서 어깨 위를 보여 준다
