@@ -1369,7 +1369,7 @@ function panelAltar(){
   sBody.appendChild(el('<div class="box"><h3>우리 법당 탱화 이야기</h3>가운데는 버들가지와 정병을 든 <b>관세음보살</b>이에요. 왼쪽 흰 코끼리에는 <b>보현보살</b>, 오른쪽 푸른 사자에는 <b>문수보살</b>이 앉아 계세요. 둘레의 동자승들은 야구, 축구, 태권도, 스노보드, 기타, 공부를 하고 있어요. 무엇을 하든 부처님 마음과 함께라는 뜻이에요.</div>'));
   var tb=el('<button class="btn ghost">탱화 속 동자승 찾기</button>');tb.addEventListener('click',function(){openSpot('taeng');});sBody.appendChild(tb);
   var vb2=el('<button class="btn ghost" style="margin-left:6px">내 원력 적기 (족자)</button>');vb2.addEventListener('click',function(){openSpot('vow');});sBody.appendChild(vb2);
-  var gz=el('<div class="box" style="background:#fff8e6;margin-top:8px"><h3>✨ 부처님 친견</h3><div class="note">조명이 잦아들고 부처님이 빛의 모습으로 떠올라요. 빛나는 점을 누르면 그 자리의 뜻을 알려줘요. 말씀은 없어요. 조용히 함께 있어요.</div><button class="btn pink" style="margin-top:8px">🙏 빛으로 뵙기</button></div>');gz.querySelector('button').addEventListener('click',function(){startGaze();});sBody.appendChild(gz);
+  var gz=el('<div class="box" style="background:#fff8e6;margin-top:8px"><h3>✨ 부처님 친견</h3><div class="note">조명이 잦아들고 부처님이 빛의 모습으로 떠올라요. 빛나는 점을 누르면 그 자리의 뜻을 알려줘요. 말씀은 없어요. 조용히 함께 있어요.</div><button class="btn pink" style="margin-top:8px">'+(isOpen('gaze')?'🙏 빛으로 뵙기':'🔒 법당 '+needDay('gaze')+'일에 열려요')+'</button></div>');gz.querySelector('button').addEventListener('click',function(){if(!isOpen('gaze')){panelLocked('gaze');return;}startGaze();});sBody.appendChild(gz);
   var aw=el('<div class="box" style="background:#f6f0ff;margin-top:8px"><h3>🖼️ 탱화가 깨어나는 밤</h3><div class="note">'+(isOpen('awake')?'조명이 잦아들고 탱화가 세 겹으로 열리며 관세음·문수·보현 세 보살이 내려와요. 걸어가서 말을 걸어 봐요.'+taengMetNote():'법당에 온 날이 '+needDay('awake')+'일이 되면 열려요. 지금 '+visitDays()+'일.')+'</div><button class="btn ghost sm" style="margin-top:8px">'+(isOpen('awake')?'🌙 깨우기':'🔒 '+needDay('awake')+'일에 열려요')+'</button></div>');aw.querySelector('button').addEventListener('click',function(){if(isOpen('awake'))startAwake();else panelLocked('awake');});sBody.appendChild(aw);
   if(isGuest){sBody.appendChild(lock());return;}
   var ob=el('<div class="box"><h3>육법공양 올리기 '+offered.length+' / 6</h3><div class="note">불단에 여섯 가지 공양을 올려요. 두 손으로 올리고 합장 반배해요. 날마다 새로 올려요.</div><div class="choices" style="margin-top:8px"></div><div class="note" id="offerMsg" style="margin-top:8px;min-height:1.4em"></div></div>');
@@ -1681,7 +1681,7 @@ function panelGuide(){
     hb.querySelector('#gSnd').addEventListener('click',function(){document.getElementById('sndBtn').click();this.textContent=soundOn?'🔔 소리 켜짐':'🔕 소리 꺼짐';});
     hb.querySelector('#gLeave').addEventListener('click',function(){closeSheet();document.getElementById('leaveBtn').click();});
     sBody.appendChild(hb);})();
-  (function(){var ab=el('<div class="box" style="background:#f6f0ff"><h3>🖼️ 탱화 깨우기 (시안)</h3><div class="note">조명이 잦아들고 탱화가 세 겹으로 열리며 관세음·문수·보현 세 보살이 내려와요. 걸어가서 말을 걸 수 있어요. 그 다음 「가까이 뵙기」로 부처님 친견. 시안이라 조건 없이 열려요.</div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn pink sm" id="gAwake">탱화 깨우기</button><button class="btn ghost sm" id="gGaze">부처님 친견만 보기</button></div></div>');
+  if(isAdmin)(function(){var ab=el('<div class="box" style="background:#f6f0ff"><h3>🖼️ 탱화 깨우기 (시안)</h3><div class="note">조명이 잦아들고 탱화가 세 겹으로 열리며 관세음·문수·보현 세 보살이 내려와요. 걸어가서 말을 걸 수 있어요. 그 다음 「가까이 뵙기」로 부처님 친견. 시안이라 조건 없이 열려요.</div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn pink sm" id="gAwake">탱화 깨우기</button><button class="btn ghost sm" id="gGaze">부처님 친견만 보기</button></div></div>');
     ab.querySelector('#gAwake').addEventListener('click',function(){startAwake();});ab.querySelector('#gGaze').addEventListener('click',function(){startGaze();});sBody.appendChild(ab);})();
   if(isAdmin){var fbx=el('<div class="box" style="background:#eef6ff"><h3>🧪 서버 시험 (6-3 코드 32개 · 교직원 코드 25개)</h3><div class="note">개인 코드로 들어온 기기의 기록이 서버(praise-stars-63)에 저장돼요. 코드표: 교학부 폴더 「연화법당 학생코드_6-3_시험.csv」·「연화법당 교직원코드_시범25.csv」. 연결 상태: '+(typeof fbState!=='undefined'?fbState:'-')+'</div><button class="btn ghost sm" style="margin-top:8px">반 현황 불러오기</button><div class="rank" style="margin-top:8px"></div></div>');
     fbx.querySelector('button').addEventListener('click',function(){if(!fbDb){toast('서버 연결이 안 됐어요');return;}fbDb.ref('beopdang/students').once('value').then(function(s){var v=s.val()||{},rk=fbx.querySelector('.rank');rk.innerHTML='';var keys=Object.keys(v);if(!keys.length)rk.innerHTML='<div class="note">아직 아무도 안 들어왔어요</div>';keys.sort(function(a,b){return STUDENT_HASHES.indexOf(a)-STUDENT_HASHES.indexOf(b)}).forEach(function(h){var d=v[h],n=STUDENT_HASHES.indexOf(h)+1,sn=STAFF_HASHES.indexOf(h)+1;rk.appendChild(el('<div class="r"><span>'+(n?n+'번':sn?'교사'+sn:'?')+'</span><b>'+(d.days||0)+'일 · 절 '+(d.bows||0)+' · 사경 '+(d.sg||0)+' · 연등 '+(d.ln||0)+'</b></div>'));});}).catch(function(e){toast('불러오기 실패: '+e.message);});});
@@ -2845,12 +2845,13 @@ var LADDER=[
  {d:135,keys:['title:14'],n:'칭호 「보살의 마음」'},
  {d:142,p:{tap:10},keys:['fx:tapPetals'],n:'🌸 탑돌이 꽃잎 길'},
  {d:150,p:{yebul:12},keys:['title:15','plaque'],n:'칭호 「연화 보살」 · 법당 문 위 내 이름 현판'},
- {d:190,keys:['hoehyang'],n:'한 해 회향'}
+ {d:190,keys:['hoehyang'],n:'한 해 회향'},
+ {d:12,keys:['gaze'],n:'✨ 부처님 친견(빛으로 뵙기)'} // 11-07 뒤에 붙인 칸(번호 유지), 아래에서 날짜순 정렬
 ];
-LADDER.forEach(function(u,i){u.id=i;u.d=dayN(u.d);if(u.p)for(var k in u.p)u.p[k]=Math.max(1,Math.ceil(u.p[k]*DAY_SCALE));});
+LADDER.forEach(function(u,i){u.id=i;u.d=dayN(u.d);if(u.p)for(var k in u.p)u.p[k]=Math.max(1,Math.ceil(u.p[k]*DAY_SCALE));});LADDER.sort(function(a,b){return a.d-b.d||a.id-b.id;});
 var UNLOCKS=LADDER,KEYIDX={};LADDER.forEach(function(u){u.keys.forEach(function(k){KEYIDX[k]=u;});});
 var gfOpen=store.get('gfOpen',null); // 예전 규칙으로 이미 열렸던 꾸밈(염주·꾸미기·동반자)은 그대로 둔다(빼앗지 않음)
-var LOCK_NAME={yard:'마당',sagyeong:'사경대',lantern:'소원 연등',deco:'꾸미기',vow:'내 원력 족자',pet:'동반자 동물',dhp:'오늘의 법구경',play:'놀이터',samul:'사물 네 가지',ogye:'오계',samgwi:'삼귀의 글판',life:'부처님 생애 그림책',study:isAdult?'경전 공부방':'나란다 공부방',garden:'비밀 정원',cham:'참회의 자리',awake:'탱화가 깨어나는 밤',tap:'탑돌이',pondlan:'작은 연등 띄우기',fish:'물고기 바라보기',ball:'공 차기',jing:'징검다리',swing:'그네',squirrel:'숨은 다람쥐',flower:'꽃밭',bubble:'비눗방울',mala:'염주 꿰기'};
+var LOCK_NAME={gaze:'부처님 친견',yard:'마당',sagyeong:'사경대',lantern:'소원 연등',deco:'꾸미기',vow:'내 원력 족자',pet:'동반자 동물',dhp:'오늘의 법구경',play:'놀이터',samul:'사물 네 가지',ogye:'오계',samgwi:'삼귀의 글판',life:'부처님 생애 그림책',study:isAdult?'경전 공부방':'나란다 공부방',garden:'비밀 정원',cham:'참회의 자리',awake:'탱화가 깨어나는 밤',tap:'탑돌이',pondlan:'작은 연등 띄우기',fish:'물고기 바라보기',ball:'공 차기',jing:'징검다리',swing:'그네',squirrel:'숨은 다람쥐',flower:'꽃밭',bubble:'비눗방울',mala:'염주 꿰기'};
 function isStaff(){return !!(SID&&typeof STAFF_HASHES!=='undefined'&&STAFF_HASHES.indexOf(SID)>-1);}
 function needDay(k){if(k==='lantern'&&isStaff())return 1;var u=KEYIDX&&KEYIDX[k];return u?u.d:1;}
 function entryPracOk(u){if(!u.p)return true;var pr=prac||{};for(var pk in u.p)if((pr[pk]||0)<u.p[pk])return false;return true;}
@@ -3017,7 +3018,7 @@ function loop(){
   else if(sitOn){var rx3=Math.cos(heading),rz3=-Math.sin(heading);cp.set(pos.x+fx*2.4+rx3*1.5,1.5,pos.z+fz*2.4+rz3*1.5);lk.set(pos.x+fx*.2,0,pos.z+fz*.2);} // 명상은 앞옆에서. 11-07: 아래 명상 창에 가리지 않게 연이를 화면 위쪽에
   else if(wallIdx>=0){var bz=bayZ(wallIdx);cp.set(PX-6.6,3.0,pos.z*.15);lk.set(hx,3.35,0);} // 액자 설명판은 정면에서
   if(typeof playCam==='function')playCam(cp,lk);
-  if(typeof birdState!=='undefined'&&birdState.cam>0&&birdState.phase==='sit'&&!sitOn&&bowT<0&&!(typeof playLock==='function'&&playLock())){var bp2=birdTarget(),sx=-Math.cos(heading),sz=Math.sin(heading);cp.set(pos.x+sx*1.25+fx*1.0,bp2.y+.3,pos.z+sz*1.25+fz*1.0);lk.set(bp2.x,bp2.y-.05,bp2.z);} // 11-07: 파랑새가 앉으면 3초 동안 옆에서 어깨 위를 보여 준다
+  if(typeof birdState!=='undefined'&&birdState.cam>0&&birdState.phase==='sit'&&!sitOn&&bowT<0&&!(typeof playLock==='function'&&playLock())){var bp2=birdTarget(),sx=-Math.cos(heading),sz=Math.sin(heading);cp.set(pos.x+sx*1.0+fx*.85,bp2.y+.22,pos.z+sz*1.0+fz*.85);lk.set(bp2.x,bp2.y+.02,bp2.z);} // 11-07: 파랑새가 앉으면 3초 동안 옆에서 어깨 위를 보여 준다
   if(cer.on){cp.set(0,2.5,-1.6);lk.set(0,2.7,-9);}
   if(tour){var kf=TOUR[tour.i];tour.t+=dt;cp.set(kf.cp[0],kf.cp[1],kf.cp[2]);lk.set(kf.lk[0],kf.lk[1],kf.lk[2]);if(tour.t>=kf.d){tour.i++;tour.t=0;if(tour.i>=TOUR.length)endTour();else showTourText();}}
   if(lanternFocus){var lp=lanternFocus.m.position,shE=document.getElementById('sheet'),wide=innerWidth>760,sw=(sheetOpen&&shE&&wide)?Math.min(.65,shE.offsetWidth/innerWidth):0,shH=(sheetOpen&&shE&&!wide)?Math.min(.6,shE.offsetHeight/innerHeight):0,sft=sw*.554*2.6*camera.aspect,dwn=shH*.554*2.6;cp.set(lp.x+1.25+.87*sft,lp.y-.55-dwn,lp.z+2.2-.49*sft);lk.set(lp.x+.87*sft,lp.y-.58-dwn,lp.z-.49*sft);} // 11-07 연등과 꼬리표가 한 화면에, 옆(아래) 창에 가리지 않는 쪽으로
@@ -3480,7 +3481,7 @@ var SWING={x:-12.7,z:-3.2,top:2.3,L:1.78},swingG=new THREE.Group();
   swingG.position.set(SWING.x,SWING.top-.02,SWING.z);g.add(swingG);
   var rope=pMat(0xd9c9a3,.9);[-.3,.3].forEach(function(x){pAdd(swingG,new THREE.CylinderGeometry(.012,.012,SWING.L,6),rope,x,-SWING.L/2,0);});
   pAdd(swingG,new THREE.BoxGeometry(.72,.06,.32),pMat(0xb5462f,.7),0,-SWING.L,0);
-  var s=label('그네','타면 밤하늘이 가까워져요','#d9486f');s.position.set(SWING.x,SWING.top+.7,SWING.z);s.scale.set(1.0,.39,1);g.add(s);})();
+  var s=label('그네','서서 타요 · 흔들흔들','#d9486f');s.position.set(SWING.x,SWING.top+.7,SWING.z);s.scale.set(1.0,.39,1);g.add(s);})();
 function startSwing(){closeSheet();stopWalk();PLAY.swing={t:0,amp:0,out:0};heading=0;pos.set(SWING.x,0,SWING.z);chime();toast('그네를 타요 · 방향키나 화면을 누르면 내려요');}
 function swingTick(dt){var S=PLAY.swing;if(!S){if(Math.abs(swingG.rotation.x)>.001)swingG.rotation.x*=Math.max(0,1-dt*2);return;}
   S.t+=dt;if(!S.out&&(keys.up||keys.down||keys.left||keys.right||target||S.t>20)){S.out=.001;target=null;routeQ=[];}
@@ -3667,7 +3668,7 @@ function afterFontsRepaint(){[function(){drawBoard();},function(){paintNext();},
 var bird=(function(){var g=new THREE.Group();function m(geo,col){return new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:col,roughness:.7}));}
   var body=m(new THREE.SphereGeometry(.07,12,10),0x3b8fd9);body.scale.set(1,.85,1.3);g.add(body);var head=m(new THREE.SphereGeometry(.045,10,8),0x4aa3ea);head.position.set(0,.06,.07);g.add(head);
   var beak=m(new THREE.ConeGeometry(.012,.035,6),0xf2b134);beak.rotation.x=Math.PI/2;beak.position.set(0,.055,.12);g.add(beak);
-  [-1,1].forEach(function(k){var e=m(new THREE.SphereGeometry(.008,6,6),0x111111);e.position.set(k*.025,.075,.1);g.add(e);var w=m(new THREE.SphereGeometry(.05,10,8),0x2f78c4);w.scale.set(.35,.25,1);w.position.set(k*.07,.01,0);w.userData.wing=k;g.add(w);});
+  [-1,1].forEach(function(k){var e=m(new THREE.SphereGeometry(.012,10,8),0x111111);e.position.set(k*.026,.077,.1);e.userData.eye=k;g.add(e);var hl=new THREE.Mesh(new THREE.SphereGeometry(.0035,6,5),new THREE.MeshBasicMaterial({color:0xffffff}));hl.position.set(.004,.005,.009);e.add(hl); /* 11-07 눈을 조금 크게, 반짝 점 */var w=m(new THREE.SphereGeometry(.05,10,8),0x2f78c4);w.scale.set(.35,.25,1);w.position.set(k*.07,.01,0);w.userData.wing=k;g.add(w);});
   var tail=m(new THREE.ConeGeometry(.03,.07,6),0x2f78c4);tail.rotation.x=-Math.PI/2;tail.position.set(0,0,-.1);g.add(tail);
   var belly=m(new THREE.SphereGeometry(.05,10,8),0xfff1c9);belly.scale.set(.9,.7,1.1);belly.position.set(0,-.03,.02);g.add(belly);
   g.visible=false;scene.add(g);return g;})();
@@ -3688,6 +3689,17 @@ function birdStart(){if(birdState.on)return;birdState.on=true;birdState.t=0;bird
   birdOrbit(0,birdFrom);bird.position.copy(birdFrom);birdPrev.copy(birdFrom);chime();}
 function birdStop(){birdState.on=false;birdState.phase='off';bird.visible=false;birdGlow.material.opacity=0;}
 function birdWings(a){bird.children.forEach(function(c){if(c.userData.wing)c.rotation.z=c.userData.wing*a;});}
+// 11-07 파랑새 찡긋: 내려앉아 클로즈업하는 동안 카메라를 보고 고개를 갸웃, 한쪽 눈을 찡긋, 눈가에 반짝
+var starTex=canvasTex(64,64,function(g,w,h){g.translate(32,32);g.fillStyle='#fff';g.beginPath();for(var i=0;i<8;i++){var r=i%2?5:30,a=i/8*Math.PI*2;g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}g.closePath();g.fill();});
+var birdSpark=new THREE.Sprite(new THREE.SpriteMaterial({map:starTex,color:0xfff1a0,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));birdSpark.position.set(.06,.11,.11);birdSpark.scale.set(.001,.001,1);bird.add(birdSpark);
+function birdWink(dt,t){var eyes=bird.children.filter(function(c){return c.userData.eye;}),c=birdState.cam;
+  if(!(c>0)){birdState.wyT=0;bird.rotation.z*=.85;eyes.forEach(function(e){e.scale.set(1,1,1);});birdSpark.material.opacity=0;return;}
+  var dx=camera.position.x-bird.position.x,dz=camera.position.z-bird.position.z,want=Math.atan2(dx,dz);if(birdState.wy===undefined||birdState.wyT!==1)birdState.wy=bird.rotation.y;birdState.wyT=1;var dy=want-birdState.wy;dy=Math.atan2(Math.sin(dy),Math.cos(dy));birdState.wy+=dy*Math.min(1,dt*6);bird.rotation.y=birdState.wy; // 카메라 쪽으로(고개를 끝까지 돌림)
+  var w=c<2.35&&c>1.45,k=w?Math.sin(Math.min(1,(2.35-c)/.9)*Math.PI):0; // 0→1→0
+  bird.rotation.z=.32*k; // 고개 갸웃
+  eyes.forEach(function(e){if(e.userData.eye===1)e.scale.set(1+.5*k,1-.85*k,1);else e.scale.set(1,1,1);}); // 한쪽 눈 찡긋
+  birdSpark.material.opacity=k;birdSpark.material.rotation=t*2;var s=.01+.06*k*(1+.25*Math.sin(t*18));birdSpark.scale.set(s,s,1);
+  if(w&&!birdState.winked){birdState.winked=true;chirp();}if(!w&&c<1.4)birdState.winked=false;}
 var gLabTmp=new THREE.Vector3();function gLabelFade(){garden.traverse(function(o){if(!o.isSprite||!o.material.map||o.material.blending===THREE.AdditiveBlending)return;var d=camera.position.distanceTo(o.getWorldPosition(gLabTmp)),a=Math.max(0,Math.min(1,(d-1.3)/1.1));o.material.opacity=a;o.visible=a>.02;});} // 11-07: 정원 표지판이 카메라 코앞에 오면 흐려져 화면을 가리지 않게
 function birdTick(dt,t){
   var inG=garden.visible&&secretOpen&&pos.x<-hx&&pos.z<YARD.z0;
@@ -3711,8 +3723,9 @@ function birdTick(dt,t){
     if(k>=1){birdState.phase='land';birdState.t=0;birdLandFrom.copy(bird.position);}}
   else if(ph==='land'){var k2=Math.min(1,birdState.t/BIRD_LAND),e=k2*k2*(3-2*k2);bird.position.lerpVectors(birdLandFrom,tg,e);bird.position.y+=Math.sin(k2*Math.PI)*.06;bird.rotation.x*=.9;
     var dyw=(heading-.95)-bird.rotation.y;dyw=Math.atan2(Math.sin(dyw),Math.cos(dyw));bird.rotation.y+=dyw*Math.min(1,dt*4);birdWings((1-k2)*Math.sin(t*20)*.6+.12*k2);birdGlow.material.opacity=Math.max(0,birdGlow.material.opacity-dt);
-    if(k2>=1){birdState.phase='sit';birdState.t=0;birdState.cam=3.2;chirp();if(!birdState.said){birdState.said=true;setTimeout(birdSay,900);}}}
+    if(k2>=1){birdState.phase='sit';birdState.t=0;birdState.cam=3.2;chirp();if(!birdState.said){birdState.said=true;setTimeout(birdSay,3500);} /* 11-07 클로즈업(찡긋)이 끝난 뒤 인사 */}}
   else if(ph==='sit'){bird.position.copy(tg);bird.position.y+=Math.abs(Math.sin(t*2.2))*.008;bird.rotation.x=0;bird.rotation.y=heading-.95+Math.sin(t*.7)*.25*(Math.sin(t*.23)>.6?1:0); // 가끔 고개를 돌린다
+    birdWink(dt,t);
     birdWings(.12+(Math.sin(t*.9)>.97?Math.sin(t*30)*.3:0));}
   else if(ph==='leave'){var k3=birdState.t/2.2;bird.position.y+=dt*(1.2+k3*1.5);bird.position.x+=Math.sin(bird.rotation.y)*dt*1.4;bird.position.z+=Math.cos(bird.rotation.y)*dt*1.4;birdWings(Math.sin(t*16)*.9);birdGlow.material.opacity=Math.min(.9,k3);
     if(k3>=1)birdStop();}
