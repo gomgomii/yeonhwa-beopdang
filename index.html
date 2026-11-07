@@ -220,6 +220,7 @@ body.cer .cer-card{display:grid;gap:12px}
 @media (prefers-reduced-motion:reduce){.orb,.sheet{transition:none}}
 #deco{position:fixed;left:14px;right:14px;bottom:12px;z-index:6;background:var(--glass);border-radius:16px;padding:10px 12px;display:none;flex-direction:column;gap:8px;box-shadow:0 6px 24px rgba(0,0,0,.2);max-height:46vh;overflow:auto}
 body.deco #deco{display:flex}
+body.deco.decoFold #deco>:not(:first-child),body.deco.decoFold #decoHint{display:none} /* 11-07 꾸미기 창 접기: 바닥이 보이게 */
 body.deco .hud.bottom,body.deco .prompt,body.deco .hint,body.deco .jump,body.cer #deco{display:none !important}
 .sw{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.2);padding:0}
 .sw[aria-pressed="true"]{outline:3px solid var(--leaf);outline-offset:1px}
@@ -1988,15 +1989,15 @@ function paintPlaque(){if(plaque){scene.remove(plaque);plaque=null;}var n=store.
 paintPlaque();
 // 꾸미기 판
 var decoEl=document.getElementById('deco');
-decoEl.innerHTML='<div class="row" style="justify-content:space-between"><b style="font-family:var(--font-display);font-size:17px;color:#2d7356">🏠 내 법당 꾸미기</b><span class="note" id="decoHint">바닥을 누르면 놓여요 · 놓인 것을 누르면 고칠 수 있어요</span><button class="btn pink sm" id="decoClose">다 꾸몄어요</button></div>'
+decoEl.innerHTML='<div class="row" style="justify-content:space-between"><b style="font-family:var(--font-display);font-size:17px;color:#2d7356">🏠 내 법당 꾸미기</b><span class="note" id="decoHint">바닥을 누르면 놓여요 · 놓인 것을 누르면 고칠 수 있어요</span><span class="row" style="gap:6px;margin-left:auto"><button class="btn ghost sm" id="decoFold" aria-pressed="false">접기 ▾</button><button class="btn pink sm" id="decoClose">✕ 다 꾸몄어요</button></span></div>'
  +'<div class="choices" id="decoTypes"></div>'
  +'<div class="row"><span class="note">색</span><div class="row" id="decoColors" style="gap:6px"></div><span class="note" style="margin-left:8px" id="decoCount"></span></div>'
  +'<div class="row" id="decoSelRow" style="display:none"><span class="note" id="decoSelName"></span><button class="btn ghost sm" id="dRot">돌리기</button><button class="btn ghost sm" id="dCol">색 바꾸기</button><button class="btn ghost sm" id="dWord" style="display:none">글자 바꾸기</button><button class="btn ghost sm" id="dDel">치우기</button></div>'
  +'<div class="row"><input id="bnameIn" maxlength="10" placeholder="내 법당 이름 (예: 지우)" style="padding:7px 10px;border:1px solid #cfe0d6;border-radius:10px;font:inherit;width:170px"><button class="btn ghost sm" id="bnameSet">이름 걸기</button><button class="btn ghost sm" id="cushAll">기본 방석 다 치우기</button><button class="btn ghost sm" id="decoClear" style="margin-left:auto">다 치우기</button></div>';
 function paintDecoUI(){
   var cur=DECO_TYPES.filter(function(t){return t.k===decoType})[0];if(!cur||!unlocked(cur))decoType='cushion';
-  var tp=decoEl.querySelector('#decoTypes');tp.innerHTML='';DECO_TYPES.forEach(function(t){var ok=unlocked(t);var b=el('<button class="choice" aria-pressed="'+(t.k===decoType)+'"'+(ok?'':' disabled style="opacity:.55" title="'+reqShort('deco:'+t.k)+'"')+'>'+(ok?t.e+' '+t.n:'🔒 '+t.n+' · '+needDay('deco:'+t.k)+'일')+'</button>');if(ok)b.addEventListener('click',function(){decoType=t.k;paintDecoUI();});tp.appendChild(b);});
-  decoEl.querySelector('#decoHint').textContent='법당에 온 날 '+visitDays()+'일째 · '+nextUnlock();
+  var tp=decoEl.querySelector('#decoTypes');tp.innerHTML='';var nLock=0;DECO_TYPES.forEach(function(t){var ok=unlocked(t);if(!ok){nLock++;return;}var b=el('<button class="choice" aria-pressed="'+(t.k===decoType)+'">'+t.e+' '+t.n+'</button>');b.addEventListener('click',function(){decoType=t.k;paintDecoUI();});tp.appendChild(b);});if(nLock)tp.appendChild(el('<span class="note" style="align-self:center">🔒 '+nLock+'가지 더 · '+nextUnlock()+'</span>')); // 11-07 잠긴 물건은 한 줄로
+  decoEl.querySelector('#decoHint').textContent='바닥을 누르면 놓여요 · 놓인 것을 누르면 고쳐요';
   var cl=decoEl.querySelector('#decoColors');cl.innerHTML='';DECO_COLORS.forEach(function(c,i){var b=el('<button class="sw" aria-label="색 '+(i+1)+'" aria-pressed="'+(i===decoColor)+'" style="background:'+hex6(c)+'"></button>');b.addEventListener('click',function(){decoColor=i;if(decoSel>=0&&decor[decoSel]){decor[decoSel].c=i;saveDecor();}paintDecoUI();});cl.appendChild(b);});
   decoEl.querySelector('#decoCount').textContent=decor.length+' / 80개';
   var sr=decoEl.querySelector('#decoSelRow'),d=decor[decoSel];sr.style.display=d?'':'none';
@@ -2004,9 +2005,11 @@ function paintDecoUI(){
   decoEl.querySelector('#bnameIn').value=store.get('bname','');
   var left=baseCushions.length-cushOff.length;decoEl.querySelector('#cushAll').textContent=left?'기본 방석 다 치우기 ('+left+'장 남음)':'방석 다시 깔기';
 }
-function setDeco(on){decoOn=on;document.body.classList.toggle('deco',on);decoSel=-1;paintDecoUI();if(on)toast('바닥을 눌러서 놓아 보세요');}
+function setDeco(on){decoOn=on;document.body.classList.toggle('deco',on);if(!on){document.body.classList.remove('decoFold');var fb=document.getElementById('decoFold');if(fb){fb.textContent='접기 ▾';fb.setAttribute('aria-pressed','false');}}decoSel=-1;paintDecoUI();if(on)toast('바닥을 눌러서 놓아 보세요');}
 document.getElementById('decoBtn').addEventListener('click',function(){if(isGuest){document.getElementById('guideBtn').click();return;}if(!isOpen('deco')){panelLocked('deco');return;}setDeco(!decoOn);});
 decoEl.querySelector('#decoClose').addEventListener('click',function(){setDeco(false);});
+decoEl.querySelector('#decoFold').addEventListener('click',function(){var f=!document.body.classList.contains('decoFold');document.body.classList.toggle('decoFold',f);this.textContent=f?'펴기 ▴':'접기 ▾';this.setAttribute('aria-pressed',String(f));});
+window.addEventListener('keydown',function(e){if(e.key==='Escape'&&decoOn){setDeco(false);}}); // 11-07 Esc로 꾸미기 끝내기
 decoEl.querySelector('#cushAll').addEventListener('click',function(){if(baseCushions.length-cushOff.length>0){cushOff=baseCushions.map(function(m){return m.userData.ci});toast('기본 방석을 다 치웠어요. 내 방석을 놓아 보세요');}else{cushOff=[];toast('기본 방석을 다시 깔았어요');}applyCushOff();paintDecoUI();});
 
 decoEl.querySelector('#dRot').addEventListener('click',function(){var d=decor[decoSel];if(!d)return;d.r=((d.r||0)+Math.PI/4)%(Math.PI*2);saveDecor();paintDecoUI();});
