@@ -2272,7 +2272,7 @@ function gardenWalk(){if(!garden.visible)return;var best=-1,bd=.5;gardenStones.f
   if(best<0||best===gLastStone)return;gLastStone=best;if(gWalked[best])return;gWalked[best]=true;var n=Object.keys(gWalked).length;chime();
   if(n>=8){gWalked={};if(gWalkDays.indexOf(todayKey)<0){gWalkDays.push(todayKey);store.set('gwalk',gWalkDays);}toast('한 바퀴. 숨 여덟 번. 마음이 조금 느려졌나요?');questEvent('mind');}
   else toast((n%2?'들이쉬고… ':'내쉬고… ')+n+' / 8');}
-function paintSecret(){secretOpen=visitDays()>=SECRET_DAYS;doorLock.material.color.set(secretOpen?0x9fd3b5:0xc9a227);}
+function paintSecret(){secretOpen=isAdmin||visitDays()>=SECRET_DAYS;doorLock.material.color.set(secretOpen?0x9fd3b5:0xc9a227);}
 // 11-07 비밀의 문: 가까이 가면 「짠」 열린다 — 문이 돌며 열리고, 문틈에서 금빛이 터지고, 반짝이가 흩날린다. 멀어지면 닫힌다
 var doorFx={open:false,t:9,glow:null,pts:null,pd:null};
 function doorFxBuild(){var gm=new THREE.Mesh(new THREE.PlaneGeometry(1.62,2.45),new THREE.MeshBasicMaterial({color:0xffe6a0,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));gm.position.set(-hx-.04,1.22,2.5);gm.rotation.y=Math.PI/2;scene.add(gm);doorFx.glow=gm;
@@ -2854,8 +2854,8 @@ var LOCK_NAME={yard:'마당',sagyeong:'사경대',lantern:'소원 연등',deco:'
 function isStaff(){return !!(SID&&typeof STAFF_HASHES!=='undefined'&&STAFF_HASHES.indexOf(SID)>-1);}
 function needDay(k){if(k==='lantern'&&isStaff())return 1;var u=KEYIDX&&KEYIDX[k];return u?u.d:1;}
 function entryPracOk(u){if(!u.p)return true;var pr=prac||{};for(var pk in u.p)if((pr[pk]||0)<u.p[pk])return false;return true;}
-function entryOpen(u){return visitDays()>=u.d&&entryPracOk(u);}
-function isOpen(k){if(k==='lantern'&&isStaff())return true;if(gfOpen&&gfOpen[k])return true;var u=KEYIDX&&KEYIDX[k];return !u||entryOpen(u);}
+function entryOpen(u){if(isAdmin)return true;return visitDays()>=u.d&&entryPracOk(u);} // 11-07 교법사는 모두 열림
+function isOpen(k){if(isAdmin)return true;if(k==='lantern'&&isStaff())return true;if(gfOpen&&gfOpen[k])return true;var u=KEYIDX&&KEYIDX[k];return !u||entryOpen(u);}
 function reqText(u){var s='법당 '+u.d+'일';if(u.p)for(var pk in u.p)s+=' · '+(PRAC_N[pk]||pk)+' '+u.p[pk]+'일';return s;}
 function reqShort(k){var u=KEYIDX&&KEYIDX[k];return u?reqText(u):'';}
 function nextUnlockEntry(){for(var i=0;i<LADDER.length;i++)if(!entryOpen(LADDER[i]))return LADDER[i];return null;}
@@ -3588,7 +3588,7 @@ function robeHex(){return (typeof MY==='undefined'||!MY)?0x8b8f86:myPick(ROBE_C,
 function walkSpd(){return (MY&&MY.run&&isOpen('run')&&pos.x<-hx)?5.5:4;} // 11-07 걷기 3→4, 달리기 4.6→5.5 // 법당 안에서는 뛰지 않는다(예절). 마당·정원에서만
 function fxOn(k){return !!(MY&&MY.fx[k])&&isOpen('fx:'+k);}
 function sndOn(k){return !!(typeof MY!=='undefined'&&MY&&MY.snd&&MY.snd[k])&&isOpen('snd:'+k);}
-function beadOk(b){if(!b||b.k==='none'||b.k==='wood')return true;if(typeof KEYIDX==='undefined'||!KEYIDX)return b.need<=visitDays()+beadBonus;var k='bead:'+b.k;if(gfOpen&&gfOpen[k])return true;var u=KEYIDX[k];return !u||(visitDays()+beadBonus>=u.d&&entryPracOk(u));} // 선생님 선물(염주 한 단계)은 날수만 앞당긴다
+function beadOk(b){if(!b||b.k==='none'||b.k==='wood'||isAdmin)return true;if(typeof KEYIDX==='undefined'||!KEYIDX)return b.need<=visitDays()+beadBonus;var k='bead:'+b.k;if(gfOpen&&gfOpen[k])return true;var u=KEYIDX[k];return !u||(visitDays()+beadBonus>=u.d&&entryPracOk(u));} // 선생님 선물(염주 한 단계)은 날수만 앞당긴다
 function ladderTitle(){var best=0;for(var i=1;i<=TITLES.length;i++)if(isOpen('title:'+i))best=i;return best;}
 // 촛불·공·법당 빛
 function applyCandle(){var c=myPick(CANDLE_C,'candle');candleMat.color.setHex(c.b);candleMat.emissive.setHex(c.k==='base'?0xffe8b0:c.f);flames.forEach(function(f){if(f.material&&f.material.color)f.material.color.setHex(c.f);});}
@@ -3655,7 +3655,7 @@ var annL=store.get('annL',null);
     store.set('gfOpen',gfOpen);}
   if(!annL){var seen=store.get('seenUnlock',0);annL=LADDER.filter(function(u){return entryOpen(u)&&u.d<=Math.max(1,seen);}).map(function(u){return u.id;});store.set('annL',annL);}
   setTimeout(checkNewUnlocks,2600);})();
-function checkNewUnlocks(){if(!annL)return;var fresh=LADDER.filter(function(u){return entryOpen(u)&&annL.indexOf(u.id)<0;});if(!fresh.length)return;
+function checkNewUnlocks(){if(!annL)return;var fresh=LADDER.filter(function(u){return entryOpen(u)&&annL.indexOf(u.id)<0;});if(!fresh.length)return;if(isAdmin){fresh.forEach(function(u){annL.push(u.id);});store.set('annL',annL);return;}
   fresh.forEach(function(u){annL.push(u.id);u.keys.forEach(function(k){if(k.indexOf('fx:')===0)MY.fx[k.slice(3)]=true;});});store.set('annL',annL);saveMy();
   bell();toast('🔓 새로 열렸어요: '+fresh.slice(0,2).map(function(u){return u.n;}).join(' / ')+(fresh.length>2?' 외 '+(fresh.length-2)+'가지':''));
   paintNext();dress();dressAcc();paintPet();paintRobeName();paintPlaque();applyCandle();applyBall();paintWho();}
