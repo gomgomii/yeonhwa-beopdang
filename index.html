@@ -1217,7 +1217,7 @@ function clampPos(p,dry){
   if(p.z>5.35&&p.z<6.65&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(5.35,Math.min(6.65,p.z));return;} // 출입문 문턱
   if(p.x<-hx&&p.z>YARD.z1-1.0&&p.z<YARD.z1+.75&&Math.abs(p.x-NARU.gx)<.8&&isOpen('para')){p.x=Math.max(NARU.gx-.45,Math.min(NARU.gx+.45,p.x));return;} // 11-07 나루터 문
   if(p.x<-hx&&p.z>YARD.z1){p.x=Math.max(NARU.x0+.6,Math.min(NARU.x1-.6,p.x));p.z=Math.max(YARD.z1+.55,Math.min(NARU.bank-.25,p.z));return;} // 나루터(강에는 못 들어감)
-  if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));[[-17.8,7.0,2.0],[-13.6,9.2,1.7],[-17.8,11.7,1.0]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 마당(범종각·연못은 못 들어감)
+  if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));[[-16.4,5.6,.3],[-19.2,5.6,.3],[-16.4,8.4,.3],[-19.2,8.4,.3],[-18.7,6.1,.5],[-18.7,5.35,.2],[-18.7,6.85,.2],[-16.9,6.1,.5],[-16.9,5.45,.2],[-16.9,6.75,.2],[-18.9,7.9,.5],[-17.1,7.9,.5],[-13.6,9.2,1.7],[-17.8,11.7,1.0]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 마당(범종각·연못은 못 들어감)
   if(secretOpen&&p.z>1.95&&p.z<3.25&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(1.95,Math.min(3.25,p.z));return;} // 문턱
   if(secretOpen&&p.x<-hx){p.x=Math.max(-14.5+.6,p.x);p.z=Math.max(-4.0,Math.min(3.85,p.z));if(p.z<1.95||p.z>3.25)p.x=Math.min(-hx-.6,p.x); /* 11-07: 정원 담(옆 4.45·문 옆 법당 벽)에 파묻히지 않게 */if(p.x<-13.3&&p.z>1.3&&p.z<3.7)p.x=-13.3;[[GC.x,GC.z,.75],[-8.4,4.0,.75],[-8.6,-3.4,.75],[-13.0,-.35,.3],[-13.5,-3.2,.22],[-11.9,-3.2,.22]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 비밀 정원 안(기도터 상·수반·돌탑은 못 들어감)
   if(awake&&awake.phase==='stay')[[0,-6.2,.75],[BH_AT.x,BH_AT.z+.2,.9],[MS_AT.x,MS_AT.z+.2,.9]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}}); // 11-07 깨어난 세 보살은 지나가지 못한다
@@ -2374,6 +2374,10 @@ function samulAnim(dt,t){samulRigs.forEach(function(g){if(g.userData.hitT<0)retu
   else{st.rotation.x=.7-sw*.9;bd.rotation.z=Math.sin(h*22)*.1*Math.max(0,1-h/1.5);}
   if(h>2.4){g.userData.hitT=-1;st.rotation.x=g.userData.kind==='bell'?0:g.userData.kind==='drum'?-.9:g.userData.kind==='fish'?.6:.7;bd.rotation.z=0;bd.scale.setScalar(1);}});}
 function openSamul(i){if(!isOpen('samul')){panelLocked('samul');return;}var s=SAMUL[i];samulHit(i);s.s();showLearn(s.n,'<h3>'+s.n+'</h3>'+s.m+'<div class="note" style="margin-top:8px">사물은 아침저녁 예불 때 순서대로 울려요: 법고 → 운판 → 목어 → 범종.</div>');questEvent('learn');}
+/* 11-07 범종각 안으로 들어가 사물 앞에 서서 친다: 서는 자리(사물과 가운데 사이) · 그쪽을 보고 치기 */
+var SAMUL_AT=[[-18.7,6.1],[-16.9,6.1],[-18.9,7.9],[-17.1,7.9]],SAMUL_E=['🔔','🥁','🐟','☁'];function samulStand(i){var a=SAMUL_AT[i],dx=-17.8-a[0],dz=7.0-a[1],d=Math.hypot(dx,dz);return [a[0]+dx/d*.8,a[1]+dz/d*.8];}
+var samulCam={t:0,s:[0,0],a:[0,0],n:[0,0]}; /* 칠 때는 범종각 밖 옆에서 연이와 사물을 함께 */
+function playSamul(i){var a=SAMUL_AT[i];heading=Math.atan2(a[0]-pos.x,a[1]-pos.z);if(isOpen("samul")){var ux=a[0]-pos.x,uz=a[1]-pos.z,ul=Math.hypot(ux,uz)||1;samulCam={t:6,s:[pos.x,pos.z],a:a,n:[-uz/ul,ux/ul]};}openSamul(i);}
 // 밟으면 배우는 자리: 삼귀의 글판(오른쪽 벽 뒤쪽), 부처님 생애 그림책(사경대 옆)
 var OGYE=[
  {n:'불살생',hj:'不殺生',m:'산 것을 죽이거나 해치지 않아요. 벌레도, 꽃도, 친구 마음도요.'},
@@ -2396,6 +2400,7 @@ var LIFE=[
 ];
 if(isAdult)LIFE=LIFE_ADULT;
 var learnSpots=[],ogyeStones=[];
+SAMUL_AT.forEach(function(a,i){var s=samulStand(i);learnSpots.push({x:s[0],z:s[1],r:.42,lock:'samul',label:SAMUL_E[i]+' '+SAMUL[i].n.split(' ')[0]+' 치기',open:function(){playSamul(i);}});}); // 11-07 범종각 안 사물 앞 자리
 // 비밀 정원 자리(정원 블록은 위에 있어 여기서 등록)
 learnSpots.push({x:-hx-.8,z:2.6,r:.7,lock:'garden',label:'🚪 법당으로 돌아가기',open:function(){walkTo(-hx+2.2,2.6);}}); // 11-07 정원에서 나가는 문
 learnSpots.push({x:-13.3,z:2.5,r:1.0,lock:'garden',label:'기도터 · 누군가를 위해 불 밝히기',open:openPray});
@@ -2419,7 +2424,7 @@ learnSpots.push({x:-8.3,z:.9,r:.9,lock:'play',label:'놀이터 · 목탁 리듬'
 // 눌러서 배우기: 사물·천불·공양물
 function learnClick(){
   var hv=ray.intersectObjects(vowScroll.children,true);if(hv.length){openSpot('vow');return true;}
-  var hs=ray.intersectObjects(samulGroup.children,true);if(hs.length){var si=hs[0].object.userData.samul,hp=hs[0].point,hd=Math.hypot(hp.x-pos.x,hp.z-pos.z);if(hd>2.6){var ux=(pos.x-hp.x)/hd,uz=(pos.z-hp.z)/hd;walkTo(hp.x+ux*1.3,hp.z+uz*1.3,function(){openSamul(si);});toast('걸어가서 울려요');}else openSamul(si);return true;}
+  var hs=ray.intersectObjects(samulGroup.children,true);if(hs.length){var si=hs[0].object.userData.samul,hp=hs[0].point,hd=Math.hypot(hp.x-pos.x,hp.z-pos.z);var st2=samulStand(si);if(Math.hypot(st2[0]-pos.x,st2[1]-pos.z)>.5){walkTo(st2[0],st2[1],function(){playSamul(si);});toast('범종각 안으로 걸어가서 울려요');}else playSamul(si);return true;}
   var ht=ray.intersectObjects(learnMeshes,false);if(ht.length){showLearn('천불 (千佛)',isAdult?CHEONBUL_ADULT:'<h3>천 분의 부처님</h3>법당 양옆 벽에 작은 부처님이 천 분 계세요. "누구나 부처가 될 수 있다"는 뜻이에요. 지금 보는 나도, 옆 친구도요.<div class="note" style="margin-top:8px">천불전에서는 한 분 한 분이 다 다른 손 모양을 하고 있기도 해요. 우리 법당 천불 벽을 지나갈 때 한 번 합장해 보세요.</div>');questEvent('learn');return true;}
   var ho=ray.intersectObjects(offerGroup.children,true);if(ho.length){var o=ho[0].object;while(o.parent&&o.parent!==offerGroup)o=o.parent;var of=offerings.filter(function(x){return x.k===o.userData.k})[0];if(of){showLearn('육법공양 · '+of.n,'<h3>'+of.n+' <span style="color:#8a6a2a;font-size:14px">'+of.t+'</span></h3>'+of.m+'<div class="note" style="margin-top:8px">육법공양: 향·등·꽃·과일·차·쌀. 올린 것을 누르면 뜻이 나와요.</div>');questEvent('learn');return true;}}
   return false;
@@ -2962,7 +2967,8 @@ function loop(){
   if(halfBow>0)halfBow-=dt;
   var kb=Math.min(1,dt*8);
   var onCu=!sitOn&&!!nearestCushion(); // 방석 위에 서거나 절할 땐 방석 높이만큼 올린다
-  var tb=(bp?bp.body:(sitOn?(sitCushion?-.1:-.22):0))+(onCu?.12:0), tt=bp?bp.torso:(halfBow>0?.5:0), tk=bp?bp.knee:(sitOn?2.8:0), thx=(!bp&&sitOn)?-1.35:0, thy=(!bp&&sitOn)?.55:0;
+  var onDais=Math.abs(pos.x+17.8)<1.8&&Math.abs(pos.z-7.0)<1.8; // 11-07 범종각 돌 기단(20cm) 위
+  var tb=(bp?bp.body:(sitOn?(sitCushion?-.1:-.22):0))+(onCu?.12:0)+(onDais?.2:0), tt=bp?bp.torso:(halfBow>0?.5:0), tk=bp?bp.knee:(sitOn?2.8:0), thx=(!bp&&sitOn)?-1.35:0, thy=(!bp&&sitOn)?.55:0;
   bodyG.position.y+=(tb-bodyG.position.y)*kb;torsoG.rotation.x+=(tt-torsoG.rotation.x)*kb;
   knees.forEach(function(k){k.rotation.x+=(tk-k.rotation.x)*kb;});
   hips.forEach(function(h,i){h.rotation.x+=(thx-h.rotation.x)*kb;h.rotation.y+=((i?1:-1)*thy-h.rotation.y)*kb;});
@@ -3024,6 +3030,7 @@ function loop(){
   if(showOff>0){cp.set(pos.x-fx*2.6,1.5,pos.z-fz*2.6);lk.set(pos.x,.75,pos.z);}
   else if(bowT>=0){var rx=Math.cos(heading),rz=-Math.sin(heading);cp.set(pos.x+rx*2.4+fx*.6,1.15,pos.z+rz*2.4+fz*.6);lk.set(pos.x+fx*.3,.5,pos.z+fz*.3);} // 절은 옆에서
   else if(mokT>0){cp.set(pos.x+fx*2.6,1.4,pos.z+fz*2.6);lk.set(pos.x,.75,pos.z);} // 목탁은 앞에서
+  else if(samulCam.t>0&&Math.hypot(pos.x-samulCam.s[0],pos.z-samulCam.s[1])<.6){samulCam.t-=dt;var sc=samulCam;cp.set(sc.s[0]+sc.n[0]*2.8,1.9,sc.s[1]+sc.n[1]*2.8);lk.set((sc.s[0]+sc.a[0])/2,1.0,(sc.s[1]+sc.a[1])/2);} // 11-07 사물은 범종각 옆에서
   else if(sitOn){var rx3=Math.cos(heading),rz3=-Math.sin(heading);cp.set(pos.x+fx*2.4+rx3*1.5,1.5,pos.z+fz*2.4+rz3*1.5);lk.set(pos.x+fx*.2,0,pos.z+fz*.2);} // 명상은 앞옆에서. 11-07: 아래 명상 창에 가리지 않게 연이를 화면 위쪽에
   else if(wallIdx>=0){var bz=bayZ(wallIdx);cp.set(PX-6.6,3.0,pos.z*.15);lk.set(hx,3.35,0);} // 액자 설명판은 정면에서
   if(typeof playCam==='function')playCam(cp,lk);
