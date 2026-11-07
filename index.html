@@ -1247,7 +1247,7 @@ var nearSpot=null;
 function goTo(key){
   if(key==="naru"&&!isOpen("para")){panelLocked("para");return;} // 11-07 나루터
   var dest={naru:[RIVER.x0,NARU.bank-.55,0],altar:[0,-5.6,Math.PI],lantern:[-4.2,7.2,0],sagyeong:[4.3,6,Math.PI/2],pond:[-12.1,9.2,-Math.PI/2],path:[PX-1.1,FRAME_Z[weekIdx],Math.PI/2],board:[2.4,5.6,0]}[key];
-  pos.set(dest[0],0,dest[1]);heading=dest[2];target=null;
+  pos.set(dest[0],0,dest[1]);heading=dest[2];target=null;if(key==="naru"){camPos.set(pos.x-Math.sin(heading)*4.2,2.7,pos.z-Math.cos(heading)*4.2);camLook.set(pos.x,1.2,pos.z+2.5);} // 나루터로 바로 갈 땐 카메라도 바로(마당 건물을 뚫고 지나가지 않게)
 }
 document.querySelectorAll('.jump button').forEach(function(b){b.addEventListener('click',function(){document.querySelector('.jump').classList.remove('open');document.getElementById('jumpToggle').setAttribute('aria-expanded','false');if(b.dataset.spot){openSpot(b.dataset.spot);}else goTo(b.dataset.go);});});
 document.getElementById('jumpToggle').addEventListener('click',function(){var j=document.querySelector('.jump');j.classList.toggle('open');this.setAttribute('aria-expanded',String(j.classList.contains('open')));});
@@ -3620,7 +3620,18 @@ var PARA_M={ // [저학년, 고학년, 어른] 바라밀마다 네 개씩
        ['내 생각과 다른 의견 하나 들어 보기','실수에서 배운 것 한 줄','법구경 구절을 내 말로 바꾸기','화 밑에 있는 「바란 것」 찾기'],
        ['오늘 일어난 일을 연기(緣起)로 보기 — 무엇이 모여 이 일이 되었나','내 판단을 한 번 의심해 보기','경전 한 구절을 하루 품기','하루 회향: 오늘 받은 것과 드린 것']]
 };
-var PARA_LAPS=24,paraSt=store.get('para',null)||{days:{},cur:[],laps:0,pend:null,last:''};
+var PARA_ROWS=12,paraSt=store.get('para',null)||{days:{},cur:[],pend:null,last:'',v:2,prog:0,cross:0,lotus:0};
+if(!paraSt.v){var paraTot=0;for(var pk in paraSt.days)paraTot+=paraSt.days[pk]||0;paraSt.cross=Math.floor(paraTot/PARA_ROWS);paraSt.prog=paraTot%PARA_ROWS;paraSt.lotus=0;paraSt.cur=paraSt.cur||[];delete paraSt.laps;paraSt.v=2;store.set('para',paraSt);} // 11-07 「건네주는 배」로 바꿈: 지금까지 저은 날을 모두 세어 옮김
+// 저 언덕에 건네줄 이들(돌아가며): p 사람 · a 짐승 · b 새
+var PARA_PASS=[{n:'친구 동자',t:'p',c:0x9a9e98,h:0x5a4636},{n:'아기 다람쥐',t:'a',c:0xa0612f},{n:'길 잃은 새',t:'b',c:0x5aa0e0},{n:'할머니',t:'p',c:0x7a6a9a,h:0xdedede},{n:'아기 토끼',t:'a',c:0xf2efe6,e:.2},{n:'외로운 친구',t:'p',c:0xe6a0b0},
+ {n:'아기 사슴',t:'a',c:0xc08850},{n:'아기 오리',t:'b',c:0xf2d24b},{n:'할아버지',t:'p',c:0x6b5a4a,h:0xdedede},{n:'강아지',t:'a',c:0xd9b07a},{n:'새로 온 친구',t:'p',c:0x7cc4ff},{n:'아기 고양이',t:'a',c:0x9a9a9a}];
+function paraPass(i){return PARA_PASS[i%PARA_PASS.length];}
+function jo(w,a,b){var c=w.charCodeAt(w.length-1)-0xac00;return w+((c>=0&&c<11172&&c%28)?a:b);} // 받침 있으면 a(이·을), 없으면 b(가·를)
+function passMesh(p){var g=new THREE.Group(),m=pMat(p.c,.8),eye=new THREE.MeshBasicMaterial({color:0x111111});
+  if(p.t==='p'){pAdd(g,new THREE.CylinderGeometry(.09,.15,.32,10),m,0,.16,0);pAdd(g,new THREE.SphereGeometry(.11,12,10),pMat(0xf3d9c2,.6),0,.42,0);pAdd(g,new THREE.SphereGeometry(.113,12,10,0,Math.PI*2,0,Math.PI*.45),pMat(p.h||0x3a2a1e,.9),0,.43,0);}
+  else if(p.t==='a'){var b=pAdd(g,new THREE.SphereGeometry(.14,12,10),m,0,.14,0);b.scale.set(1.3,.9,.9);pAdd(g,new THREE.SphereGeometry(.09,12,10),m,.16,.27,0);[-1,1].forEach(function(s){pAdd(g,new THREE.ConeGeometry(.03,p.e||.09,6),m,.15,.36+(p.e?.05:0),s*.045);pAdd(g,new THREE.SphereGeometry(.015,6,6),eye,.24,.29,s*.035);});}
+  else{var b2=pAdd(g,new THREE.SphereGeometry(.1,12,10),m,0,.12,0);b2.scale.set(1.3,1,1);pAdd(g,new THREE.SphereGeometry(.07,12,10),m,.1,.22,0);var bk=pAdd(g,new THREE.ConeGeometry(.025,.07,6),pMat(0xf2a33a,.6),.18,.22,0);bk.rotation.z=-Math.PI/2;[-1,1].forEach(function(s){var w=pAdd(g,new THREE.SphereGeometry(.07,8,6),m,-.02,.14,s*.09);w.scale.set(1.2,.4,.6);pAdd(g,new THREE.SphereGeometry(.012,6,6),eye,.15,.25,s*.03);});}
+  return g;}
 function paraLevel(){if(isAdult)return 2;var g=parseInt(String(myClass||'').replace(/[^0-9].*$/,''),10);return g>=4?1:0;}
 function paraSave(){store.set('para',paraSt);}
 // 강·배·노
@@ -3659,7 +3670,7 @@ var RIVER={z:NARU.rz,x0:-10.6,x1:-17.2},paraG=new THREE.Group(),shipG=new THREE.
   var hx2=RIVER.x1-.5,hz2=far+.9;var hill=pAdd(g,new THREE.SphereGeometry(1.25,24,14),pMat(0x5aa05a,.85),hx2,0,hz2);hill.scale.set(1.2,.42,.8);paraFx.hill=hill;
   [[0,0,1.1],[-.6,.2,.8],[.6,-.1,.8],[-.25,-.45,.7],[.35,.4,.7]].forEach(function(o){var f=new THREE.Mesh(lotusPetals(LOTUS_ROWS.slice(0,3),0xf07a9b),new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,emissive:0xf7b3c6,emissiveIntensity:.3,roughness:.55,side:THREE.DoubleSide}));f.scale.setScalar(o[2]);f.position.set(hx2+o[0],.42,hz2+o[1]);g.add(f);});
   var s1=label('이 언덕','번뇌의 강가 · 나루','#5b7166');s1.position.set(RIVER.x0+1.2,1.5,NARU.bank-.3);s1.scale.set(1.1,.43,1);g.add(s1);
-  var s2=label('저 언덕','연꽃 언덕 · 피안','#d9486f');s2.position.set(hx2,2.3,hz2);s2.scale.set(1.4,.55,1);g.add(s2);
+  var s2=label('저 언덕','연꽃 언덕 · 피안','#d9486f');s2.position.set(hx2,2.3,hz2);s2.scale.set(1.4,.55,1);g.add(s2);paraFx.s2=s2;paraFx.hx=hx2;paraFx.hz=hz2;paraFx.hillG=new THREE.Group();g.add(paraFx.hillG);paraFx.lotG=new THREE.Group();g.add(paraFx.lotG);paraFx.hold=0;
   // 배
   var red=pMat(0xa8463a,.6),gold=new THREE.MeshStandardMaterial({color:0xe3b04a,metalness:.6,roughness:.35}),jade=pMat(0x2f8f7a,.6);
   pAdd(shipG,new THREE.BoxGeometry(.95,.16,.34),red,0,.13,0);pAdd(shipG,new THREE.BoxGeometry(.97,.03,.36),gold,0,.22,0);
@@ -3677,29 +3688,43 @@ var RIVER={z:NARU.rz,x0:-10.6,x1:-17.2},paraG=new THREE.Group(),shipG=new THREE.
     o.userData={mt:mt,i:i};oars.push(o);});
   var nameTex=canvasTex(512,64,function(g2,w,h){g2.fillStyle='rgba(0,0,0,0)';g2.clearRect(0,0,w,h);g2.textAlign='center';g2.textBaseline='middle';g2.font='700 34px "Gowun Batang", serif';PARA.forEach(function(p,i){g2.fillStyle='#fff3d6';g2.fillText(p.n,(i+.5)*w/6,h/2+2);});});
   var np=new THREE.Mesh(new THREE.PlaneGeometry(.9,.11),new THREE.MeshBasicMaterial({map:nameTex,transparent:true}));np.position.set(0,.13,.172);shipG.add(np);
-  // 단계 장식: 뱃머리 연등(6칸) · 동자 사공(12칸) · 꽃비(18칸)
+  // 단계 장식: 뱃머리 연등(첫 건너기) · 동자 사공(3번) · 꽃비(6번) · 지금 태운 이(갑판 가운데)
+  paraFx.passG=new THREE.Group();paraFx.passG.position.set(-.12,.23,0);shipG.add(paraFx.passG);
   var lan=makeLantern(0xf07a9b);lan.scale.setScalar(.22);lan.position.set(.5,.62,0);lan.visible=false;shipG.add(lan);paraFx.lan=lan;
   var dj=new THREE.Group();pAdd(dj,new THREE.CylinderGeometry(.06,.1,.18,10),pMat(0x9a9e98,.8),0,.09,0);pAdd(dj,new THREE.SphereGeometry(.075,12,10),pMat(0xf3d9c2,.6),0,.25,0);pAdd(dj,new THREE.SphereGeometry(.077,12,10,0,Math.PI*2,0,Math.PI*.42),pMat(0x5a4636,.9),0,.26,0);
   dj.position.set(-.38,.22,-.02);dj.visible=false;shipG.add(dj);paraFx.dj=dj;
   var pg=new THREE.BufferGeometry(),pp=new Float32Array(60*3);for(var j=0;j<60;j++){pp[j*3]=(Math.random()-.5)*1.4;pp[j*3+1]=Math.random()*1.4;pp[j*3+2]=(Math.random()-.5)*.8;}pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
   var pts=new THREE.Points(pg,new THREE.PointsMaterial({color:0xf7a8c0,size:.05,transparent:true,opacity:.9,depthWrite:false}));pts.visible=false;shipG.add(pts);paraFx.pts=pts;
   shipG.rotation.y=Math.PI;shipG.scale.setScalar(2.6);g.add(shipG);paraFx.x=null;})(); // 뱃머리(용머리)가 저 언덕 쪽을, 노와 이름이 나루 쪽을 보게
-function paraTier(n){return n>=25?3:n>=12?2:n>=5?1:0;}
-function paintOars(){oars.forEach(function(o){var p=PARA[o.userData.i],n=paraSt.days[p.k]||0,t=paraTier(n),mt=o.userData.mt;mt.color.setHex([0x8a6a4a,0xb5462f,0x2f8f7a,0xe3b04a][t]);mt.metalness=t===3?.6:0;mt.emissiveIntensity=n>0?.25:0;mt.emissive.setHex(t===3?0xffd27a:p.c);});
-  paraFx.lan.visible=paraSt.laps>=6;paraFx.dj.visible=paraSt.laps>=12;paraFx.pts.visible=paraSt.laps>=18;var op=isOpen("para");naruLeaves.forEach(function(l){l.rotation.y=op?l.userData.s*1.5:0;});}
-paintOars();
-function paraShipX(){return RIVER.x0+(RIVER.x1-RIVER.x0)*Math.min(1,paraSt.laps/PARA_LAPS);}
-function paraTick(dt,t){if(!paraG.visible)return;var tx=paraShipX();if(paraFx.x===null)paraFx.x=tx;paraFx.x+=(tx-paraFx.x)*Math.min(1,dt*.8);
+// 11-07 「건네주는 배」: 노 하나 저을 때마다 조금씩, 12번이면 강을 건넌다. 저 언덕에 닿으면 다시 돌아와 다른 이를 태운다(끝 없음)
+var PARA_TD=[0,5,12,25,50,108],PARA_TN=['나무 노','붉은 옻칠 노','단청 노','금빛 노','빛나는 금빛 노','연꽃 옥 노'];
+function paraTier(n){for(var i=PARA_TD.length-1;i>0;i--)if(n>=PARA_TD[i])return i;return 0;}
+function paraDC(){return (paraSt.cross||0)-(paraFx.hold>0?1:0);} // 화면에 보일 건넌 횟수(도착 연출 중엔 하나 전)
+function paintPara(){oars.forEach(function(o){var p=PARA[o.userData.i],n=paraSt.days[p.k]||0,t=paraTier(n),mt=o.userData.mt;mt.color.setHex([0x8a6a4a,0xb5462f,0x2f8f7a,0xe3b04a,0xf0c75a,0xf4f1e6][t]);mt.metalness=(t===3||t===4)?.6:0;mt.emissiveIntensity=n>0?(t>=4?.55:.25):0;mt.emissive.setHex(t===5?0xffd6e6:(t>=3?0xffd27a:p.c));});
+  var dc=paraDC();paraFx.lan.visible=dc>=1;paraFx.dj.visible=dc>=3;paraFx.pts.visible=dc>=6;
+  while(paraFx.passG.children.length)paraFx.passG.remove(paraFx.passG.children[0]);if(dc>=1){var pm=passMesh(paraPass(dc-1));pm.scale.setScalar(1/2.6);paraFx.passG.add(pm);}
+  while(paraFx.hillG.children.length)paraFx.hillG.remove(paraFx.hillG.children[0]);var nd=Math.max(0,dc-1);for(var i=0;i<Math.min(nd,24);i++){var m=passMesh(paraPass(i));m.position.set(paraFx.hx+1.9+(i%8)*.55,0,paraFx.hz-.3+Math.floor(i/8)*.5);m.rotation.y=Math.PI/2;paraFx.hillG.add(m);}
+  while(paraFx.lotG.children.length)paraFx.lotG.remove(paraFx.lotG.children[0]);for(var j=0;j<Math.min(paraSt.lotus||0,15);j++){var a=j*2.4,rr=.55+.25*(j%3),f=new THREE.Mesh(lotusPetals(LOTUS_ROWS.slice(0,3),0xf7a8c0),new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,emissive:0xf7b3c6,emissiveIntensity:.35,roughness:.55,side:THREE.DoubleSide}));f.scale.setScalar(.55);f.position.set(paraFx.hx+Math.cos(a)*rr*1.2,.32,paraFx.hz+Math.sin(a)*rr*.7);paraFx.lotG.add(f);}
+  var sub=nd>0?'함께 건넌 이 '+nd:(dc>=1?'다시 돌아가 다른 이를 태워요':'연꽃 언덕 · 피안'),ns=label('저 언덕',sub,'#d9486f');paraFx.s2.material.map=ns.material.map;paraFx.s2.material.needsUpdate=true;
+  var op=isOpen("para");naruLeaves.forEach(function(l){l.rotation.y=op?l.userData.s*1.5:0;});}
+function paintOars(){paintPara();} // 예전 이름(다른 곳에서 부름)
+paintPara();
+function paraShipX(){var f=paraFx.hold>0?1:(paraSt.prog||0)/PARA_ROWS;return RIVER.x0+(RIVER.x1-RIVER.x0)*f;}
+function paraTick(dt,t){if(!paraG.visible)return;if(paraFx.hold>0){paraFx.hold-=dt;if(paraFx.hold<=0)paintPara();}
+  var tx=paraShipX();if(paraFx.x===null)paraFx.x=tx;var back=tx>paraFx.x+.05;paraFx.x+=(tx-paraFx.x)*Math.min(1,dt*.6);
+  var ry=back?0:Math.PI;shipG.rotation.y+=(ry-shipG.rotation.y)*Math.min(1,dt*1.5); // 돌아갈 땐 뱃머리를 나루 쪽으로
   var pf=(paraFx.x-RIVER.x0)/(RIVER.x1-RIVER.x0);shipG.position.set(paraFx.x,-.1+Math.sin(t*1.4)*.04,RIVER.z-.45+pf*.9);shipG.rotation.z=Math.sin(t*1.1)*.03;paraFx.tex.offset.x-=dt*.05;
-  var row=paraFx.row>0;if(row)paraFx.row-=dt;oars.forEach(function(o,i){o.rotation.z=row?Math.sin(t*6+i*.3)*.35:Math.sin(t*.9+i)*.04;});
+  var row=paraFx.row>0||Math.abs(tx-paraFx.x)>.1;if(paraFx.row>0)paraFx.row-=dt;oars.forEach(function(o,i){o.rotation.z=row?Math.sin(t*6+i*.3)*.35:Math.sin(t*.9+i)*.04;});
   if(paraFx.pts.visible){var a=paraFx.pts.geometry.attributes.position.array;for(var j=0;j<60;j++){a[j*3+1]-=dt*.25;if(a[j*3+1]<0)a[j*3+1]=1.4;}paraFx.pts.geometry.attributes.position.needsUpdate=true;}
-  if(paraSt.laps>=PARA_LAPS)paraFx.hill.material.emissive.setHex(0x3a7a3a),paraFx.hill.material.emissiveIntensity=.25+.15*Math.sin(t*2);}
-// 노 하나 저은 날: 하루 한 번만
-function paraCredit(k){if(paraSt.last===todayKey)return false;paraSt.last=todayKey;paraSt.days[k]=(paraSt.days[k]||0)+1;if(paraSt.cur.indexOf(k)<0)paraSt.cur.push(k);var lap=false;
-  if(paraSt.cur.length>=6){paraSt.cur=[];paraSt.laps=Math.min(PARA_LAPS,paraSt.laps+1);lap=true;}paraSave();paintOars();paraFx.row=2.4;moktak(true);if(typeof questEvent==='function')questEvent('para');return lap?'lap':true;}
+  if((paraSt.cross||0)>=1)paraFx.hill.material.emissive.setHex(0x3a7a3a),paraFx.hill.material.emissiveIntensity=.2+.12*Math.sin(t*2);}
+// 노 하나 저은 날: 하루 한 번만. 돌려주는 것: false(이미 저음) 또는 {arrive, all(여섯 노 고루), tier(새 노 이름)}
+function paraCredit(k){if(paraSt.last===todayKey)return false;paraSt.last=todayKey;var t0=paraTier(paraSt.days[k]||0);paraSt.days[k]=(paraSt.days[k]||0)+1;var t1=paraTier(paraSt.days[k]);if(paraSt.cur.indexOf(k)<0)paraSt.cur.push(k);
+  paraSt.prog=(paraSt.prog||0)+1;var r={arrive:false,all:false,tier:t1>t0?PARA_TN[t1]:null};
+  if(paraSt.prog>=PARA_ROWS){paraSt.prog=0;paraSt.cross=(paraSt.cross||0)+1;r.arrive=true;r.all=paraSt.cur.length>=6;if(r.all)paraSt.lotus=(paraSt.lotus||0)+1;paraSt.cur=[];paraFx.hold=6;}
+  paraSave();paintPara();paraFx.row=2.4;moktak(true);if(typeof questEvent==='function')questEvent('para');return r;}
 function paraSay(t){return '<div style="font-family:var(--font-display);font-size:19px;line-height:1.7;color:#3b2a55">'+t+'</div>';}
-function paraOarRow(){return '<div class="rank" style="margin-top:8px">'+PARA.map(function(p){var n=paraSt.days[p.k]||0,done=paraSt.cur.indexOf(p.k)>-1;return '<div class="r" style="grid-template-columns:auto 1fr auto"><span style="color:#'+('000000'+p.c.toString(16)).slice(-6)+'">●</span><span><b>'+p.n+'</b> · '+p.h+(isAdult?'<br><span class="note">'+p.ad+'</span>':'')+'</span><span class="note">'+(done?'✔ 이번 바퀴 ':'')+n+'일</span></div>';}).join('')+'</div>';}
-function paraLapNote(){return '<div class="note" style="margin-top:6px">배가 '+paraSt.laps+' / '+PARA_LAPS+'칸 왔어요 · 이번 바퀴 '+paraSt.cur.length+' / 6 노'+(paraSt.laps>=PARA_LAPS?' · 저 언덕에 닿았어요!':'')+'</div>';}
+function paraOarRow(){return '<div class="rank" style="margin-top:8px">'+PARA.map(function(p){var n=paraSt.days[p.k]||0,done=paraSt.cur.indexOf(p.k)>-1,t=paraTier(n),nx=PARA_TD[t+1];return '<div class="r" style="grid-template-columns:auto 1fr auto"><span style="color:#'+('000000'+p.c.toString(16)).slice(-6)+'">●</span><span><b>'+p.n+'</b> · '+p.h+(isAdult?'<br><span class="note">'+p.ad+'</span>':'')+'<br><span class="note">'+PARA_TN[t]+(nx?' · '+nx+'일에 '+PARA_TN[t+1]:'')+'</span></span><span class="note">'+(done?'✔ ':'')+n+'일</span></div>';}).join('')+'</div>';}
+function paraLapNote(){var c=paraSt.cross||0;return '<div class="note" style="margin-top:6px">이번 건너기 '+(paraSt.prog||0)+' / '+PARA_ROWS+'번 · 건넌 횟수 '+c+(c>=2?' · 함께 건넌 이 '+(c-1):'')+((paraSt.lotus||0)?' · 고루 저어 핀 연꽃 '+paraSt.lotus:'')+' · '+(c>=1?((paraSt.prog||0)?'지금 배에 탄 이: ':'나루에서 기다리는 이: ')+paraPass(c-1).n:'첫 건너기는 나 혼자')+'</div>';}
 function openPara(){var P=paraSt.pend;
   if(P&&P.d!==todayKey){var p=PARA.filter(function(x){return x.k===P.k})[0];
     showLearn('⛵ 반야용선',paraSay('다시 왔군요.<br>'+p.n+' 노 — 「'+P.m+'」 해 봤어요?'),function(){var ch=el('<div class="choices" style="margin-top:10px"></div>');
@@ -3708,15 +3733,21 @@ function openPara(){var P=paraSt.pend;
   if(P&&P.d===todayKey){var p2=PARA.filter(function(x){return x.k===P.k})[0];
     showLearn('⛵ 반야용선',paraSay('오늘 고른 노: <b>'+p2.n+'</b><br>「'+P.m+'」')+'<div class="note" style="margin-top:6px">다음에 오면 했는지 물어볼게요. 벌써 했으면 눌러요.</div>'+paraLapNote(),function(){var b=el('<button class="btn pink sm" style="margin-top:8px">지금 했어요</button>');b.addEventListener('click',function(){paraSt.pend=null;paraSave();paraDone(p2,paraCredit(P.k),1);});sBody.appendChild(b);});return;}
   if(paraSt.last===todayKey){showLearn('⛵ 반야용선',paraSay('오늘은 노를 저었어요.<br>내일 또 저어요.')+paraOarRow()+paraLapNote());return;}
-  showLearn('⛵ 육바라밀 반야용선',paraSay(isAdult?'오늘은 어느 노를 저으시겠어요?':'오늘은 어떤 노를 저어 볼까요?')+'<div class="note" style="margin-top:4px">바라밀은 "저 언덕으로 건너가기". 하루에 노 하나, 여섯 노를 다 한 번씩 저으면 배가 한 칸 나아가요. 여섯 개를 다 잘할 필요 없어요.</div>'+paraOarRow()+paraLapNote(),function(){
+  showLearn('⛵ 육바라밀 반야용선',paraSay(isAdult?'오늘은 어느 노를 저으시겠어요?':'오늘은 어떤 노를 저어 볼까요?')+'<div class="note" style="margin-top:4px">바라밀은 "저 언덕으로 건너가기". 하루에 노 하나를 저으면 배가 조금씩 나아가고, 12번이면 강을 건너요. 저 언덕에 닿으면 다시 돌아와 다른 이를 태워 건네줘요. 끝이 없는 배예요. 여섯 노를 고루 저으면 저 언덕에 연꽃이 더 피어요.</div>'+paraOarRow()+paraLapNote(),function(){
     var ch=el('<div class="choices" style="margin-top:10px"></div>');PARA.forEach(function(p){var b=el('<button class="choice">'+p.n+' · '+p.h+'</button>');b.addEventListener('click',function(){paraPick(p);});ch.appendChild(b);});sBody.appendChild(ch);});}
 function paraPick(p){var L=PARA_M[p.k][paraLevel()],opts=[];for(var i=0;i<3;i++)opts.push(L[(doy2+i)%L.length]);
   showLearn('⛵ '+p.n+' 노',paraSay(p.n+' · '+p.h)+(isAdult?'<div class="note">'+p.ad+'</div>':'')+'<div class="note" style="margin-top:6px">오늘 할 일 하나를 골라요.</div>',function(){var ch=el('<div class="choices" style="margin-top:8px"></div>');
     opts.forEach(function(m){var b=el('<button class="choice" style="white-space:normal;text-align:left">'+m+'</button>');b.addEventListener('click',function(){paraSt.pend={k:p.k,m:m,d:todayKey};paraSave();chime();
       showLearn('⛵ '+p.n+' 노',paraSay('좋아요. 「'+m+'」')+'<div class="note" style="margin-top:6px">다음에 오면 했는지 물어볼게요. 지금 바로 할 수 있으면 하고 눌러요.</div>',function(){var r=el('<div class="row" style="margin-top:8px"><button class="btn pink sm">지금 했어요</button><button class="btn ghost sm">할게요</button></div>'),bs=r.querySelectorAll('button');
         bs[0].addEventListener('click',function(){paraSt.pend=null;paraSave();paraDone(p,paraCredit(p.k),1);});bs[1].addEventListener('click',function(){closeSheet();toast(p.n+' 노를 잡았어요 · 다음에 알려 줘요');});sBody.appendChild(r);});});ch.appendChild(b);});sBody.appendChild(ch);});}
-function paraDone(p,r,v){var msg=r===false?'오늘은 이미 노 하나를 저었어요. 내일 또 저어요.':(r==='lap'?'여섯 노를 다 저었어요! 배가 저 언덕 쪽으로 한 칸 나아가요.':(v===1?p.n+' 노에 빛이 들었어요.':'반도 한 걸음이에요. '+p.n+' 노에 빛이 들었어요.'));
-  if(r==='lap'){bell();if(paraSt.laps===6)msg+='<br>뱃머리에 연등이 켜졌어요.';if(paraSt.laps===12)msg+='<br>동자 사공이 배에 탔어요.';if(paraSt.laps===18)msg+='<br>배 위로 꽃비가 내려요.';if(paraSt.laps>=PARA_LAPS)msg+='<br><b>저 언덕에 닿았어요.</b> 한 해 동안 저은 노가 모두 여기까지 왔어요.';}
+function paraDone(p,r,v){var msg;
+  if(r===false)msg='오늘은 이미 노를 저었어요. 내일 또 저어요.';
+  else{msg=(v===1?'':'반도 한 걸음이에요. ')+p.n+' 노를 저었어요. 배가 저 언덕 쪽으로 나아가요.';if(r.tier)msg+='<br>'+p.n+' 노가 <b>'+r.tier+'</b>가 되었어요.';
+    if(r.arrive){bell();var c=paraSt.cross;
+      if(c===1)msg='<b>저 언덕에 닿았어요!</b><br>그런데 부처님은 저 언덕에 머물지 않으셨어요. 다시 돌아가 다른 이를 태워 건네주셨지요.<br>배가 나루로 돌아가요. 다음엔 '+jo(paraPass(0).n,'이','가')+' 기다리고 있어요.';
+      else msg='<b>'+jo(paraPass(c-2).n,'을','를')+' 저 언덕에 건네주었어요.</b><br>함께 건넌 이 '+(c-1)+'. 배가 다시 나루로 돌아가요.<br>다음엔 '+jo(paraPass(c-1).n,'이','가')+' 기다려요.';
+      if(r.all)msg+='<br>여섯 노를 고루 저어 저 언덕에 연꽃이 한 송이 더 피었어요.';
+      if(c===1)msg+='<br>뱃머리에 연등이 켜졌어요.';if(c===3)msg+='<br>동자 사공이 함께 노를 저어요.';if(c===6)msg+='<br>배 위로 꽃비가 내려요.';}}
   showLearn('⛵ 반야용선',paraSay(msg)+paraOarRow()+paraLapNote());}
 learnSpots.push({x:RIVER.x0,z:NARU.bank-.55,r:1.0,lock:'para',label:'⛵ 오늘의 노 젓기 · 육바라밀',open:openPara});
 learnSpots.push({x:NARU.gx,z:YARD.z1-1.25,r:.8,lock:'para',label:'⛵ 반야용선 나루터로',open:function(){walkTo(RIVER.x0,NARU.bank-.55,openPara);}}); // 마당 앞 담 문: 15일 전엔 「법당 N일에 열려요」
