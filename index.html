@@ -1146,7 +1146,7 @@ renderer.domElement.addEventListener('pointermove',function(e){
   if(gazeOn){if(!downAt)return;if(!dragged&&Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>8)dragged=true;if(dragged)gazeYaw=Math.max(-.85,Math.min(.85,gazeYaw-(e.clientX-dragLast[0])*.005));dragLast=[e.clientX,e.clientY];return;}
   if(!downAt||cer.on||sheetOpen)return;
   if(!dragged&&Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>8)dragged=true;
-  if(dragged){heading-=(e.clientX-dragLast[0])*(e.pointerType==='touch'?.011:.006);stopWalk();}
+  if(dragged){heading-=(e.clientX-dragLast[0])*(e.pointerType==='touch'?.0065:.0035);stopWalk();}
   dragLast=[e.clientX,e.clientY];
 });
 ['pointercancel','pointerleave'].forEach(function(ev){renderer.domElement.addEventListener(ev,function(){downAt=null;});});
@@ -2907,12 +2907,12 @@ function loop(){
   var dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
   var moving=false;
   if(!sheetOpen&&!cer.on&&!sitOn&&!awakeLock()&&!(typeof playLock==='function'&&playLock())){var px0=pos.x,pz0=pos.z;
-    if(keys.left)heading+=2.2*dt;if(keys.right)heading-=2.2*dt;
+    if(keys.left)heading+=1.2*dt;if(keys.right)heading-=1.2*dt; // 11-07 회전 천천히(어지럽지 않게)
     var f=(keys.up?1:0)-(keys.down?1:0);
-    var spd=(typeof walkSpd==="function")?walkSpd():3;if(f){pos.x+=Math.sin(heading)*f*spd*dt;pos.z+=Math.cos(heading)*f*spd*dt;moving=true;}
+    var spd=(typeof walkSpd==="function")?walkSpd():4;if(f){pos.x+=Math.sin(heading)*f*spd*dt;pos.z+=Math.cos(heading)*f*spd*dt;moving=true;}
     if(target){var dx=target.x-pos.x,dz=target.z-pos.z,dist=Math.hypot(dx,dz);
       if(dist<.08){target=null;if(routeQ.length){target=routeQ.shift();}else{if(autoSit){autoSit=false;sitHere();}if(onArrive){var oa=onArrive;onArrive=null;oa();}else faceRoom();}}
-    else{var want=Math.atan2(dx,dz),diff=((want-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=diff*Math.min(1,8*dt);var sp=Math.min(dist,spd*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
+    else{var want=Math.atan2(dx,dz),diff=((want-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=diff*Math.min(1,4*dt);var sp=Math.min(dist,spd*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
     else if(turnTo!==null){var tdiff=((turnTo-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=tdiff*Math.min(1,5*dt);if(Math.abs(tdiff)<.03)turnTo=null;} // 도착 뒤 벽을 보고 있으면 방 안쪽으로 돌아섬
     clampPos(pos);
     if(target){if(Math.hypot(pos.x-px0,pos.z-pz0)<.004){stuckT+=dt;if(stuckT>.25){stopWalk();faceRoom();}}else stuckT=0;} // 벽에 막혀 제자리걸음이면 멈춤
@@ -3560,7 +3560,7 @@ var FX_LIST=[{k:'petals',n:'🌸 꽃비'},{k:'snow',n:'❄ 눈'},{k:'fireflies',
 var TITLES=['연씨','새싹','연잎','꽃대','꽃봉오리','연꽃','연꽃 향기','연꽃 등불','연화 수행자','정진하는 어린이','법당 지킴이','연못의 등불','자비의 손','보살의 마음','연화 보살'];
 function myPick(list,cat){var k=(MY&&MY[cat])||'base',it=list.filter(function(x){return x.k===k})[0];return (it&&(k==='base'||isOpen(cat+':'+k)))?it:list[0];}
 function robeHex(){return (typeof MY==='undefined'||!MY)?0x8b8f86:myPick(ROBE_C,'robe').c;}
-function walkSpd(){return (MY&&MY.run&&isOpen('run')&&pos.x<-hx)?4.6:3;} // 법당 안에서는 뛰지 않는다(예절). 마당·정원에서만
+function walkSpd(){return (MY&&MY.run&&isOpen('run')&&pos.x<-hx)?5.5:4;} // 11-07 걷기 3→4, 달리기 4.6→5.5 // 법당 안에서는 뛰지 않는다(예절). 마당·정원에서만
 function fxOn(k){return !!(MY&&MY.fx[k])&&isOpen('fx:'+k);}
 function sndOn(k){return !!(typeof MY!=='undefined'&&MY&&MY.snd&&MY.snd[k])&&isOpen('snd:'+k);}
 function beadOk(b){if(!b||b.k==='none'||b.k==='wood')return true;if(typeof KEYIDX==='undefined'||!KEYIDX)return b.need<=visitDays()+beadBonus;var k='bead:'+b.k;if(gfOpen&&gfOpen[k])return true;var u=KEYIDX[k];return !u||(visitDays()+beadBonus>=u.d&&entryPracOk(u));} // 선생님 선물(염주 한 단계)은 날수만 앞당긴다
