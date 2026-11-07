@@ -310,6 +310,7 @@ body.tour .hud,body.tour .jump,body.tour .dpad,body.tour .prompt,body.tour .hint
   <button data-go="path">팔정도 길</button>
   <button data-go="sagyeong">사경대</button>
   <button data-go="lantern">소원 연등</button>
+  <button data-go="naru">⛵ 반야용선 나루터</button>
   <button data-spot="manner">법당 예절</button>
 </nav>
 
@@ -1178,7 +1179,7 @@ renderer.domElement.addEventListener('pointerup',function(e){
   if(lanternFocus){lanternFocus=null;closeSheet();return;}
   var hl=ray.intersectObjects(lanternGroup.children,true);if(hl.length){var lo=hl[0].object;while(lo.parent&&lo.parent!==lanternGroup)lo=lo.parent;var li=lanternGroup.children.indexOf(lo);if(li>-1){focusLantern(li);return;}}
   if(ray.intersectObject(altar).length){openSpot('taeng');return;}
-  var hit=ray.intersectObjects([floor].concat(yardGround?[yardGround]:[]).concat(garden.visible&&gardenGround?[gardenGround]:[]));
+  var hit=ray.intersectObjects([floor].concat(yardGround?[yardGround]:[]).concat(typeof naruGround!=='undefined'&&naruGround?[naruGround]:[]).concat(garden.visible&&gardenGround?[gardenGround]:[]));
   if(hit.length){walkTo(hit[0].point.x,hit[0].point.z);}
 });
 // 탭한 곳으로 걸어가기. 법당 안↔마당은 출입문(z 6)을 거쳐 간다. then = 도착하면 할 일
@@ -1195,6 +1196,9 @@ function walkTo(x,z,then){
   else if(from==='yard'&&to==='garden')way=[dY[1],dY[0],dG[0],dG[1]];else if(from==='garden'&&to==='yard')way=[dG[1],dG[0],dY[0],dY[1]];
   if(to==='garden'&&!secretOpen){target=dG[0];return;} // 정원이 안 열렸으면 문 앞까지
   if(to==='yard'&&from!=='yard'&&!yardOpen()){target=dY[0];onArrive=function(){panelLocked('yard');};return;} // 11-07 마당이 안 열렸으면 출입문 앞까지
+  var fN=pos.x<-hx&&pos.z>YARD.z1,tN=x<-hx&&z>YARD.z1,gY=new THREE.Vector3(NARU.gx,0,YARD.z1-1.1),gN=new THREE.Vector3(NARU.gx,0,YARD.z1+1.0); // 11-07 나루터는 마당 앞 담 문으로
+  if(tN&&!fN){if(!isOpen('para')){way.push(gY);target=way.shift();routeQ=way;onArrive=function(){panelLocked('para');};return;}way.push(gY,gN);}
+  if(fN&&!tN)way=[gN,gY].concat(way);
   way.push(dest);target=way.shift();routeQ=way;
 }function stopWalk(){target=null;routeQ=[];onArrive=null;turnTo=null;}
 var turnTo=null,stuckT=0; // 도착 뒤 천천히 돌아설 방향 / 막힌 시간
@@ -1202,7 +1206,7 @@ function faceRoom(){ // 코앞(1.4m)이 벽이면 방 가운데를 보게. 불�
   if(Math.cos(heading)<-.5&&pos.x>-hx)return;
   var p=new THREE.Vector3(pos.x+Math.sin(heading)*1.4,0,pos.z+Math.cos(heading)*1.4),q=p.clone();clampPos(q,true);
   if(Math.hypot(q.x-p.x,q.z-p.z)<.35)return;
-  var cx=0,cz=0;if(pos.x<-hx&&pos.z>=YARD.z0){cx=(YARD.x0+YARD.x1)/2;cz=(YARD.z0+YARD.z1)/2;}else if(pos.x<-hx){cx=-9.5;cz=2.5;}
+  var cx=0,cz=0;if(pos.x<-hx&&pos.z>YARD.z1){cx=(NARU.x0+NARU.x1)/2;cz=NARU.rz;}else if(pos.x<-hx&&pos.z>=YARD.z0){cx=(YARD.x0+YARD.x1)/2;cz=(YARD.z0+YARD.z1)/2;}else if(pos.x<-hx){cx=-9.5;cz=2.5;}
   turnTo=Math.atan2(cx-pos.x,cz-pos.z);
 }
 var zone='hall'; // 지금 있는 구역(hall/yard/garden): 정원↔마당 담을 통과 못 하게
@@ -1211,6 +1215,8 @@ function clampPos(p,dry){
   if(!dry){zone=p.x<-hx?(p.z>=4.5?'yard':'garden'):'hall';}
   if(p.x<-hx+.6&&p.x>-hx-.3&&p.z>5.2&&p.z<6.8&&!yardOpen())p.x=-hx+.6; // 11-07 마당은 7일에 열린다: 그 전엔 출입문 밖으로 못 나감
   if(p.z>5.35&&p.z<6.65&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(5.35,Math.min(6.65,p.z));return;} // 출입문 문턱
+  if(p.x<-hx&&p.z>YARD.z1-1.0&&p.z<YARD.z1+.75&&Math.abs(p.x-NARU.gx)<.8&&isOpen('para')){p.x=Math.max(NARU.gx-.45,Math.min(NARU.gx+.45,p.x));return;} // 11-07 나루터 문
+  if(p.x<-hx&&p.z>YARD.z1){p.x=Math.max(NARU.x0+.6,Math.min(NARU.x1-.6,p.x));p.z=Math.max(YARD.z1+.55,Math.min(NARU.bank-.25,p.z));return;} // 나루터(강에는 못 들어감)
   if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));[[-17.8,7.0,2.0],[-13.6,9.2,1.7],[-17.8,11.7,1.0]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 마당(범종각·연못은 못 들어감)
   if(secretOpen&&p.z>1.95&&p.z<3.25&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(1.95,Math.min(3.25,p.z));return;} // 문턱
   if(secretOpen&&p.x<-hx){p.x=Math.max(-14.5+.6,p.x);p.z=Math.max(-4.0,Math.min(3.85,p.z));if(p.z<1.95||p.z>3.25)p.x=Math.min(-hx-.6,p.x); /* 11-07: 정원 담(옆 4.45·문 옆 법당 벽)에 파묻히지 않게 */if(p.x<-13.3&&p.z>1.3&&p.z<3.7)p.x=-13.3;[[GC.x,GC.z,.75],[-8.4,4.0,.75],[-8.6,-3.4,.75],[-13.0,-.35,.3],[-13.5,-3.2,.22],[-11.9,-3.2,.22]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 비밀 정원 안(기도터 상·수반·돌탑은 못 들어감)
@@ -1239,7 +1245,8 @@ var spots={
 };
 var nearSpot=null;
 function goTo(key){
-  var dest={altar:[0,-5.6,Math.PI],lantern:[-4.2,7.2,0],sagyeong:[4.3,6,Math.PI/2],pond:[-12.1,9.2,-Math.PI/2],path:[PX-1.1,FRAME_Z[weekIdx],Math.PI/2],board:[2.4,5.6,0]}[key];
+  if(key==="naru"&&!isOpen("para")){panelLocked("para");return;} // 11-07 나루터
+  var dest={naru:[RIVER.x0,NARU.bank-.55,0],altar:[0,-5.6,Math.PI],lantern:[-4.2,7.2,0],sagyeong:[4.3,6,Math.PI/2],pond:[-12.1,9.2,-Math.PI/2],path:[PX-1.1,FRAME_Z[weekIdx],Math.PI/2],board:[2.4,5.6,0]}[key];
   pos.set(dest[0],0,dest[1]);heading=dest[2];target=null;
 }
 document.querySelectorAll('.jump button').forEach(function(b){b.addEventListener('click',function(){document.querySelector('.jump').classList.remove('open');document.getElementById('jumpToggle').setAttribute('aria-expanded','false');if(b.dataset.spot){openSpot(b.dataset.spot);}else goTo(b.dataset.go);});});
@@ -2110,7 +2117,7 @@ function panelManner(){
 
 // ===== 비밀 정원: 법당에 60일 온 어린이에게(11-07: 30일 → 60일) 왼쪽 벽 문이 열린다 (횟수가 아니라 날수) =====
 // ===== 마당(앞뜰): 출입문(왼쪽 벽 뒤쪽, z 5.3~6.7) 밖. 연꽃 연못 · 범종각(사물 4종) · 참회실 별채. 1일째부터 열림 =====
-var YARD={x0:-20.5,x1:-hx,z0:4.5,z1:14.2}; // 11-06 넓힘: 범종각(앞 왼쪽)과 참회실(뒤 오른쪽)을 멀리
+var YARD={x0:-20.5,x1:-hx,z0:4.5,z1:14.2}; var NARU={x0:-19.5,x1:-8.5,z0:14.2,z1:25.0,gx:-13.6,bank:20.0,rz:21.5}; /* 11-07 반야용선 나루터: 마당 앞 담 문 너머 강가 */ // 11-06 넓힘: 범종각(앞 왼쪽)과 참회실(뒤 오른쪽)을 멀리
 var yard=new THREE.Group();scene.add(yard);var yardGround=null,yardLeaves=[];function yardOpen(){return typeof UNLOCKS==='undefined'||isOpen('yard');} // 마당 바닥(탭해서 걸어가기용)
 (function(){
   var g=yard;
@@ -2123,7 +2130,8 @@ var yard=new THREE.Group();scene.add(yard);var yardGround=null,yardLeaves=[];fun
   var sky=pl(YARD.x1-YARD.x0+2,YARD.z1-YARD.z0+2,(YARD.x0+YARD.x1)/2,7.2,(YARD.z0+YARD.z1)/2,0,new THREE.MeshBasicMaterial({color:0xa9d8f5}));sky.rotation.x=Math.PI/2;sky.rotation.y=0;
   var sun=pl(1.8,1.8,-16.5,7.1,11.5,0,new THREE.MeshBasicMaterial({color:0xfff3c4,transparent:true,opacity:.9}));sun.rotation.x=Math.PI/2;sun.rotation.y=0;
   pl(YARD.z1-YARD.z0,3.0,YARD.x0,1.5,(YARD.z0+YARD.z1)/2,Math.PI/2,fenceM);        // 먼 담
-  pl(YARD.x1-YARD.x0,3.0,(YARD.x0+YARD.x1)/2,1.5,YARD.z1,Math.PI,fenceM);          // 앞 담
+  [[YARD.x0,NARU.gx-.85],[NARU.gx+.85,YARD.x1]].forEach(function(s){pl(s[1]-s[0],3.0,(s[0]+s[1])/2,1.5,YARD.z1,Math.PI,fenceM);}); // 앞 담(11-07 가운데에 나루터 문)
+  pl(1.7,.8,NARU.gx,2.6,YARD.z1,Math.PI,fenceM); // 나루터 문 위
   pl(YARD.x1-YARD.x0,3.0,(YARD.x0+YARD.x1)/2,1.5,YARD.z0,0,fenceM);                // 뒤 담(비밀 정원 쪽)
   // 법당 바깥벽(문 양옆·문 위)
   var outW=new THREE.MeshStandardMaterial({color:0xcfa871,roughness:.85});
@@ -3010,7 +3018,7 @@ function loop(){
   // 벽은 한쪽 면만 그려서 카메라가 벽 밖으로 조금 나가도 안이 보인다. 뒷벽 가까이에서 연이가 화면 아래로 잘리지 않게.
   var inYard=pos.x<-hx+.3&&pos.z>=YARD.z0, inGarden=secretOpen&&pos.x<-hx+.3&&!inYard;
   var hallMinX=(cp.z>YARD.z0-.3||(garden.visible&&cp.z>-4.9))?-hx+.3:-hx-1.2; // 마당·정원 쪽(z -0.4부터)은 벽 밖에 다른 방이 있어 카메라를 법당 안에 둠(11-06: 정원 문 앞에서 벽 뚫림 수정)
-  cp.x=Math.max(inGarden?-14.9:(inYard?YARD.x0-.4:hallMinX),Math.min(hx+1.2,cp.x));cp.z=Math.max(-hz+.3,Math.min(inYard?YARD.z1+.6:hz+1.6,cp.z));if(inYard)cp.x=Math.min(-hx-.5,cp.x);if(inGarden){cp.x=Math.min(-hx-.6,cp.x);cp.z=Math.max(-4.25,Math.min(4.1,cp.z));} // 마당·정원에 있으면 카메라도 그 안에(벽이 가리지 않게)
+  cp.x=Math.max(inGarden?-14.9:(inYard?YARD.x0-.4:hallMinX),Math.min(hx+1.2,cp.x));cp.z=Math.max(-hz+.3,Math.min(inYard?(pos.z>YARD.z1+.3?NARU.z1:YARD.z1+.6):hz+1.6,cp.z));if(inYard)cp.x=Math.min(-hx-.5,cp.x);if(inGarden){cp.x=Math.min(-hx-.6,cp.x);cp.z=Math.max(-4.25,Math.min(4.1,cp.z));}if(inYard&&pos.z>YARD.z1+.3){cp.x=Math.max(NARU.x0+.3,Math.min(NARU.x1-.3,cp.x));cp.z=Math.max(YARD.z1+.6,Math.min(NARU.z1-.4,cp.z));} /* 11-07 나루터 */ // 마당·정원에 있으면 카메라도 그 안에(벽이 가리지 않게)
   var sqx=cp.x-pos.x,sqz=cp.z-pos.z,sqd=Math.sqrt(sqx*sqx+sqz*sqz);if(sqd<2.2)cp.y+=(2.2-sqd)*.9; // 벽에 눌려 카메라가 연이 바로 뒤까지 오면 위로 올려 머리가 화면을 가리지 않게
   var lk=new THREE.Vector3(pos.x+fx*2.5,1.2+(lookUp>0?2.6:0),pos.z+fz*2.5);
   if(showOff>0){cp.set(pos.x-fx*2.6,1.5,pos.z-fz*2.6);lk.set(pos.x,.75,pos.z);}
@@ -3609,18 +3617,42 @@ var PARA_LAPS=24,paraSt=store.get('para',null)||{days:{},cur:[],laps:0,pend:null
 function paraLevel(){if(isAdult)return 2;var g=parseInt(String(myClass||'').replace(/[^0-9].*$/,''),10);return g>=4?1:0;}
 function paraSave(){store.set('para',paraSt);}
 // 강·배·노
-var RIVER={z:-7.25,x0:-4.7,x1:4.7},paraG=new THREE.Group(),shipG=new THREE.Group(),oars=[],paraFx={row:0,wave:0};scene.add(paraG);
-(function(){var g=paraG;
+// 11-07 자리 옮김: 법당 앞 → 마당 앞 담 문 너머 「반야용선 나루터」(넓은 강·큰 배·먼 산·연꽃 언덕)
+var RIVER={z:NARU.rz,x0:-10.6,x1:-17.2},paraG=new THREE.Group(),shipG=new THREE.Group(),oars=[],paraFx={row:0,wave:0},naruGround=null,naruLeaves=[];scene.add(paraG);
+(function(){var g=paraG,cx=(NARU.x0+NARU.x1)/2,W2=NARU.x1-NARU.x0,far=NARU.rz+1.4;
+  function pl(w,h,x,y,z,rx,ry,mat){var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);m.rotation.set(rx,ry,0);m.position.set(x,y,z);g.add(m);return m;}
+  var grassM=new THREE.MeshStandardMaterial({color:0x6aa24c,roughness:.95}),sandM=new THREE.MeshStandardMaterial({color:0xd8c9a3,roughness:.95}),fenceM=new THREE.MeshStandardMaterial({color:0xe6dfcf,roughness:.9}),woodM=new THREE.MeshStandardMaterial({color:0x6b4a2f,roughness:.75}),tileM=new THREE.MeshStandardMaterial({color:0x4b4a52,roughness:.8});
+  // 땅: 이쪽 강가(풀·모래) · 강 · 저쪽 강가
+  naruGround=pl(W2,NARU.bank-NARU.z0,cx,.004,(NARU.z0+NARU.bank)/2,-Math.PI/2,0,grassM);naruGround.receiveShadow=true;
+  pl(W2,.55,cx,.008,NARU.bank-.22,-Math.PI/2,0,sandM);
+  pl(W2,NARU.z1-far,cx,.004,(NARU.z1+far)/2,-Math.PI/2,0,grassM);pl(W2,.4,cx,.008,far+.15,-Math.PI/2,0,sandM);
   var wt=canvasTex(256,64,function(g2,w,h){var gr=g2.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#5fa8d8');gr.addColorStop(1,'#3a7fb8');g2.fillStyle=gr;g2.fillRect(0,0,w,h);g2.strokeStyle='rgba(255,255,255,.55)';g2.lineWidth=2;for(var i=0;i<6;i++){g2.beginPath();for(var x=0;x<=w;x+=8){var y=8+i*9+Math.sin(x/18+i)*3;if(x===0)g2.moveTo(x,y);else g2.lineTo(x,y);}g2.stroke();}});
-  wt.wrapS=THREE.RepeatWrapping;wt.repeat.set(10,1);paraFx.tex=wt;
-  var river=new THREE.Mesh(new THREE.PlaneGeometry(RIVER.x1-RIVER.x0+1.2,.6),new THREE.MeshStandardMaterial({map:wt,roughness:.25,metalness:.15}));river.rotation.x=-Math.PI/2;river.position.set(0,.012,RIVER.z);g.add(river);
-  // 이 언덕(왼쪽): 돌 몇 개 · 저 언덕(오른쪽): 초록 둔덕에 연꽃
-  for(var i=0;i<6;i++){var r=pAdd(g,new THREE.SphereGeometry(.09+Math.random()*.06,8,6),pMat(0x8f8a80,.9),RIVER.x0-.55+Math.random()*.35,.05,RIVER.z-.22+i*.09);r.scale.y=.6;}
-  var hill=pAdd(g,new THREE.SphereGeometry(.42,18,12),pMat(0x5aa05a,.85),RIVER.x1+.45,.0,RIVER.z);hill.scale.set(1,.45,.9);paraFx.hill=hill;
-  [[-.1,.05],[.12,-.1],[.05,.16]].forEach(function(o){var f=new THREE.Mesh(lotusPetals(LOTUS_ROWS.slice(0,3),0xf07a9b),new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,emissive:0xf7b3c6,emissiveIntensity:.3,roughness:.55,side:THREE.DoubleSide}));f.scale.setScalar(.32);f.position.set(RIVER.x1+.45+o[0],.2,RIVER.z+o[1]);g.add(f);});
-  var s1=label('이 언덕','번뇌의 강가','#5b7166');s1.position.set(RIVER.x0-.4,.8,RIVER.z+.05);s1.scale.set(.7,.27,1);g.add(s1);
-  var s2=label('저 언덕','연꽃 언덕 · 피안','#d9486f');s2.position.set(RIVER.x1+.45,1.0,RIVER.z+.05);s2.scale.set(.8,.31,1);g.add(s2);
-  var s3=label('반야용선','육바라밀 · 오늘의 노 하나','#8a4fa8');s3.position.set(RIVER.x0-.3,1.55,RIVER.z+.6);s3.scale.set(1.25,.49,1);g.add(s3);
+  wt.wrapS=wt.wrapT=THREE.RepeatWrapping;wt.repeat.set(5,2);paraFx.tex=wt;
+  pl(W2,far-NARU.bank,cx,.012,(NARU.bank+far)/2,-Math.PI/2,0,new THREE.MeshStandardMaterial({map:wt,roughness:.25,metalness:.15}));
+  // 하늘 · 먼 산 · 양옆 담 · 마당 쪽 담 안쪽 면
+  pl(W2+2,NARU.z1-NARU.z0+2,cx,7.2,(NARU.z0+NARU.z1)/2,Math.PI/2,0,new THREE.MeshBasicMaterial({color:0xa9d8f5}));
+  var mt=canvasTex(1024,512,function(g2,w,h){var gr=g2.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#a9d8f5');gr.addColorStop(.75,'#e4f2fb');g2.fillStyle=gr;g2.fillRect(0,0,w,h);
+    g2.fillStyle='rgba(255,255,255,.85)';[[180,90,46],[230,80,36],[700,120,40],[750,110,30]].forEach(function(c){g2.beginPath();g2.arc(c[0],c[1],c[2],0,Math.PI*2);g2.fill();});
+    [['#b9cfe0',300,.9],['#93b9a4',360,1.4],['#6f9e72',420,2.1]].forEach(function(L,j){g2.fillStyle=L[0];g2.beginPath();g2.moveTo(0,h);for(var x=0;x<=w;x+=16)g2.lineTo(x,L[1]-Math.abs(Math.sin(x/(150-j*30)+j))*90*L[2]/2-Math.sin(x/53+j)*12);g2.lineTo(w,h);g2.fill();});});
+  pl(W2,7.4,cx,3.7,NARU.z1,0,Math.PI,new THREE.MeshBasicMaterial({map:mt}));
+  pl(NARU.z1-NARU.z0,3.0,NARU.x0,1.5,(NARU.z0+NARU.z1)/2,0,Math.PI/2,fenceM);pl(NARU.z1-NARU.z0,3.0,NARU.x1,1.5,(NARU.z0+NARU.z1)/2,0,-Math.PI/2,fenceM);
+  var skyW=new THREE.MeshBasicMaterial({color:0xc4e3f7});pl(NARU.z1-NARU.z0,4.3,NARU.x0,5.15,(NARU.z0+NARU.z1)/2,0,Math.PI/2,skyW);pl(NARU.z1-NARU.z0,4.3,NARU.x1,5.15,(NARU.z0+NARU.z1)/2,0,-Math.PI/2,skyW);pl(W2,4.3,cx,5.15,NARU.z0+.01,0,0,skyW); // 담 위 하늘
+  [[NARU.x0,NARU.gx-.85],[NARU.gx+.85,NARU.x1]].forEach(function(s){pl(s[1]-s[0],3.0,(s[0]+s[1])/2,1.5,NARU.z0+.01,0,0,fenceM);});pl(1.7,.8,NARU.gx,2.6,NARU.z0+.01,0,0,fenceM);
+  // 나루터 문: 기둥 둘 · 기와 지붕 · 문짝 둘(15일 전엔 닫힘)
+  [-1,1].forEach(function(s){pAdd(g,new THREE.BoxGeometry(.2,2.5,.2),woodM,NARU.gx+s*.85,1.25,NARU.z0);});
+  var roof=pAdd(g,new THREE.BoxGeometry(2.4,.16,.9),tileM,NARU.gx,3.08,NARU.z0);pAdd(g,new THREE.BoxGeometry(2.0,.14,.6),tileM,NARU.gx,3.22,NARU.z0);
+  [[-1],[1]].forEach(function(d){var s=d[0],leaf=new THREE.Group();leaf.position.set(NARU.gx+s*.85,0,NARU.z0);pAdd(leaf,new THREE.BoxGeometry(.82,2.1,.05),new THREE.MeshStandardMaterial({color:0x7a4b1e,roughness:.65}),-s*.41,1.08,0);leaf.userData.s=s;naruLeaves.push(leaf);g.add(leaf);});
+  var sg=label('반야용선','나루터 · 육바라밀','#8a4fa8');sg.position.set(NARU.gx,3.75,NARU.z0-.2);sg.scale.set(1.3,.51,1);g.add(sg);
+  // 나루(나무 다리): 배가 떠나는 곳
+  pAdd(g,new THREE.BoxGeometry(1.3,.08,1.5),woodM,RIVER.x0,.1,NARU.bank+.45);[-1,1].forEach(function(s){[0,1].forEach(function(k){pAdd(g,new THREE.CylinderGeometry(.06,.06,.5,8),woodM,RIVER.x0+s*.6,.12,NARU.bank+k*1.1);});});
+  // 이쪽 강가 돌·갈대, 저쪽 강가 갈대
+  for(var i=0;i<14;i++){var r=pAdd(g,new THREE.SphereGeometry(.12+Math.random()*.1,8,6),pMat(0x8f8a80,.9),NARU.x0+.6+Math.random()*(W2-1.2),.05,NARU.bank-.1+Math.random()*.2);r.scale.y=.55;}
+  var reedM=pMat(0x7f9a4a,.9);for(var j=0;j<40;j++){var fz=j%2?NARU.bank-.15:far+.1,rx=NARU.x0+.4+Math.random()*(W2-.8);if(Math.abs(rx-RIVER.x0)<.9&&fz<NARU.rz)continue;var rd=pAdd(g,new THREE.CylinderGeometry(.015,.02,.7+Math.random()*.5,5),reedM,rx,.35,fz);rd.rotation.z=(Math.random()-.5)*.3;}
+  // 저 언덕: 연꽃 둔덕
+  var hx2=RIVER.x1-.5,hz2=far+.9;var hill=pAdd(g,new THREE.SphereGeometry(1.25,24,14),pMat(0x5aa05a,.85),hx2,0,hz2);hill.scale.set(1.2,.42,.8);paraFx.hill=hill;
+  [[0,0,1.1],[-.6,.2,.8],[.6,-.1,.8],[-.25,-.45,.7],[.35,.4,.7]].forEach(function(o){var f=new THREE.Mesh(lotusPetals(LOTUS_ROWS.slice(0,3),0xf07a9b),new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,emissive:0xf7b3c6,emissiveIntensity:.3,roughness:.55,side:THREE.DoubleSide}));f.scale.setScalar(o[2]);f.position.set(hx2+o[0],.42,hz2+o[1]);g.add(f);});
+  var s1=label('이 언덕','번뇌의 강가 · 나루','#5b7166');s1.position.set(RIVER.x0+1.2,1.5,NARU.bank-.3);s1.scale.set(1.1,.43,1);g.add(s1);
+  var s2=label('저 언덕','연꽃 언덕 · 피안','#d9486f');s2.position.set(hx2,2.3,hz2);s2.scale.set(1.4,.55,1);g.add(s2);
   // 배
   var red=pMat(0xa8463a,.6),gold=new THREE.MeshStandardMaterial({color:0xe3b04a,metalness:.6,roughness:.35}),jade=pMat(0x2f8f7a,.6);
   pAdd(shipG,new THREE.BoxGeometry(.95,.16,.34),red,0,.13,0);pAdd(shipG,new THREE.BoxGeometry(.97,.03,.36),gold,0,.22,0);
@@ -3634,7 +3666,7 @@ var RIVER={z:-7.25,x0:-4.7,x1:4.7},paraG=new THREE.Group(),shipG=new THREE.Group
   var sail=new THREE.Mesh(new THREE.PlaneGeometry(.42,.42),new THREE.MeshStandardMaterial({map:canvasTex(128,128,function(g2,w,h){g2.fillStyle='#fbf3e3';g2.fillRect(0,0,w,h);g2.strokeStyle='#d9486f';g2.lineWidth=4;g2.strokeRect(4,4,w-8,h-8);g2.translate(w/2,h/2+8);g2.fillStyle='#f07a9b';for(var i=-2;i<=2;i++){g2.save();g2.rotate(i*.42);g2.beginPath();g2.ellipse(0,-18,9,24,0,0,Math.PI*2);g2.fill();g2.restore();}}),side:THREE.DoubleSide,roughness:.8}));sail.position.set(0,.6,-.05);shipG.add(sail);
   // 노 여섯: 앞쪽(법당 쪽)으로, 노마다 이름 글씨
   PARA.forEach(function(p,i){var x=-.375+i*.15,o=new THREE.Group();o.position.set(x,.2,.18);shipG.add(o);
-    var mt=new THREE.MeshStandardMaterial({color:0x8a6a4a,roughness:.6,emissive:p.c,emissiveIntensity:0});var sh=pAdd(o,new THREE.CylinderGeometry(.012,.012,.5,6),mt,0,-.2,.1);sh.rotation.x=.75;var bl=pAdd(o,new THREE.BoxGeometry(.06,.14,.012),mt,0,-.38,.29);bl.rotation.x=.75;
+    var mt=new THREE.MeshStandardMaterial({color:0x8a6a4a,roughness:.6,emissive:p.c,emissiveIntensity:0});var sh=pAdd(o,new THREE.CylinderGeometry(.018,.018,.5,6),mt,0,-.2,.1);sh.rotation.x=.75;var bl=pAdd(o,new THREE.BoxGeometry(.08,.18,.016),mt,0,-.38,.29);bl.rotation.x=.75;
     o.userData={mt:mt,i:i};oars.push(o);});
   var nameTex=canvasTex(512,64,function(g2,w,h){g2.fillStyle='rgba(0,0,0,0)';g2.clearRect(0,0,w,h);g2.textAlign='center';g2.textBaseline='middle';g2.font='700 34px "Gowun Batang", serif';PARA.forEach(function(p,i){g2.fillStyle='#fff3d6';g2.fillText(p.n,(i+.5)*w/6,h/2+2);});});
   var np=new THREE.Mesh(new THREE.PlaneGeometry(.9,.11),new THREE.MeshBasicMaterial({map:nameTex,transparent:true}));np.position.set(0,.13,.172);shipG.add(np);
@@ -3644,14 +3676,14 @@ var RIVER={z:-7.25,x0:-4.7,x1:4.7},paraG=new THREE.Group(),shipG=new THREE.Group
   dj.position.set(-.38,.22,-.02);dj.visible=false;shipG.add(dj);paraFx.dj=dj;
   var pg=new THREE.BufferGeometry(),pp=new Float32Array(60*3);for(var j=0;j<60;j++){pp[j*3]=(Math.random()-.5)*1.4;pp[j*3+1]=Math.random()*1.4;pp[j*3+2]=(Math.random()-.5)*.8;}pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
   var pts=new THREE.Points(pg,new THREE.PointsMaterial({color:0xf7a8c0,size:.05,transparent:true,opacity:.9,depthWrite:false}));pts.visible=false;shipG.add(pts);paraFx.pts=pts;
-  shipG.rotation.y=0;g.add(shipG);paraFx.x=null;})();
+  shipG.rotation.y=Math.PI;shipG.scale.setScalar(2.6);g.add(shipG);paraFx.x=null;})(); // 뱃머리(용머리)가 저 언덕 쪽을, 노와 이름이 나루 쪽을 보게
 function paraTier(n){return n>=25?3:n>=12?2:n>=5?1:0;}
 function paintOars(){oars.forEach(function(o){var p=PARA[o.userData.i],n=paraSt.days[p.k]||0,t=paraTier(n),mt=o.userData.mt;mt.color.setHex([0x8a6a4a,0xb5462f,0x2f8f7a,0xe3b04a][t]);mt.metalness=t===3?.6:0;mt.emissiveIntensity=n>0?.25:0;mt.emissive.setHex(t===3?0xffd27a:p.c);});
-  paraFx.lan.visible=paraSt.laps>=6;paraFx.dj.visible=paraSt.laps>=12;paraFx.pts.visible=paraSt.laps>=18;paraG.visible=isOpen('para');}
+  paraFx.lan.visible=paraSt.laps>=6;paraFx.dj.visible=paraSt.laps>=12;paraFx.pts.visible=paraSt.laps>=18;var op=isOpen("para");naruLeaves.forEach(function(l){l.rotation.y=op?l.userData.s*1.5:0;});}
 paintOars();
 function paraShipX(){return RIVER.x0+(RIVER.x1-RIVER.x0)*Math.min(1,paraSt.laps/PARA_LAPS);}
 function paraTick(dt,t){if(!paraG.visible)return;var tx=paraShipX();if(paraFx.x===null)paraFx.x=tx;paraFx.x+=(tx-paraFx.x)*Math.min(1,dt*.8);
-  shipG.position.set(paraFx.x,Math.sin(t*1.4)*.015,RIVER.z);shipG.rotation.z=Math.sin(t*1.1)*.03;paraFx.tex.offset.x-=dt*.05;
+  var pf=(paraFx.x-RIVER.x0)/(RIVER.x1-RIVER.x0);shipG.position.set(paraFx.x,-.1+Math.sin(t*1.4)*.04,RIVER.z-.45+pf*.9);shipG.rotation.z=Math.sin(t*1.1)*.03;paraFx.tex.offset.x-=dt*.05;
   var row=paraFx.row>0;if(row)paraFx.row-=dt;oars.forEach(function(o,i){o.rotation.z=row?Math.sin(t*6+i*.3)*.35:Math.sin(t*.9+i)*.04;});
   if(paraFx.pts.visible){var a=paraFx.pts.geometry.attributes.position.array;for(var j=0;j<60;j++){a[j*3+1]-=dt*.25;if(a[j*3+1]<0)a[j*3+1]=1.4;}paraFx.pts.geometry.attributes.position.needsUpdate=true;}
   if(paraSt.laps>=PARA_LAPS)paraFx.hill.material.emissive.setHex(0x3a7a3a),paraFx.hill.material.emissiveIntensity=.25+.15*Math.sin(t*2);}
@@ -3679,7 +3711,8 @@ function paraPick(p){var L=PARA_M[p.k][paraLevel()],opts=[];for(var i=0;i<3;i++)
 function paraDone(p,r,v){var msg=r===false?'오늘은 이미 노 하나를 저었어요. 내일 또 저어요.':(r==='lap'?'여섯 노를 다 저었어요! 배가 저 언덕 쪽으로 한 칸 나아가요.':(v===1?p.n+' 노에 빛이 들었어요.':'반도 한 걸음이에요. '+p.n+' 노에 빛이 들었어요.'));
   if(r==='lap'){bell();if(paraSt.laps===6)msg+='<br>뱃머리에 연등이 켜졌어요.';if(paraSt.laps===12)msg+='<br>동자 사공이 배에 탔어요.';if(paraSt.laps===18)msg+='<br>배 위로 꽃비가 내려요.';if(paraSt.laps>=PARA_LAPS)msg+='<br><b>저 언덕에 닿았어요.</b> 한 해 동안 저은 노가 모두 여기까지 왔어요.';}
   showLearn('⛵ 반야용선',paraSay(msg)+paraOarRow()+paraLapNote());}
-learnSpots.push({x:-4.9,z:-6.5,r:.9,lock:'para',label:'⛵ 오늘의 노 젓기 · 육바라밀',open:openPara});
+learnSpots.push({x:RIVER.x0,z:NARU.bank-.55,r:1.0,lock:'para',label:'⛵ 오늘의 노 젓기 · 육바라밀',open:openPara});
+learnSpots.push({x:NARU.gx,z:YARD.z1-1.25,r:.8,lock:'para',label:'⛵ 반야용선 나루터로',open:function(){walkTo(RIVER.x0,NARU.bank-.55,openPara);}}); // 마당 앞 담 문: 15일 전엔 「법당 N일에 열려요」
 // ===== 11-07 나의 법당: 열림표로 열린 것 고르기(촛불·법복·이름 실·이름표·공·법당 빛·소리·걸음·법당 효과) · 법복 등 이름 · 이름 현판 =====
 var MY=store.get('my',null)||{};['candle','robe','emb','tag','ball','light'].forEach(function(k){if(!MY[k])MY[k]='base';});MY.fx=MY.fx||{};MY.snd=MY.snd||{};
 function saveMy(){store.set('my',MY);}
