@@ -634,7 +634,7 @@ var latticeMat=new THREE.MeshStandardMaterial({map:lattice,roughness:.9});
 [-1,1].forEach(function(s){
   var ry=-s*Math.PI/2, wx=s*(hx-.01);
   var band=new THREE.Mesh(new THREE.PlaneGeometry(D,.6),new THREE.MeshStandardMaterial({map:dancheong}));band.position.set(wx,H-.3,0);band.rotation.y=ry;scene.add(band);
-  (s>0?[[D,0]]:[[hz+5.3,(-hz+5.3)/2],[hz-6.7,(6.7+hz)/2]]).forEach(function(q){var wain=new THREE.Mesh(new THREE.PlaneGeometry(q[0],.9),wainMat);wain.position.set(s*(hx-.02),.45,q[1]);wain.rotation.y=ry;scene.add(wain);}); // 왼쪽은 출입문(z 5.3~6.7)에서 끊김
+  (s>0?[[D,0]]:[[hz+1.65,(-hz+1.65)/2],[1.95,4.325],[hz-6.7,(6.7+hz)/2]]).forEach(function(q){var wain=new THREE.Mesh(new THREE.PlaneGeometry(q[0],.9),wainMat);wain.position.set(s*(hx-.02),.45,q[1]);wain.rotation.y=ry;scene.add(wain);}); // 왼쪽은 출입문(z 5.3~6.7)에서 끊김
   // 벽 기둥 제거(11-06): 삼귀의 글판·액자를 가려서
   // 벽 격자창 제거(11-06)
 });
@@ -1666,7 +1666,7 @@ function nameize(s){if(!s||CN==='연이'||s.indexOf('연이')<0)return s;var b=h
 function nameizeNode(n){if(n.nodeType===3){if(n.nodeValue.indexOf('연이')>-1)n.nodeValue=nameize(n.nodeValue);return;}if(n.nodeType!==1)return;var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),x;while((x=w.nextNode())){if(x.nodeValue.indexOf('연이')>-1)x.nodeValue=nameize(x.nodeValue);}}
 (function(){var ob=new MutationObserver(function(ms){if(CN==='연이')return;ms.forEach(function(m){for(var i=0;i<m.addedNodes.length;i++)nameizeNode(m.addedNodes[i]);if(m.type==='characterData')nameizeNode(m.target);});});ob.observe(sBody,{childList:true,subtree:true,characterData:true});ob.observe(sTitle,{childList:true,subtree:true,characterData:true});})();
 var nameTag=null;
-function paintNameTag(){if(nameTag){yeoni.remove(nameTag);nameTag=null;}if(!CN||CN==='연이')return;var tc=(typeof MY!=='undefined'&&MY)?myPick(TAG_C,'tag').c:'#2d7356';var tt=canvasTex(320,96,function(g,w,h){g.textAlign='center';g.textBaseline='middle';g.font='700 52px "Gowun Batang", serif';g.lineJoin='round';g.lineWidth=10;g.strokeStyle='rgba(255,255,255,.92)';g.strokeText(CN,w/2,h/2+2);g.fillStyle=tc;g.fillText(CN,w/2,h/2+2);});nameTag=new THREE.Sprite(new THREE.SpriteMaterial({map:tt,transparent:true,depthTest:true}));nameTag.position.set(0,1.45,0);nameTag.scale.set(.4,.12,1);yeoni.add(nameTag);} // 11-07 이름표: 작게, 상자 없이 테두리 글씨
+function paintNameTag(){if(nameTag){yeoni.remove(nameTag);nameTag=null;}return; /* 11-07 머리 위 이름표는 없앰(이름은 법복 등에) */if(!CN||CN==="연이")return;var tc=(typeof MY!=='undefined'&&MY)?myPick(TAG_C,'tag').c:'#2d7356';var tt=canvasTex(320,96,function(g,w,h){g.textAlign='center';g.textBaseline='middle';g.font='700 52px "Gowun Batang", serif';g.lineJoin='round';g.lineWidth=10;g.strokeStyle='rgba(255,255,255,.92)';g.strokeText(CN,w/2,h/2+2);g.fillStyle=tc;g.fillText(CN,w/2,h/2+2);});nameTag=new THREE.Sprite(new THREE.SpriteMaterial({map:tt,transparent:true,depthTest:true}));nameTag.position.set(0,1.45,0);nameTag.scale.set(.4,.12,1);yeoni.add(nameTag);} // 11-07 이름표: 작게, 상자 없이 테두리 글씨
 function setMyName(v){CN=v;store.set('cname',v);paintNameTag();if(typeof paintRobeName==='function'){paintRobeName();paintPlaque();}var bs=document.getElementById('brandSub');if(bs)bs.textContent=v+'의 마음법당';if(typeof paintWho==='function')try{paintWho();}catch(e){}if(typeof fbSchedule==='function')fbSchedule();}
 function nameBox(){var nb=el('<div class="box" style="background:#eef6ff"><h3>🙂 내 이름 짓기</h3><div class="note">법당 안에서 나를 부르는 이름이에요. 내 이름이나 별명, 6자까지. 지금: <b>'+CN+'</b></div><div class="row" style="margin-top:8px"><input id="cnIn" maxlength="6" placeholder="이름 또는 별명" style="flex:1;min-width:0;padding:8px;border-radius:10px;border:1px solid #cfd8d3;font:inherit"><button class="btn pink sm">정하기</button></div></div>');
   nb.querySelector('button').addEventListener('click',function(){var v=nb.querySelector('#cnIn').value.trim().replace(/\s+/g,'').slice(0,6);if(!v){toast('이름을 써 주세요');return;}if(!/^[가-힣A-Za-z0-9]+$/.test(v)){toast('한글·영어·숫자만 써요');return;}if(/선생님|교법사|부처님|스님|관리자/.test(v)){toast('그 이름은 쓸 수 없어요');return;}if(typeof cleanOrToast==='function'&&!cleanOrToast(v,'이름'))return;setMyName(v);bell();closeSheet();toast(v+josa(v,'이','가')+' 되었어요. 이제 법당에서 '+v+josa(v,'이라고','라고')+' 불러요');});
@@ -2765,7 +2765,7 @@ var LADDER=[
  {d:25,p:{offer:4},keys:['candle:green'],n:'🕯 촛불 연둣빛'},
  {d:26,keys:['deco:incense'],n:'꾸미기: 향로'},
  {d:27,p:{lantern:2},keys:['lan:5'],n:'🏮 보라 연등'},
- {d:28,keys:['tag:pink'],n:'머리 위 이름표 분홍'},
+ {d:28,keys:['emb:pink'],n:'법복 이름 분홍 실'},
  {d:29,p:{mok:3},keys:['bead:amethyst'],n:'📿 자수정 염주'},
  {d:30,keys:['deco:drum','title:4'],n:'꾸미기: 법고 · 칭호 「꽃대」'},
  {d:31,keys:['acc:scarf'],n:'🧣 목도리'},
@@ -2786,7 +2786,7 @@ var LADDER=[
  {d:46,keys:['deco:basin'],n:'꾸미기: 연꽃 수반'},
  {d:47,p:{offer:9},keys:['candle:purple'],n:'🕯 촛불 보랏빛'},
  {d:48,p:{lantern:5},keys:['acc:lanternpack'],n:'🏮 연등 배낭'},
- {d:49,keys:['tag:gold'],n:'머리 위 이름표 금빛'},
+ {d:49,keys:['emb:white'],n:'법복 이름 흰 실'},
  {d:50,p:{sagyeong:6},keys:['emb:lotus','title:6'],n:'🪷 법복 이름 연꽃 수 · 칭호 「연꽃」'},
  {d:51,keys:['deco:lotusString'],n:'꾸미기: 연꽃 등불 줄'},
  {d:52,p:{sit:6},keys:['fx:fireflies'],n:'✨ 법당 반딧불'},
@@ -2813,7 +2813,7 @@ var LADDER=[
  {d:74,p:{wall:8},keys:['fx:steps'],n:'👣 걸음마다 연꽃 발자국'},
  {d:75,p:{yebul:4},keys:['snd:bell2'],n:'🔔 깊은 종소리'},
  {d:76,keys:['deco:rainbowLantern'],n:'꾸미기: 무지개 연등'},
- {d:77,keys:['tag:sky'],n:'머리 위 이름표 하늘빛'},
+ {d:77,keys:['emb:sky'],n:'법복 이름 하늘 실'},
  {d:78,p:{bow:20},keys:['kick2'],n:'⚽ 공 세게 차기'},
  {d:79,p:{offer:16},keys:['bub:big'],n:'✨ 큰 비눗방울'},
  {d:80,p:{sit:10},keys:['acc:halo','title:9'],n:'연꽃 빛(등 꾸밈) · 칭호 「연화 수행자」'},
@@ -2836,7 +2836,7 @@ var LADDER=[
  {d:110,p:{mok:20},keys:['bead:sandal','title:12'],n:'📿 백단 염주 · 칭호 「연못의 등불」'},
  {d:112,p:{offer:27},keys:['seed:lily'],n:'🌺 꽃씨: 백합'},
  {d:114,p:{offer:28},keys:['candle:lotus'],n:'🪷 연꽃 촛불'},
- {d:116,p:{sagyeong:12},keys:['tag:purple'],n:'머리 위 이름표 보랏빛'},
+ {d:116,p:{sagyeong:12},keys:['emb:purple'],n:'법복 이름 보라 실'},
  {d:118,p:{bow:36},keys:['robe:white'],n:'👘 흰 두루마기'},
  {d:120,p:{sit:15},keys:['fx:aura','title:13'],n:'✨ 둘레에 은은한 빛 · 칭호 「자비의 손」'},
  {d:124,p:{mok:23},keys:['bead:lotus'],n:'📿 연꽃 염주'},
@@ -3577,7 +3577,7 @@ var MY=store.get('my',null)||{};['candle','robe','emb','tag','ball','light'].for
 function saveMy(){store.set('my',MY);}
 var CANDLE_C=[{k:'base',n:'흰빛',b:0xfff7e6,f:0xffd27a},{k:'yellow',n:'노란빛',b:0xffe9a8,f:0xffc93a},{k:'pink',n:'분홍빛',b:0xffd6e2,f:0xff8fb1},{k:'green',n:'연둣빛',b:0xe2f5cf,f:0x9be36a},{k:'sky',n:'하늘빛',b:0xd6ecff,f:0x7cc4ff},{k:'purple',n:'보랏빛',b:0xe6dcff,f:0xb08cff},{k:'gold',n:'금빛',b:0xf3d98a,f:0xffb627},{k:'orange',n:'주황빛',b:0xffe0c2,f:0xff8a3a},{k:'rainbow',n:'무지개',b:0xfff7e6,f:0xffffff},{k:'lotus',n:'연꽃',b:0xf7c6d4,f:0xff9ec0}];
 var ROBE_C=[{k:'base',n:'회색',c:0x8b8f86},{k:'brown',n:'갈색',c:0x8a6a4a},{k:'ink',n:'먹색',c:0x4a4a52},{k:'green',n:'연둣빛',c:0x8fae7a},{k:'indigo',n:'쪽빛',c:0x3c5a8a},{k:'sky',n:'하늘빛',c:0x9cc3e0},{k:'pink',n:'연분홍',c:0xe6b2c0},{k:'gold',n:'금빛 가사',c:0xc9a24a},{k:'white',n:'흰 두루마기',c:0xf2efe6}];
-var EMB_C=[{k:'base',n:'먹 실'},{k:'gold',n:'금실'},{k:'lotus',n:'연꽃 수'},{k:'rainbow',n:'무지개 실'}];
+var EMB_C=[{k:'base',n:'먹 실'},{k:'pink',n:'분홍 실'},{k:'gold',n:'금실'},{k:'white',n:'흰 실'},{k:'lotus',n:'연꽃 수'},{k:'sky',n:'하늘 실'},{k:'rainbow',n:'무지개 실'},{k:'purple',n:'보라 실'}];
 var TAG_C=[{k:'base',n:'초록',c:'#2d7356'},{k:'pink',n:'분홍',c:'#d9486f'},{k:'gold',n:'금빛',c:'#b8860b'},{k:'sky',n:'하늘빛',c:'#2f78c4'},{k:'purple',n:'보랏빛',c:'#8a4fa8'}];
 var BALL_C=[{k:'base',n:'줄무늬 공'},{k:'red',n:'빨간 공'},{k:'sky',n:'하늘색 공'},{k:'gold',n:'금빛 공'}];
 var LIGHT_C=[{k:'base',n:'보통'},{k:'dawn',n:'새벽빛'},{k:'dusk',n:'노을빛'},{k:'moon',n:'달빛'}];
@@ -3601,7 +3601,7 @@ var robeNameMesh=null;
 function paintRobeName(){if(robeNameMesh){torsoG.remove(robeNameMesh);robeNameMesh=null;}if(!robeOn||typeof CN==='undefined'||!CN||CN==='연이'||typeof MY==='undefined'||!MY)return;
   var st=myPick(EMB_C,'emb').k;
   var tx=canvasTex(512,256,function(g,w,h){g.textAlign='center';g.textBaseline='middle';g.font='700 '+(CN.length>4?58:(CN.length>3?70:84))+'px "Gowun Batang", serif';
-    var fill=st==='gold'?'#f2c14e':(st==='lotus'?'#f6d27a':'#3b302a');if(st==='rainbow'){var gr=g.createLinearGradient(w*.2,0,w*.8,0);['#ff6b6b','#ffb347','#ffe66d','#7bd389','#6cb8e6','#b08cff'].forEach(function(c,i,a){gr.addColorStop(i/(a.length-1),c);});fill=gr;}
+    var fill={gold:'#f2c14e',lotus:'#f6d27a',pink:'#e0608a',white:'#fbf6ea',sky:'#3a86c8',purple:'#8a4fa8'}[st]||'#3b302a';if(st==='rainbow'){var gr=g.createLinearGradient(w*.2,0,w*.8,0);['#ff6b6b','#ffb347','#ffe66d','#7bd389','#6cb8e6','#b08cff'].forEach(function(c,i,a){gr.addColorStop(i/(a.length-1),c);});fill=gr;}
     g.lineJoin='round';g.lineWidth=6;g.strokeStyle=st==='base'?'rgba(255,252,244,.75)':'rgba(60,40,20,.55)';g.strokeText(CN,w/2,h*.56);g.fillStyle=fill;g.fillText(CN,w/2,h*.56);
     if(st==='lotus'){g.save();g.translate(w/2,h*.27);g.fillStyle='#f4a7bd';for(var i=-2;i<=2;i++){g.save();g.rotate(i*.4);g.beginPath();g.ellipse(0,-16,10,24,0,0,Math.PI*2);g.fill();g.restore();}g.restore();}});
   robeNameMesh=new THREE.Mesh(new THREE.CylinderGeometry(.279,.339,.44,24,1,true,Math.PI-.8,1.6),new THREE.MeshStandardMaterial({map:tx,transparent:true,roughness:.8,depthWrite:false}));robeNameMesh.position.set(0,.18,0);torsoG.add(robeNameMesh);}
@@ -3633,7 +3633,6 @@ function myBox(){var b=el('<div class="box" style="background:#fffaf0"><h3>🎁 
   row('촛불',CANDLE_C,'candle',function(){applyCandle();toast('촛불 색을 바꿨어요');});
   row('법복',ROBE_C,'robe',function(){dress();showOff=4;});
   row('법복 등 이름',EMB_C,'emb',function(){paintRobeName();showOff=4;});
-  row('이름표',TAG_C,'tag',function(){paintNameTag();});
   row('공',BALL_C,'ball',function(){applyBall();});
   row('법당 빛',LIGHT_C,'light',function(){applyLight();});
   var tg=el('<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>');
