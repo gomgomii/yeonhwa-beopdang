@@ -23,7 +23,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:#2a1f17;color:var(--ink);font-family:var(--font-body)}
+html,body{margin:0;height:100%;overflow:hidden;background:#2a1f17;color:var(--ink);font-family:var(--font-body);word-break:keep-all;overflow-wrap:anywhere} /* 11-07 한글은 낱말 단위로 줄바꿈 */
 button{font:inherit;cursor:pointer}
 button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 h1,h2,h3{font-family:var(--font-display);font-weight:400;margin:0;line-height:1.25}
@@ -1124,7 +1124,7 @@ if(isAdult){yeoni.scale.set(1.15,1.28,1.15);head.scale.setScalar(.88);} // 어�
 var hands=new THREE.Group();hands.position.set(0,.22,.25);hands.visible=false;
 var palm=new THREE.Mesh(new THREE.BoxGeometry(.05,.19,.03),skin);palm.rotation.x=-.25;hands.add(palm);torsoG.add(hands); // 두 손바닥을 맞댄 모양 하나
 scene.add(yeoni);
-var pos=new THREE.Vector3(-4.8,0,6.2), heading=Math.PI*5/6; // 출입문 안쪽에서 시작, 법당 안(불단 쪽)을 비스듬히 보며
+var pos=new THREE.Vector3(-3.9,0,5.7), heading=Math.PI*5/6; // 11-07 문에서 조금 안쪽: 첫 화면에 삼귀의 글판이 왼쪽을 가리지 않게 // 출입문 안쪽에서 시작, 법당 안(불단 쪽)을 비스듬히 보며
 yeoni.position.copy(pos);yeoni.rotation.y=heading;
 
 /* ---------------- 이동 ---------------- */
@@ -1709,7 +1709,7 @@ function panelGuide(){
   hs.addEventListener('change',function(){hairStyle=this.value;store.set('hair',hairStyle);doHair();showOff=4;toast(HAIR_NAME[hairStyle]+' 머리로 바꿨어요');});
   ub.querySelector('#uSkirt').addEventListener('click',function(){uniSkirt=!uniSkirt;store.set('skirt',uniSkirt);this.setAttribute('aria-pressed',String(uniSkirt));dress();showOff=4;});
   sBody.insertBefore(ub,sBody.firstChild);
-  var vb=el('<div class="box"><h3>법당에 온 날 (선생님 확인용)</h3><div class="note">법당에 온 날이 쌓일수록 꾸미기 물건과 염주 색이 열리고, 7일이면 마당, 60일이면 비밀 정원 문이 열려요(3·5·7·10·15·20·30일). 하루에 몇 번 와도 하루예요. 지금 '+visitDays()+'일째.</div><div class="row" style="margin-top:8px"><button class="btn ghost sm" id="vPlus">방문일 +1</button><button class="btn ghost sm" id="vReset">방문일 되돌리기</button></div><div class="row" style="margin-top:8px"><button class="btn pink sm" id="vAll">🔓 다 열어 보기 (200일째로)</button><button class="btn ghost sm" id="vFill">🏆 108배·도장 8·사경 10 채우기</button><button class="btn ghost sm" id="vWipe" style="color:#b5462f">🧹 이 기기 기록 모두 지우기</button></div><div class="row" style="margin-top:8px"><span class="note">지금 보는 화면: <b>'+(isAdult?'어른(연화회)':'어린이')+'</b></span><button class="btn ghost sm" id="vChild">👧 어린이 화면</button><button class="btn ghost sm" id="vAdult">🧕 어른 화면</button></div><div class="note" style="margin-top:6px">교법사 체험용. 「방문일 되돌리기」로 원래대로. 채우기는 되돌릴 수 없어요(이 기기만).</div></div>');
+  var vb=el('<div class="box"><h3>법당에 온 날 (선생님 확인용)</h3><div class="note">법당에 온 날이 쌓일수록 꾸미기 물건과 염주 색이 열리고, 7일이면 마당, 60일이면 비밀 정원 문이 열려요. 1~2일마다 하나씩, 날수와 수행한 날수로 열리는 열림표 108칸(⚙️ › 🎁 나의 법당 › 📜 열림표). 하루에 몇 번 와도 하루예요. 지금 '+visitDays()+'일째.</div><div class="row" style="margin-top:8px"><button class="btn ghost sm" id="vPlus">방문일 +1</button><button class="btn ghost sm" id="vReset">방문일 되돌리기</button></div><div class="row" style="margin-top:8px"><button class="btn pink sm" id="vAll">🔓 다 열어 보기 (200일째로)</button><button class="btn ghost sm" id="vFill">🏆 108배·도장 8·사경 10 채우기</button><button class="btn ghost sm" id="vWipe" style="color:#b5462f">🧹 이 기기 기록 모두 지우기</button></div><div class="row" style="margin-top:8px"><span class="note">지금 보는 화면: <b>'+(isAdult?'어른(연화회)':'어린이')+'</b></span><button class="btn ghost sm" id="vChild">👧 어린이 화면</button><button class="btn ghost sm" id="vAdult">🧕 어른 화면</button></div><div class="note" style="margin-top:6px">교법사 체험용. 「방문일 되돌리기」로 원래대로. 채우기는 되돌릴 수 없어요(이 기기만).</div></div>');
   vb.querySelector('#vAll').addEventListener('click',function(){visitBonus=200;store.set('visitBonus',200);toast('다 열었어요. 화면을 새로 열어요');setTimeout(function(){location.reload();},700);});
   vb.querySelector('#vChild').addEventListener('click',function(){store.set('viewAs','child');location.reload();});vb.querySelector('#vAdult').addEventListener('click',function(){store.set('viewAs','adult');location.reload();});
   vb.querySelector('#vWipe').addEventListener('click',function(){if(this.dataset.arm){var ks=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('yeon3d-')===0)ks.push(k);}ks.forEach(function(k){localStorage.removeItem(k);});toast('다 지웠어요. 처음 화면으로');setTimeout(function(){location.reload();},700);}else{this.dataset.arm='1';this.textContent='한 번 더 누르면 지워요';}});
@@ -2170,7 +2170,7 @@ var doorLock=new THREE.Mesh(new THREE.SphereGeometry(.06,10,8),new THREE.MeshSta
   var step=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.08,12),new THREE.MeshStandardMaterial({color:0xa8a096,roughness:.95}));step.position.set(cx,.04,cz-1.55);g.add(step);
   [[cx+2.05,cz+.4],[cx+2.25,cz+.9],[cx-2.1,cz+.6]].forEach(function(p){for(var k=0;k<3;k++){var bb=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,2.6+k*.3,6),new THREE.MeshStandardMaterial({color:0x5f9a45,roughness:.8}));bb.position.set(p[0]+k*.12,1.3+k*.15,p[1]+k*.08);g.add(bb);for(var m=0;m<4;m++){var lf=new THREE.Mesh(new THREE.SphereGeometry(.07,6,5),new THREE.MeshStandardMaterial({color:0x4f8a3e}));lf.scale.set(.35,1,2.2);lf.position.set(p[0]+k*.12+(m%2?.1:-.1),1.6+m*.35+k*.15,p[1]+k*.08);lf.rotation.y=m*.9;g.add(lf);}}});
 })();
-var doorTex=canvasTex(256,128,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.fillStyle='#8a4fa8';g.font='44px Jua, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('비밀 정원',w/2,46);g.fillStyle='#5b7166';g.font='24px "Gowun Dodum", sans-serif';g.fillText('30일 동안 온 어린이만',w/2,94);});
+var doorTex=canvasTex(256,128,function(g,w,h){g.fillStyle='#fbf5e6';g.fillRect(0,0,w,h);g.fillStyle='#8a4fa8';g.font='44px Jua, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('비밀 정원',w/2,46);g.fillStyle='#5b7166';g.font='24px "Gowun Dodum", sans-serif';g.fillText(SECRET_DAYS+'일 동안 온 어린이만',w/2,94);});
 var doorSign=new THREE.Mesh(new THREE.PlaneGeometry(.9,.45),new THREE.MeshStandardMaterial({map:doorTex}));doorSign.position.set(-hx+.17,2.95,2.5);doorSign.rotation.y=Math.PI/2;scene.add(doorSign);
 var garden=new THREE.Group();scene.add(garden);var gardenGround=null,gardenStones=[],gWalked={},gLastStone=-1,gCandleGroup=new THREE.Group(),gTowerGroup=new THREE.Group();
 var GC={x:-10.4,z:2.3}; // 정원 가운데(나무·걷기 길)
@@ -2680,11 +2680,11 @@ var MANUAL_ADULT=[
 ];
 var MANUAL_CHILD=[
  ['👋 어서 와요','여기는 <b>은석 온라인 연화법당</b>이에요. 학교 법당을 그대로 옮겼고, <b>연이</b>가 되어 걸어 다녀요.<br><br>움직이기: 화살표 키·WASD, 바닥 누르기, 화면 왼쪽 아래 버튼. 화면을 옆으로 끌면 둘러봐요.<br>가까이 가면 분홍 버튼이 떠요 — 그걸 눌러요.'],
- ['🏛 법당 네 곳','<b>부처님 앞</b>: 공양 올리기, 절, 탱화 이야기<br><b>오른쪽 벽 팔정도</b>: 액자 앞 버튼을 밟으면 설명이 펼쳐져요. 이번 주 팔정도 액자에서 「오늘 실천했어요」를 3일 체크하면 도장. 이번 주 약속 하나!<br><b>사경대</b>: 글귀 따라 쓰기<br><b>연꽃 연못</b>: 도장마다 연꽃 한 송이<br>그리고 뒷벽 게시판 퀴즈, 왼쪽 벽 오늘의 법구경, 사물 네 가지, 오계 돌, 부처님 생애 그림책.'],
+ ['🏛 법당 네 곳','<b>부처님 앞</b>: 공양 올리기, 절, 탱화 이야기<br><b>오른쪽 벽 팔정도</b>: 액자 앞 버튼을 밟으면 설명이 펼쳐져요. 이번 주 팔정도 액자에서 「오늘 실천했어요」를 3일 체크하면 도장. 이번 주 약속 하나!<br><b>사경대</b>: 글귀 따라 쓰기<br>그리고 뒷벽 법회 스크린, 왼쪽 벽 오늘의 법구경, 부처님 생애 그림책.<br><b>문 밖 마당</b>(7일부터): 연꽃 연못(도장마다 한 송이)·석탑 탑돌이·범종각·참회실·공 차기.'],
  ['🌿 마음이 힘들 때','위쪽 <b>🌿 마음 쉼터</b>: 마음 날씨 → 감정 단어 → 바란 것 → 숨 고르기. 5분이면 돼요.<br><b>지금 힘들어요</b> 버튼: 숨 세 번부터 같이 해요.<br>방석 가까이 가면 <b>앉아서 명상</b>.<br><br>점수 없어요. 기록은 이 크롬북에만 남고 아무도 못 봐요.'],
- ['📅 날마다','오늘 한 일은 <b>내 수행록</b>과 법회 <b>회향</b>에 저절로 모여요.<br>왼쪽 벽 <b>법구경</b>은 날마다 바뀌어요.<br><b>하루에 몇 번 와도 하루</b>예요. 날이 쌓이면 꾸미기 물건·염주 색·동반자 동물이 열리고, 30일이면 왼쪽 벽 <b>비밀의 문</b>이 열려요.'],
- ['🏠 내 법당','<b>⚙️ 설정 → 🏠 꾸미기</b>로 방석·연꽃·석등을 놓고 내 법당 이름을 걸어요.<br>부처님 앞 족자에 <b>내 원력</b> 한 줄을 걸어요 — "내가 이렇게 하겠다"는 것.<br><br>그리고 <b>눈 감고 법당 떠올리기</b>: 이 법당을 마음속에 하나 지어 두면, 크롬북이 없어도 힘들 때 떠올릴 수 있어요.'],
- ['🙏 약속','법당에서는 뛰지 않고, 가운데 길은 비워 두고, 부처님께 합장 반배.<br>여기서 배운 걸 학교와 집에서도 해 봐요 — 그게 진짜 법당이에요.<br><br>준비됐으면 <b>시작하기</b>. 내 원력부터 적어도 좋아요.']
+ ['📅 날마다','오늘 한 일은 <b>내 수행록</b>과 법회 <b>회향</b>에 저절로 모여요.<br>왼쪽 벽 <b>법구경</b>은 날마다 바뀌어요.<br><b>하루에 몇 번 와도 하루</b>예요. 법당에 온 날과 <b>절·공양·사경·명상·목탁·법회를 한 날</b>이 쌓이면 1~2일마다 새것이 하나씩 열려요(⚙️ 설정 › 📜 열림표).<br>7일이면 문 밖 <b>마당</b>, 60일이면 왼쪽 벽 <b>비밀의 문</b>이 열려요.'],
+ ['🏠 내 법당','<b>⚙️ 설정 → 🏠 꾸미기</b>로 방석·연꽃·석등을 놓고 내 법당 이름을 걸어요.<br><b>⚙️ 설정 → 🎁 나의 법당</b>에서 열린 촛불·법복 색을 고르고, 이름을 지으면 법복 등에 새겨져요.<br>부처님 앞 족자에 <b>내 원력</b> 한 줄을 걸어요 — "내가 이렇게 하겠다"는 것.<br><br>그리고 <b>눈 감고 법당 떠올리기</b>: 이 법당을 마음속에 하나 지어 두면, 크롬북이 없어도 힘들 때 떠올릴 수 있어요.'],
+ ['🙏 약속','법당 안에서는 뛰지 않고(달리기는 마당·정원에서), 가운데 길은 비워 두고, 부처님께 합장 반배.<br>여기서 배운 걸 학교와 집에서도 해 봐요 — 그게 진짜 법당이에요.<br><br>준비됐으면 <b>시작하기</b>. 내 원력부터 적어도 좋아요.']
 ];
 function panelManual(){var pi=0,MANUAL=isTeacher?MANUAL_ADULT.concat([['🧑‍🏫 선생님만','<b>열림표는 아이와 똑같아요.</b> 선생님 화면이 예고편이 되지 않게, 선생님도 법당에 온 날수만큼만 열려요.<br><br><b>📺 TV 모드</b>: 법회 모드 안의 「TV에 크게」 — 이번 주 팔정도·법구경·그림책·오계·떠올리기 대본을 교실 TV에 띄워요(열린 것만).<br><b>🎁 칭찬 선물</b>: 아이 크롬북 ⚙️ 설정 → 「선생님 선물」에 선생님 코드를 넣으면 아이가 선물 하나를 골라요(하루 한 번). 다음 기능을 미리 여는 선물은 없어요.<br><b>내 신행 기록</b>: 사경·명상·108배가 수행록에 남아요.']]):(isAdult?MANUAL_ADULT:MANUAL_CHILD);function pg(){sBody.innerHTML='';sTitle.textContent='법당 사용설명서 '+(pi+1)+' / '+MANUAL.length;var M=MANUAL[pi];sBody.appendChild(el('<div class="box"><h3>'+M[0]+'</h3><div style="line-height:1.75;font-size:15.5px">'+M[1]+'</div></div>'));
     var row=el('<div class="row" style="justify-content:space-between"><button class="btn ghost sm">◀ 앞</button><span class="note">'+(pi+1)+' / '+MANUAL.length+'</span><button class="btn sm">'+(pi===MANUAL.length-1?'시작하기':'다음 ▶')+'</button></div>');var bs=row.querySelectorAll('button');bs[0].disabled=pi===0;bs[0].addEventListener('click',function(){pi--;pg();});
@@ -2722,7 +2722,7 @@ var LADDER=[
  {d:13,p:{offer:2},keys:['candle:pink'],n:'🕯 촛불 분홍빛'},
  {d:14,keys:['deco:pine'],n:'꾸미기: 난초 화분'},
  {d:15,keys:['ogye','samgwi','life','cham'],n:'오계 약속 카드 · 삼귀의 글판 · 생애 그림책 · 참회실'},
- {d:16,p:{sit:2},keys:['run'],n:'🏃 달리기'},
+ {d:16,p:{sit:2},keys:['run'],n:'🏃 마당·정원에서 달리기'},
  {d:17,keys:['bead:amber'],n:'📿 호박 염주'},
  {d:18,p:{bow:4},keys:['robe:brown'],n:'👘 법복 갈색'},
  {d:19,p:{yebul:1},keys:['fx:petals'],n:'🌸 법당에 꽃비'},
@@ -2833,7 +2833,7 @@ var SPOT_LOCK={sagyeong:'sagyeong',lantern:'lantern',play:'play',study:'study',v
 function panelLocked(k){
   sBody.innerHTML='';sTitle.textContent='🔒 아직 잠겨 있어요';var u=KEYIDX[k],name=LOCK_NAME[k]||(u?u.n:k),dl=u?Math.max(0,u.d-visitDays()):0,need=[];
   if(u&&u.p)for(var pk in u.p){var h=prac[pk]||0;if(h<u.p[pk])need.push((PRAC_N[pk]||pk)+' '+h+' / '+u.p[pk]);}
-  sBody.appendChild(el('<div class="box" style="background:#fff5f8"><h3>'+name+'</h3>'+(u?'열리는 조건: <b>'+reqText(u)+'</b>':'')+'<br>지금 법당에 온 날 '+visitDays()+'일'+(dl?', 앞으로 <b>'+dl+'일</b>':'')+(need.length?'<br>법당에서 더 할 것: <b>'+need.join(', ')+'</b>':'')+'<div class="note" style="margin-top:6px">하루에 몇 번 해도 하루로 세요. 날마다 조금씩이 가장 빨라요.</div></div>'));
+  sBody.appendChild(el('<div class="box" style="background:#fff5f8"><h3>'+name+'</h3>'+(u?'열리는 조건: <b>'+reqText(u)+'</b>':'')+'<br>지금 법당에 온 날 '+visitDays()+'일'+(dl?', 앞으로 <b>'+dl+'일</b>':'')+(need.length?'<br>법당에서 더 할 것: <b>'+need.join(', ')+'</b>':'')+'<div class="note" style="margin-top:6px">하루에 몇 번 해도 하루로 세요. 날마다 조금씩이 가장 빨라요.'+(u&&u.p&&u.p.bow?' 「절한 날」은 그날 절을 3번 한 날이에요.':'')+'</div></div>'));
   sBody.appendChild(unlockBox());
   sheet.classList.add('on');sheet.setAttribute('aria-hidden','false');sheetOpen=true;currentSpot='locked';for(var kk in keys)keys[kk]=0;
 }
@@ -3496,7 +3496,7 @@ function renderFlower(){while(flwG.children.length)flwG.remove(flwG.children[0])
   if(flw)flwG.add(makeFlower(flw.k,flwStage()));}
 renderFlower();
 function openFlower(){var st=flwStage(),today=!!(flw&&flw.days.indexOf(todayKey)>-1);
-  if(!flw){showLearn('꽃밭','<h3>씨앗을 하나 골라 심어요</h3>날마다 와서 물을 주면 자라요. 물 준 날이 7일이 되면 꽃이 피어요. 빠진 날이 있어도 시들지 않아요.',function(){var ch=el('<div class="choices" style="margin-top:8px"></div>');FLW_KIND.forEach(function(K,i){if(K[3]&&!isOpen(K[3])){ch.appendChild(el('<button class="choice" disabled style="opacity:.55">🔒 '+K[0]+' · '+reqShort(K[3])+'</button>'));return;}var b=el('<button class="choice">'+K[0]+'</button>');b.addEventListener('click',function(){flw={k:i,days:[]};store.set('flower',flw);renderFlower();chime();openFlower();});ch.appendChild(b);});sBody.appendChild(ch);});return;}
+  if(!flw){showLearn('꽃밭','<h3>씨앗을 하나 골라 심어요</h3>날마다 와서 물을 주면 자라요. 물 준 날이 7일이 되면 꽃이 피어요. 빠진 날이 있어도 시들지 않아요.',function(){var ch=el('<div class="choices" style="margin-top:8px"></div>');FLW_KIND.forEach(function(K,i){if(K[3]&&!isOpen(K[3])){ch.appendChild(el('<button class="choice" disabled style="opacity:.55;white-space:normal;text-align:left">🔒 '+K[0]+' · '+reqShort(K[3])+'</button>'));return;}var b=el('<button class="choice">'+K[0]+'</button>');b.addEventListener('click',function(){flw={k:i,days:[]};store.set('flower',flw);renderFlower();chime();openFlower();});ch.appendChild(b);});sBody.appendChild(ch);});return;}
   var K=FLW_KIND[flw.k%FLW_KIND.length],names=['씨앗','새싹','새싹','잎이 났어요','꽃봉오리','꽃봉오리','꽃봉오리','활짝 피었어요'];
   showLearn('꽃밭 · '+K[0],'<h3>'+names[st]+' · 물 준 날 '+st+' / 7</h3>'+(st>=7?'꽃이 피었어요! 꽃은 꽃밭 가장자리로 옮겨 심고, 새 씨앗을 심을 수 있어요.':(today?'오늘은 벌써 물을 줬어요. 내일 또 와요.':'오늘 물을 주면 한 뼘 자라요.'))+'<div class="note" style="margin-top:6px">씨앗이 꽃이 되려면 흙·물·햇빛·기다림이 다 모여야 해요. 여러 인연이 모여 생기는 것, 이것을 <b>연기(緣起)</b>라고 해요.</div>',function(){
     if(st<7&&!today){var b=el('<button class="btn pink sm" style="margin-top:8px">💧 물 주기</button>');b.addEventListener('click',function(){flw.days.push(todayKey);store.set('flower',flw);PLAY.waterT=1.6;renderFlower();chime();closeSheet();toast(flwStage()>=7?'꽃이 피었어요!':'물을 줬어요 · '+flwStage()+' / 7');});sBody.appendChild(b);}
@@ -3554,7 +3554,7 @@ var FX_LIST=[{k:'petals',n:'🌸 꽃비'},{k:'snow',n:'❄ 눈'},{k:'fireflies',
 var TITLES=['연씨','새싹','연잎','꽃대','꽃봉오리','연꽃','연꽃 향기','연꽃 등불','연화 수행자','정진하는 어린이','법당 지킴이','연못의 등불','자비의 손','보살의 마음','연화 보살'];
 function myPick(list,cat){var k=(MY&&MY[cat])||'base',it=list.filter(function(x){return x.k===k})[0];return (it&&(k==='base'||isOpen(cat+':'+k)))?it:list[0];}
 function robeHex(){return (typeof MY==='undefined'||!MY)?0x8b8f86:myPick(ROBE_C,'robe').c;}
-function walkSpd(){return (MY&&MY.run&&isOpen('run'))?4.6:3;}
+function walkSpd(){return (MY&&MY.run&&isOpen('run')&&pos.x<-hx)?4.6:3;} // 법당 안에서는 뛰지 않는다(예절). 마당·정원에서만
 function fxOn(k){return !!(MY&&MY.fx[k])&&isOpen('fx:'+k);}
 function sndOn(k){return !!(typeof MY!=='undefined'&&MY&&MY.snd&&MY.snd[k])&&isOpen('snd:'+k);}
 function beadOk(b){if(!b||b.k==='none'||b.k==='wood')return true;if(typeof KEYIDX==='undefined'||!KEYIDX)return b.need<=visitDays()+beadBonus;var k='bead:'+b.k;if(gfOpen&&gfOpen[k])return true;var u=KEYIDX[k];return !u||(visitDays()+beadBonus>=u.d&&entryPracOk(u));} // 선생님 선물(염주 한 단계)은 날수만 앞당긴다
@@ -3606,8 +3606,8 @@ function myBox(){var b=el('<div class="box" style="background:#fffaf0"><h3>🎁 
   row('공',BALL_C,'ball',function(){applyBall();});
   row('법당 빛',LIGHT_C,'light',function(){applyLight();});
   var tg=el('<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>');
-  function chip(label,key,on,set){var ok=isOpen(key),c=el('<button class="choice" aria-pressed="'+(ok&&on)+'"'+(ok?'':' disabled style="opacity:.55"')+'>'+(ok?label:'🔒 '+label+' · '+reqShort(key))+'</button>');if(ok)c.addEventListener('click',function(){var v=c.getAttribute('aria-pressed')!=='true';c.setAttribute('aria-pressed',String(v));set(v);});tg.appendChild(c);}
-  chip('🏃 달리기','run',!!MY.run,function(v){MY.run=v;saveMy();});
+  function chip(label,key,on,set){var ok=isOpen(key),c=el('<button class="choice" aria-pressed="'+(ok&&on)+'"'+(ok?'':' disabled')+' style="white-space:normal;text-align:left;max-width:100%'+(ok?'':';opacity:.55')+'">'+(ok?label:'🔒 '+label+' · '+reqShort(key))+'</button>');if(ok)c.addEventListener('click',function(){var v=c.getAttribute('aria-pressed')!=='true';c.setAttribute('aria-pressed',String(v));set(v);});tg.appendChild(c);}
+  chip('🏃 마당·정원에서 달리기','run',!!MY.run,function(v){MY.run=v;saveMy();});
   chip('🔔 맑은 목탁 소리','snd:mok2',!!MY.snd.mok2,function(v){MY.snd.mok2=v;saveMy();moktak(true);});
   chip('🔔 깊은 종소리','snd:bell2',!!MY.snd.bell2,function(v){MY.snd.bell2=v;saveMy();bell();});
   FX_LIST.forEach(function(f){chip(f.n,'fx:'+f.k,!!MY.fx[f.k],function(v){MY.fx[f.k]=v;saveMy();});});
