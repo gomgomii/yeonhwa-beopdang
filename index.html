@@ -1112,7 +1112,7 @@ function dress(){
       var slit=new THREE.Mesh(new THREE.BoxGeometry(.15,.02,.03),new THREE.MeshBasicMaterial({color:0x2a1608}));slit.position.set(0,-.045,.075);mk.add(slit);
       var grip=new THREE.Mesh(new THREE.CylinderGeometry(.018,.02,.1,8),woodMat);grip.position.set(0,-.06,-.09);grip.rotation.x=.9;mk.add(grip);
       mk.visible=false;el.add(mk);mokProps.push(mk);}
-    else{var st=new THREE.Group();st.position.set(0,-.2,.02);st.rotation.set(1.1,-.37,-.59); // 11-06: 오른팔이 안쪽으로 흔들린 순간(칠 때) 채 끝이 목탁에 닿도록 계산한 방향
+    else{var st=new THREE.Group();st.position.set(0,-.2,.02);st.rotation.set(2.717,-2.443,1.42); // 11-07: 아래팔을 내린 순간(칠 때) 채 끝이 목탁 윗면에 닿도록 계산한 방향
       var rod=new THREE.Mesh(new THREE.CylinderGeometry(.011,.013,.21,8),woodMat);rod.position.y=-.085;rod.castShadow=true;st.add(rod);
       var tip=new THREE.Mesh(new THREE.SphereGeometry(.02,8,8),woodMat);tip.position.y=-.19;st.add(tip);
       st.visible=false;el.add(st);mokProps.push(st);}
@@ -1195,7 +1195,7 @@ function clampPos(p,dry){
   if(p.z>5.35&&p.z<6.65&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(5.35,Math.min(6.65,p.z));return;} // 출입문 문턱
   if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));[[-17.8,7.0,2.0],[-13.6,9.2,1.7]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 마당(범종각·연못은 못 들어감)
   if(secretOpen&&p.z>1.95&&p.z<3.25&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(1.95,Math.min(3.25,p.z));return;} // 문턱
-  if(secretOpen&&p.x<-hx){p.x=Math.max(-14.5+.6,p.x);p.z=Math.max(.5,Math.min(4.5,p.z));if(p.x<-13.3&&p.z>1.3&&p.z<3.7)p.x=-13.3;[[GC.x,GC.z,.75],[-8.4,4.0,.75]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 비밀 정원 안(기도터 상·수반·돌탑은 못 들어감)
+  if(secretOpen&&p.x<-hx){p.x=Math.max(-14.5+.6,p.x);p.z=Math.max(.5,Math.min(3.85,p.z));if(p.z<1.95||p.z>3.25)p.x=Math.min(-hx-.6,p.x); /* 11-07: 정원 담(옆 4.45·문 옆 법당 벽)에 파묻히지 않게 */if(p.x<-13.3&&p.z>1.3&&p.z<3.7)p.x=-13.3;[[GC.x,GC.z,.75],[-8.4,4.0,.75]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 비밀 정원 안(기도터 상·수반·돌탑은 못 들어감)
   if(awake&&awake.phase==='stay')[[0,-6.2,.75],[BH_AT.x,BH_AT.z+.2,.9],[MS_AT.x,MS_AT.z+.2,.9]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}}); // 11-07 깨어난 세 보살은 지나가지 못한다
   p.x=Math.max(-hx+.6,Math.min(hx-.6,p.x));p.z=Math.max(-hz+2.0,Math.min(hz-.7,p.z));}
 var walkT=0, hapAnim=0, bowT=-1, bowCounted=false, mokT=0, mokHit=0, mokSeq=0, mokNext=0, BOW_END=4.0;
@@ -2196,12 +2196,12 @@ var GC={x:-10.4,z:2.3}; // 정원 가운데(나무·걷기 길)
   var ptop=new THREE.Mesh(new THREE.BoxGeometry(1.8,.06,.6),new THREE.MeshStandardMaterial({color:0xb5aea2,roughness:.85}));ptop.position.set(-13.9,.53,2.5);ptop.rotation.y=Math.PI/2;g.add(ptop);
   var bud=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),new THREE.MeshStandardMaterial({color:0xe9e2d2,roughness:.6}));bud.position.set(-14.05,.75,2.5);bud.scale.set(.7,1.2,.7);g.add(bud);
   g.add(gCandleGroup);
-  var psign=label('기도터','누군가를 위해 불 밝히기','#8a4fa8');psign.position.set(-14.4,2.4,2.5);psign.scale.set(1.2,.47,1);g.add(psign);
+  var psign=label('기도터','누군가를 위해 불 밝히기','#8a4fa8');psign.position.set(-13.75,2.4,2.5);psign.scale.set(1.2,.47,1);g.add(psign);
   // 마음 돌탑(앞쪽 구석)
   var tb=new THREE.Mesh(new THREE.CylinderGeometry(.42,.46,.08,12),new THREE.MeshStandardMaterial({color:0x8f8a80,roughness:.95}));tb.position.set(-8.4,.04,4.0);g.add(tb);gTowerGroup.position.set(-8.4,.08,4.0);g.add(gTowerGroup);
-  var tsign=label('마음 돌탑','하루에 돌 하나','#2d7356');tsign.position.set(-8.4,1.9,4.0);tsign.scale.set(1.0,.39,1);g.add(tsign);
+  var tsign=label('마음 돌탑','하루에 돌 하나','#2d7356');tsign.position.set(-8.4,1.9,3.55);tsign.scale.set(1.0,.39,1);g.add(tsign);
   // 놀이터 구석(앞쪽): 목탁 리듬
-  var ps=label('놀이터','목탁 리듬 놀이','#d9486f');ps.position.set(-8.3,1.6,.8);ps.scale.set(1.0,.39,1);g.add(ps);
+  var ps=label('놀이터','목탁 리듬 놀이','#d9486f');ps.position.set(-8.3,1.6,1.05);ps.scale.set(1.0,.39,1);g.add(ps);
   var mat2=new THREE.Mesh(new THREE.CylinderGeometry(.7,.7,.04,20),new THREE.MeshStandardMaterial({color:0xd9b27a,roughness:.9}));mat2.position.set(-8.3,.02,.8);g.add(mat2);
   [[-8.2,.7],[-8.2,4.3]].forEach(function(p){g.add(buildDeco({t:'stoneLantern',x:p[0],z:p[1],r:0,c:0}));});
   g.add(buildDeco({t:'basin',x:GC.x,z:GC.z,r:0,c:6}));g.add(buildDeco({t:'flowers',x:-9.0,z:3.9,r:0,c:5}));g.add(buildDeco({t:'flowers',x:-13.6,z:4.0,r:0,c:3}));g.add(buildDeco({t:'flowers',x:-12.4,z:.8,r:0,c:2}));g.add(buildDeco({t:'flowers',x:-12.6,z:4.1,r:0,c:4})); // 가운데는 낮은 수반, 그 둘레가 걷기 길
@@ -2211,6 +2211,9 @@ var GC={x:-10.4,z:2.3}; // 정원 가운데(나무·걷기 길)
   ffGeo.setAttribute('position',new THREE.BufferAttribute(ffPos,3));var ff=new THREE.Points(ffGeo,new THREE.PointsMaterial({color:0xd9ff7a,size:.09,transparent:true,opacity:.9}));ff.userData.base=ffPos.slice();g.add(ff);garden.userData.ff=ff;
   var outM=new THREE.MeshStandardMaterial({color:0xe9e2d2,roughness:.9});
   [[.85,2.7,1.7,5.4],[4.15,2.7,1.7,5.4],[2.5,3.95,1.6,2.9]].forEach(function(o){var pl=new THREE.Mesh(new THREE.PlaneGeometry(o[2],o[3]),outM);pl.position.set(-hx-.03,o[1],o[0]);pl.rotation.y=-Math.PI/2;g.add(pl);}); // 정원에서 본 법당 바깥벽(문 둘레), 하늘까지
+  // 11-07 정원 쪽에도 문틀과 「법당으로」 표지: 정원 안에서 나가는 문이 보이게
+  var gfm=new THREE.MeshStandardMaterial({color:0x4a2d16,roughness:.7});[[2.5,2.6,1.9,.24],[1.62,1.25,.16,2.5],[3.38,1.25,.16,2.5]].forEach(function(f){var m=new THREE.Mesh(new THREE.BoxGeometry(.16,f[3],f[2]),gfm);m.position.set(-hx-.11,f[1],f[0]);g.add(m);});
+  var ex=label('법당으로','이 문으로 나가요','#2d7356');ex.position.set(-hx-.65,3.1,2.5);ex.scale.set(1.0,.39,1);g.add(ex);
   var sign=label('비밀 정원','나만의 쉼터 · 기도터 · 놀이터','#8a4fa8');sign.position.set(-10.75,3.2,2.5);sign.scale.set(1.4,.55,1);g.add(sign);
 })();
 // 기도터 촛불(이 기기): {to, c, d}
@@ -2350,6 +2353,7 @@ var LIFE=[
 if(isAdult)LIFE=LIFE_ADULT;
 var learnSpots=[],ogyeStones=[];
 // 비밀 정원 자리(정원 블록은 위에 있어 여기서 등록)
+learnSpots.push({x:-hx-.8,z:2.6,r:.7,lock:'garden',label:'🚪 법당으로 돌아가기',open:function(){walkTo(-hx+2.2,2.6);}}); // 11-07 정원에서 나가는 문
 learnSpots.push({x:-13.3,z:2.5,r:1.0,lock:'garden',label:'기도터 · 누군가를 위해 불 밝히기',open:openPray});
 learnSpots.push({x:-8.6,z:3.7,r:.9,lock:'garden',label:'마음 돌탑 · 오늘의 돌 하나',open:openTower});
 learnSpots.push({x:-8.3,z:.9,r:.9,lock:'play',label:'놀이터 · 목탁 리듬',open:function(){openSpot('play');}});
@@ -2799,7 +2803,7 @@ function loop(){
   knees.forEach(function(k){k.rotation.x+=(tk-k.rotation.x)*kb;});
   hips.forEach(function(h,i){h.rotation.x+=(thx-h.rotation.x)*kb;h.rotation.y+=((i?1:-1)*thy-h.rotation.y)*kb;});
   door.rotation.y+=((secretOpen?-1.9:0)-door.rotation.y)*Math.min(1,dt*1.5);garden.visible=gardenSeen();
-  samulAnim(dt,t);if(garden.visible)gardenWalk();if(typeof birdTick==='function')birdTick(dt,t);
+  samulAnim(dt,t);if(garden.visible)gardenWalk();if(typeof birdTick==='function')birdTick(dt,t);if(garden.visible)gLabelFade();
   if(garden.visible){var ffp=garden.userData.ff,pa=ffp.geometry.attributes.position,bsv=ffp.userData.base;for(var q=0;q<30;q++){pa.array[q*3]=bsv[q*3]+Math.sin(t*.7+q)*.3;pa.array[q*3+1]=bsv[q*3+1]+Math.sin(t*1.3+q*2)*.2;pa.array[q*3+2]=bsv[q*3+2]+Math.cos(t*.9+q)*.3;}pa.needsUpdate=true;ffp.material.opacity=.6+.4*Math.sin(t*3);}
   if(hapAnim>0)hapAnim-=dt;if(mokT>0)mokT-=dt;if(mokHit>0)mokHit-=dt;
   if(mokSeq>0){mokNext-=dt;if(mokNext<=0){mokSeq--;mokNext=.5;mokHit=.42;moktak();}}
@@ -2811,7 +2815,7 @@ function loop(){
     else if(armMode==='floor'){tx=-1.7;tz=-s*.1;ex=-.25;}
     else if(armMode==='lift'){tx=-2.1;tz=-s*.1;ex=-.5;}
     else if(armMode==='mok'){var hit=mokHit>0?Math.sin(mokHit/.42*Math.PI):0;
-      if(s<0){tx=-.4;tz=-s*.3;ex=-1.55;}else{tx=-.5;tz=-s*(.05+hit*.85);ex=-1.45;}} // 오른팔은 옆에서 가운데 목탁 쪽으로 좌우로 흔들어 친다
+      if(s<0){tx=-.3;tz=.56;ex=-1.2;}else{tx=-1.0;tz=-.55;ex=-1.02-(1-hit)*.7;}} // 11-07: 왼손은 목탁을 가슴 앞 가운데로, 오른손 채는 위에 들고 있다가 아래팔을 내려 위에서 친다
     else{tx=moving?Math.sin(t*10)*.55*s:Math.sin(t*1.6)*.04;tz=s*.12;ex=moving?-.4:-.15;}
     var ka=Math.min(1,dt*(armMode==='mok'?18:10));
     a.rotation.x+=(tx-a.rotation.x)*ka;a.rotation.z+=(tz-a.rotation.z)*Math.min(1,dt*8);el.rotation.x+=(ex-el.rotation.x)*ka;
@@ -2858,6 +2862,7 @@ function loop(){
   else if(mokT>0){cp.set(pos.x+fx*2.6,1.4,pos.z+fz*2.6);lk.set(pos.x,.75,pos.z);} // 목탁은 앞에서
   else if(sitOn){var rx3=Math.cos(heading),rz3=-Math.sin(heading);cp.set(pos.x+fx*2.3+rx3*1.5,1.25,pos.z+fz*2.3+rz3*1.5);lk.set(pos.x,.55,pos.z);} // 명상은 앞옆에서
   else if(wallIdx>=0){var bz=bayZ(wallIdx);cp.set(PX-6.6,3.0,pos.z*.15);lk.set(hx,3.35,0);} // 액자 설명판은 정면에서
+  if(typeof birdState!=='undefined'&&birdState.cam>0&&birdState.phase==='sit'&&!sitOn&&bowT<0){var bp2=birdTarget(),sx=-Math.cos(heading),sz=Math.sin(heading);cp.set(pos.x+sx*1.25+fx*1.0,bp2.y+.3,pos.z+sz*1.25+fz*1.0);lk.set(bp2.x,bp2.y-.05,bp2.z);} // 11-07: 파랑새가 앉으면 3초 동안 옆에서 어깨 위를 보여 준다
   if(cer.on){cp.set(0,2.5,-1.6);lk.set(0,2.7,-9);}
   if(tour){var kf=TOUR[tour.i];tour.t+=dt;cp.set(kf.cp[0],kf.cp[1],kf.cp[2]);lk.set(kf.lk[0],kf.lk[1],kf.lk[2]);if(tour.t>=kf.d){tour.i++;tour.t=0;if(tour.i>=TOUR.length)endTour();else showTourText();}}
   if(lanternFocus){var lp=lanternFocus.m.position;cp.set(lp.x+1.1,lp.y-.25,lp.z+1.5);lk.set(lp.x,lp.y-.2,lp.z);}
@@ -3238,8 +3243,8 @@ var bird=(function(){var g=new THREE.Group();function m(geo,col){return new THRE
 var birdState={on:false,t:0,phase:'off',said:false,trail:0,th0:0},birdFrom=new THREE.Vector3(),birdLandFrom=new THREE.Vector3(),birdPrev=new THREE.Vector3(),birdTmp=new THREE.Vector3();
 var BIRD_FLY=9,BIRD_LAND=1.2,BIRD_LOOP=.72,GBIRD={x:-10.75,z:2.2,rx:2.5,rz:1.35,y0:4.95,y1:2.3};
 function birdOrbit(u,out){var th=birdState.th0+u*Math.PI*2*1.05;return out.set(GBIRD.x+Math.cos(th)*GBIRD.rx,GBIRD.y0+(GBIRD.y1-GBIRD.y0)*u,GBIRD.z+Math.sin(th)*GBIRD.rz);}
-var birdPerch=new THREE.Object3D();birdPerch.position.set(-.3,.47,-.02);torsoG.add(birdPerch); // 오른쪽 어깨 위(몸통 기준). 어른 키·절·앉기에도 어깨를 따라간다
-bird.scale.setScalar(1.15);
+var birdPerch=new THREE.Object3D();birdPerch.position.set(-.34,.45,-.11);torsoG.add(birdPerch); // 오른쪽 어깨 위, 조금 뒤·바깥(뒤에서 보는 카메라에 큰 머리가 가리지 않게). 어른 키·절·앉기에도 어깨를 따라간다
+bird.scale.setScalar(1.5);
 var birdGlowTex=(function(){var c=document.createElement('canvas');c.width=c.height=64;var g=c.getContext('2d');var gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(200,230,255,.65)');gr.addColorStop(1,'rgba(120,180,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
 var birdGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:birdGlowTex,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));birdGlow.scale.set(.7,.7,1);bird.add(birdGlow);
 var birdTrail=[];for(var bti=0;bti<24;bti++){var bsp=new THREE.Sprite(new THREE.SpriteMaterial({map:birdGlowTex,color:bti%3?0xcfe8ff:0xffe7a6,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));bsp.visible=false;bsp.userData.life=0;scene.add(bsp);birdTrail.push(bsp);}
@@ -3250,6 +3255,7 @@ function birdStart(){if(birdState.on)return;birdState.on=true;birdState.t=0;bird
   birdOrbit(0,birdFrom);bird.position.copy(birdFrom);birdPrev.copy(birdFrom);chime();}
 function birdStop(){birdState.on=false;birdState.phase='off';bird.visible=false;birdGlow.material.opacity=0;}
 function birdWings(a){bird.children.forEach(function(c){if(c.userData.wing)c.rotation.z=c.userData.wing*a;});}
+var gLabTmp=new THREE.Vector3();function gLabelFade(){garden.traverse(function(o){if(!o.isSprite||!o.material.map||o.material.blending===THREE.AdditiveBlending)return;var d=camera.position.distanceTo(o.getWorldPosition(gLabTmp)),a=Math.max(0,Math.min(1,(d-1.3)/1.1));o.material.opacity=a;o.visible=a>.02;});} // 11-07: 정원 표지판이 카메라 코앞에 오면 흐려져 화면을 가리지 않게
 function birdTick(dt,t){
   var inG=garden.visible&&secretOpen&&pos.x<-hx&&pos.z<YARD.z0;
   if(inG&&!birdState.on)birdStart();
@@ -3257,7 +3263,8 @@ function birdTick(dt,t){
   if(!inG&&birdState.on&&birdState.phase!=='leave'){birdState.phase='leave';birdState.t=0;}
   // 반짝이 꼬리는 새가 꺼져도 끝까지 사라진다
   birdTrail.forEach(function(s){if(s.userData.life>0){s.userData.life-=dt;s.position.y-=dt*.12;var l=Math.max(0,s.userData.life/1.6);s.material.opacity=.6*l;s.scale.setScalar(.03+.06*l);if(s.userData.life<=0)s.visible=false;}});
-  if(!birdState.on)return;
+  if(!birdState.on){birdState.cam=0;return;}
+  if(birdState.cam>0)birdState.cam-=dt;
   var tg=birdTarget();birdState.t+=dt;var ph=birdState.phase;
   if(ph==='fly'){var k=Math.min(1,birdState.t/BIRD_FLY);birdPrev.copy(bird.position);
     if(k<BIRD_LOOP){var u=k/BIRD_LOOP;u=u*u*(3-2*u);birdOrbit(u,bird.position);} // 천천히 출발해 정원을 한 바퀴 돌며 내려온다
@@ -3270,9 +3277,9 @@ function birdTick(dt,t){
     birdState.trail-=dt;if(birdState.trail<=0&&k<.95){birdState.trail=.08;for(var i=0;i<birdTrail.length;i++){var sp=birdTrail[i];if(sp.userData.life<=0){sp.visible=true;sp.userData.life=1.6;sp.position.copy(bird.position);sp.position.x+=(Math.random()-.5)*.08;sp.position.z+=(Math.random()-.5)*.08;break;}}}
     if(k>=1){birdState.phase='land';birdState.t=0;birdLandFrom.copy(bird.position);}}
   else if(ph==='land'){var k2=Math.min(1,birdState.t/BIRD_LAND),e=k2*k2*(3-2*k2);bird.position.lerpVectors(birdLandFrom,tg,e);bird.position.y+=Math.sin(k2*Math.PI)*.06;bird.rotation.x*=.9;
-    var dyw=(heading+.35)-bird.rotation.y;dyw=Math.atan2(Math.sin(dyw),Math.cos(dyw));bird.rotation.y+=dyw*Math.min(1,dt*4);birdWings((1-k2)*Math.sin(t*20)*.6+.12*k2);birdGlow.material.opacity=Math.max(0,birdGlow.material.opacity-dt);
-    if(k2>=1){birdState.phase='sit';birdState.t=0;chirp();if(!birdState.said){birdState.said=true;setTimeout(birdSay,900);}}}
-  else if(ph==='sit'){bird.position.copy(tg);bird.position.y+=Math.abs(Math.sin(t*2.2))*.008;bird.rotation.x=0;bird.rotation.y=heading+.35+Math.sin(t*.7)*.25*(Math.sin(t*.23)>.6?1:0); // 가끔 고개를 돌린다
+    var dyw=(heading-.95)-bird.rotation.y;dyw=Math.atan2(Math.sin(dyw),Math.cos(dyw));bird.rotation.y+=dyw*Math.min(1,dt*4);birdWings((1-k2)*Math.sin(t*20)*.6+.12*k2);birdGlow.material.opacity=Math.max(0,birdGlow.material.opacity-dt);
+    if(k2>=1){birdState.phase='sit';birdState.t=0;birdState.cam=3.2;chirp();if(!birdState.said){birdState.said=true;setTimeout(birdSay,900);}}}
+  else if(ph==='sit'){bird.position.copy(tg);bird.position.y+=Math.abs(Math.sin(t*2.2))*.008;bird.rotation.x=0;bird.rotation.y=heading-.95+Math.sin(t*.7)*.25*(Math.sin(t*.23)>.6?1:0); // 가끔 고개를 돌린다
     birdWings(.12+(Math.sin(t*.9)>.97?Math.sin(t*30)*.3:0));}
   else if(ph==='leave'){var k3=birdState.t/2.2;bird.position.y+=dt*(1.2+k3*1.5);bird.position.x+=Math.sin(bird.rotation.y)*dt*1.4;bird.position.z+=Math.cos(bird.rotation.y)*dt*1.4;birdWings(Math.sin(t*16)*.9);birdGlow.material.opacity=Math.min(.9,k3);
     if(k3>=1)birdStop();}
@@ -3291,7 +3298,7 @@ function drawGBoard(g,w,h){g.fillStyle='#f3ead6';g.fillRect(0,0,w,h);for(var i=0
 function paintGBoard(){drawGBoard(gBoardTex.image.getContext('2d'),gBoardTex.image.width,gBoardTex.image.height);gBoardTex.needsUpdate=true;}
 (function(){var bd=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.2),new THREE.MeshStandardMaterial({map:gBoardTex,roughness:.9}));bd.position.set(-11.6,1.55,-0.04);garden.add(bd);
   var fr=new THREE.Mesh(new THREE.BoxGeometry(2.0,1.3,.04),new THREE.MeshStandardMaterial({color:0x6b4e2e,roughness:.8}));fr.position.set(-11.6,1.55,-0.07);garden.add(fr);
-  var sg=label('낙서판','숨은 벽 · 한마디 남기기','#8a4fa8');sg.position.set(-11.6,2.5,-0.02);sg.scale.set(1.1,.43,1);garden.add(sg);})();
+  var sg=label('낙서판','숨은 벽 · 한마디 남기기','#8a4fa8');sg.position.set(-11.6,2.5,.6);sg.scale.set(1.1,.43,1);garden.add(sg);})();
 function gardenVisit(){ // 첫 방문 번호 받기
   if(gardenNo>0)return;if(typeof fbOn==='function'&&fbOn()){var r=fbDb.ref('beopdang/garden/visitors');r.once('value').then(function(s){var n=s.numChildren()+1;return r.child(SID).set({no:n,ts:Date.now()}).then(function(){gardenNo=n;store.set('gardenNo',n);});}).catch(function(){});}
   else{gardenNo=1;store.set('gardenNo',1);}}
