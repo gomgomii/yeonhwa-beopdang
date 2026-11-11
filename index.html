@@ -1124,12 +1124,12 @@ function dress(){
     if(sd<0&&beadOn){for(var bi=0;bi<12;bi++){var ba=bi/12*Math.PI*2;var bd=new THREE.Mesh(new THREE.SphereGeometry(bi===0?.026:.019,8,6),beadMat);bd.position.set(Math.sin(ba)*.065,-.15,Math.cos(ba)*.065);el.add(bd);} // 왼쪽 손목 단주
       var tas=new THREE.Mesh(new THREE.CylinderGeometry(.008,.014,.05,6),um(0xb5462f));tas.position.set(0,-.19,.07);el.add(tas);}
     // 목탁(왼손)과 채(오른손): 목탁 버튼을 누르면 보인다
-    if(sd<0){var mk=new THREE.Group();mk.position.set(.08,-.24,.03);
-      var mb=new THREE.Mesh(new THREE.SphereGeometry(.085,16,12),woodMat);mb.scale.set(1,.8,1.1);mb.castShadow=true;mk.add(mb);
-      var slit=new THREE.Mesh(new THREE.BoxGeometry(.15,.02,.03),new THREE.MeshBasicMaterial({color:0x2a1608}));slit.position.set(0,-.045,.075);mk.add(slit);
-      var grip=new THREE.Mesh(new THREE.CylinderGeometry(.018,.02,.1,8),woodMat);grip.position.set(0,-.06,-.09);grip.rotation.x=.9;mk.add(grip);
+    if(sd>0){var mk=new THREE.Group();mk.position.set(-.068,-.231,.117);mk.rotation.set(1.469,.564,.621); /* sd>0 이 연이의 왼손 */ // 11-11 손잡이(-y 쪽 .14)가 주먹 안에 오고, 몸통은 주먹 위로 선다
+      var mb=new THREE.Mesh(new THREE.SphereGeometry(.078,16,12),woodMat);mb.scale.set(1,.95,1);mb.castShadow=true;mk.add(mb);
+      var slit=new THREE.Mesh(new THREE.BoxGeometry(.12,.018,.03),new THREE.MeshBasicMaterial({color:0x2a1608}));slit.position.set(0,.05,.052);slit.rotation.x=-.8;mk.add(slit);
+      [-.034,.034].forEach(function(gx){var pr=new THREE.Mesh(new THREE.CylinderGeometry(.013,.015,.1,8),woodMat);pr.position.set(gx,-.1,0);mk.add(pr);});var grip=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.095,8),woodMat);grip.position.set(0,-.14,0);grip.rotation.z=Math.PI/2;mk.add(grip); // 손잡이: 두 가닥 + 가로대(손이 쥐는 곳)
       mk.visible=false;el.add(mk);mokProps.push(mk);}
-    else{var st=new THREE.Group();st.position.set(0,-.2,.02);st.rotation.set(2.717,-2.443,1.42); // 11-07: 아래팔을 내린 순간(칠 때) 채 끝이 목탁 윗면에 닿도록 계산한 방향
+    else{var st=new THREE.Group();st.position.set(0,-.2,0);st.rotation.set(.687,.304,.81); // 11-07: 아래팔을 내린 순간(칠 때) 채 끝이 목탁 윗면에 닿도록 계산한 방향
       var rod=new THREE.Mesh(new THREE.CylinderGeometry(.011,.013,.21,8),woodMat);rod.position.y=-.085;rod.castShadow=true;st.add(rod);
       var tip=new THREE.Mesh(new THREE.SphereGeometry(.02,8,8),woodMat);tip.position.y=-.19;st.add(tip);
       st.visible=false;el.add(st);mokProps.push(st);}
@@ -1210,19 +1210,35 @@ function faceRoom(){ // 코앞(1.4m)이 벽이면 방 가운데를 보게. 불�
   var cx=0,cz=0;if(pos.x<-hx&&pos.z>YARD.z1){cx=(NARU.x0+NARU.x1)/2;cz=NARU.rz;}else if(pos.x<-hx&&pos.z>=YARD.z0){cx=(YARD.x0+YARD.x1)/2;cz=(YARD.z0+YARD.z1)/2;}else if(pos.x<-hx){cx=-9.5;cz=2.5;}
   turnTo=Math.atan2(cx-pos.x,cz-pos.z);
 }
-var zone='hall'; // 지금 있는 구역(hall/yard/garden): 정원↔마당 담을 통과 못 하게
+var zone='hall',lastC=null; // 지금 있는 구역(hall/yard/garden): 정원↔마당 담을 통과 못 하게
+// 11-11 막는 것들: 선분(문짝·벽)·상자(책상·벤치)·원(기둥·나무)
+function pushSeg(p,ax,az,bx,bz,r){var vx=bx-ax,vz=bz-az,t=((p.x-ax)*vx+(p.z-az)*vz)/(vx*vx+vz*vz);t=Math.max(0,Math.min(1,t));var cx=ax+vx*t,cz=az+vz*t,dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d<r){if(d<1e-4){dx=-vz;dz=vx;d=Math.hypot(dx,dz);}p.x=cx+dx/d*r;p.z=cz+dz/d*r;}}
+function pushBox(p,x0,x1,z0,z1,m){x0-=m;x1+=m;z0-=m;z1+=m;if(p.x<=x0||p.x>=x1||p.z<=z0||p.z>=z1)return;var a=p.x-x0,b=x1-p.x,c=p.z-z0,d=z1-p.z,k=Math.min(a,b,c,d);if(k===a)p.x=x0;else if(k===b)p.x=x1;else if(k===c)p.z=z0;else p.z=z1;}
+function pushCir(p,list){list.forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]){if(d<1e-4){dx=0;dz=1;d=1;}p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});}
+var WALL_OUT=.45; // 법당 왼쪽 벽 바깥(마당·정원)에서 벽에 붙을 수 있는 거리
 function clampPos(p,dry){
+  if(!dry&&lastC&&Math.hypot(p.x-lastC.x,p.z-lastC.z)<.7){ // 11-11 걸어서는 법당 왼쪽 벽을 못 건넌다: 벽 두께 띠 안에는 열린 문 자리로만 들어간다
+    var b0=-hx-WALL_OUT,b1=-hx+.6;
+    if(p.x>b0&&p.x<b1){var wasB=lastC.x>b0+1e-3&&lastC.x<b1-1e-3,zz=wasB?lastC.z:p.z,g=null;
+      if(yardOpen()&&zz>=5.35-1e-3&&zz<=6.65+1e-3)g=[5.35,6.65];else if(secretOpen&&zz>=1.95-1e-3&&zz<=3.25+1e-3)g=[1.95,3.25];
+      if(g){p.z=Math.max(g[0],Math.min(g[1],p.z));zone=p.x<-hx?(p.z>=4.5?'yard':'garden'):'hall';lastC.copy(p);return;}
+      p.x=lastC.x>=b1-1e-3?b1:(lastC.x<=b0+1e-3?b0:(p.x>-hx?b1:b0));}}
+  clampCore(p,dry);
+  if(!dry){if(!lastC)lastC=new THREE.Vector3();lastC.copy(p);}
+}
+function clampCore(p,dry){
   if(!dry&&p.x<-hx){if(zone==='garden'&&p.z>=4.3&&p.z<5.4)p.z=4.3;else if(zone==='yard'&&p.z<4.9&&p.z>3.6)p.z=4.9;}
   if(!dry){zone=p.x<-hx?(p.z>=4.5?'yard':'garden'):'hall';}
   if(p.x<-hx+.6&&p.x>-hx-.3&&p.z>5.2&&p.z<6.8&&!yardOpen())p.x=-hx+.6; // 11-07 마당은 7일에 열린다: 그 전엔 출입문 밖으로 못 나감
   if(p.z>5.35&&p.z<6.65&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(5.35,Math.min(6.65,p.z));return;} // 출입문 문턱
   if(p.x<-hx&&p.z>YARD.z1-1.0&&p.z<YARD.z1+.75&&Math.abs(p.x-NARU.gx)<.8&&isOpen('para')){p.x=Math.max(NARU.gx-.45,Math.min(NARU.gx+.45,p.x));return;} // 11-07 나루터 문
-  if(p.x<-hx&&p.z>YARD.z1){p.x=Math.max(NARU.x0+.6,Math.min(NARU.x1-.6,p.x));p.z=Math.max(YARD.z1+.55,Math.min(NARU.bank-.25,p.z));return;} // 나루터(강에는 못 들어감)
-  if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-.05,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));[[-16.4,5.6,.3],[-19.2,5.6,.3],[-16.4,8.4,.3],[-19.2,8.4,.3],[-18.7,6.1,.5],[-18.7,5.35,.2],[-18.7,6.85,.2],[-16.9,6.1,.5],[-16.9,5.45,.2],[-16.9,6.75,.2],[-18.9,7.9,.5],[-17.1,7.9,.5],[-13.6,9.2,1.7],[-17.8,11.7,1.0]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 마당(범종각·연못은 못 들어감)
+  if(p.x<-hx&&p.z>YARD.z1){p.x=Math.max(NARU.x0+.6,Math.min(NARU.x1-.6,p.x));p.z=Math.max(YARD.z1+.55,Math.min(NARU.bank-.25,p.z));[-1,1].forEach(function(s){pushSeg(p,NARU.gx+s*.85,NARU.z0,NARU.gx+s*.79,NARU.z0+.82,.3);});/* 11-11 열린 문짝 */return;} // 나루터(강에는 못 들어감)
+  if(p.x<-hx&&p.z>=YARD.z0){p.x=Math.max(YARD.x0+.6,Math.min(-hx-WALL_OUT,p.x));p.z=Math.max(YARD.z0+.5,Math.min(YARD.z1-.6,p.z));pushCir(p,[[-16.4,5.6,.35],[-19.2,5.6,.35],[-16.4,8.4,.35],[-19.2,8.4,.35],[-18.7,6.1,.66],[-18.7,5.35,.3],[-18.7,6.85,.25],[-18.7,7.15,.27],[-18.7,7.45,.27],[-16.9,6.1,.66],[-16.9,5.45,.2],[-16.9,6.75,.2],[-18.9,7.9,.5],[-17.1,7.9,.5],[-13.6,9.2,1.7],[-17.8,11.7,1.3],[-11.8,13.3,.3],[-7.55,13.3,.4],[-10.75,13.35,.25],[-8.85,13.35,.25]]);pushSeg(p,-11.4,11.4,-11.4,13.8,.32);pushSeg(p,-8.2,11.4,-8.2,13.8,.32);pushSeg(p,-11.4,13.8,-8.2,13.8,.4);pushBox(p,-10.35,-9.25,12.95,13.45,.2);/* 11-11 참회실 옆벽·뒷벽·상, 대나무 */return;} // 마당(범종각·연못은 못 들어감)
   if(secretOpen&&p.z>1.95&&p.z<3.25&&p.x<-hx+1.2&&p.x>-hx-1.2){p.z=Math.max(1.95,Math.min(3.25,p.z));return;} // 문턱
-  if(secretOpen&&p.x<-hx){p.x=Math.max(-14.5+.6,p.x);p.z=Math.max(-4.0,Math.min(3.85,p.z));if(p.z<1.95||p.z>3.25)p.x=Math.min(-hx-.6,p.x); /* 11-07: 정원 담(옆 4.45·문 옆 법당 벽)에 파묻히지 않게 */if(p.x<-13.3&&p.z>1.3&&p.z<3.7)p.x=-13.3;[[GC.x,GC.z,.75],[-8.4,4.0,.75],[-8.6,-3.4,.75],[-13.0,-.35,.3],[-13.5,-3.2,.22],[-11.9,-3.2,.22]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}});return;} // 비밀 정원 안(기도터 상·수반·돌탑은 못 들어감)
+  if(secretOpen&&p.x<-hx){p.x=Math.max(-14.5+.6,p.x);p.z=Math.max(-4.0,Math.min(3.85,p.z));if(p.z<1.95||p.z>3.25)p.x=Math.min(-hx-.6,p.x); /* 11-07: 정원 담(옆 4.45·문 옆 법당 벽)에 파묻히지 않게 */if(p.x<-13.3&&p.z>1.3&&p.z<3.7)p.x=-13.3;pushCir(p,[[GC.x,GC.z,.75],[-8.4,4.0,.75],[-8.6,-3.4,.75],[-13.0,-.35,.3],[-13.6,.9,.66],[-13.2,.85,.5],[-8.2,.7,.42]]);pushSeg(p,-13.5,-3.8,-13.5,-2.6,.27);pushSeg(p,-11.9,-3.8,-11.9,-2.6,.27);pushBox(p,-10.4,-9.2,.35,.75,.2);pushBox(p,-13.06,-12.34,-3.36,-3.04,.15);pushSeg(p,-hx+.06,1.72,-hx-1.42,1.22,.28);/* 11-11 나무·석등·벤치·그네·열린 문짝 */return;} // 비밀 정원 안(기도터 상·수반·돌탑은 못 들어감)
   if(awake&&awake.phase==='stay')[[0,-6.2,.75],[BH_AT.x,BH_AT.z+.2,.9],[MS_AT.x,MS_AT.z+.2,.9]].forEach(function(o){var dx=p.x-o[0],dz=p.z-o[1],d=Math.hypot(dx,dz);if(d<o[2]&&d>1e-4){p.x=o[0]+dx/d*o[2];p.z=o[1]+dz/d*o[2];}}); // 11-07 깨어난 세 보살은 지나가지 못한다
-  p.x=Math.max(-hx+.6,Math.min(hx-.6,p.x));p.z=Math.max(-hz+2.0,Math.min(hz-.7,p.z));}
+  p.x=Math.max(-hx+.6,Math.min(hx-.6,p.x));p.z=Math.max(-hz+2.0,Math.min(hz-.7,p.z));
+  pushBox(p,5.3,6.2,5.15,6.85,.22);pushBox(p,5.15,5.85,4.15,4.65,.22);pushBox(p,5.65,6.15,-5.75,-4.65,.22);} // 11-11 사경 책상·그림책 상·공부방 선반
 var walkT=0, hapAnim=0, bowT=-1, bowCounted=false, mokT=0, mokHit=0, mokSeq=0, mokNext=0, BOW_END=4.0;
 /* 절: 절에서 하는 큰절 순서 — 합장 → 무릎 꿇기 → 엎드려 이마 대기 → 손바닥 올리기(접족례) → 상체 세우기 → 일어나 합장 */
 function bowPose(t){
@@ -3023,7 +3039,7 @@ function loop(){
     else if(armMode==='floor'){tx=-1.7;tz=-s*.1;ex=-.25;}
     else if(armMode==='lift'){tx=-2.1;tz=-s*.1;ex=-.5;}
     else if(armMode==='mok'){var hit=mokHit>0?Math.sin(mokHit/.42*Math.PI):0;
-      if(s<0){tx=-.3;tz=.56;ex=-1.2;}else{tx=-1.0;tz=-.55;ex=-1.02-(1-hit)*.7;}} // 11-07: 왼손은 목탁을 가슴 앞 가운데로, 오른손 채는 위에 들고 있다가 아래팔을 내려 위에서 친다
+      if(s>0){tx=-.93;tz=-.385;ex=-.155;}else{tx=-1.14;tz=.48;ex=-.91-(1-hit)*.4;}} // 11-07: 왼손은 목탁을 가슴 앞 가운데로, 오른손 채는 위에 들고 있다가 아래팔을 내려 위에서 친다
     else{tx=moving?Math.sin(t*10)*.55*s:Math.sin(t*1.6)*.04;tz=s*.12;ex=moving?-.4:-.15;}
     var ka=Math.min(1,dt*(armMode==='mok'?18:10));
     a.rotation.x+=(tx-a.rotation.x)*ka;a.rotation.z+=(tz-a.rotation.z)*Math.min(1,dt*8);el.rotation.x+=(ex-el.rotation.x)*ka;
@@ -3632,33 +3648,34 @@ function playCam(cp,lk){if(PLAY.swing){cp.set(SWING.x+2.1,1.75,SWING.z+3.3);lk.s
 // 하루에 노 하나: 바라밀 하나를 골라 미션 하나 → 다음에 "했어요?"(또는 지금 바로) → 그 노에 빛. 여섯 노를 다 한 번씩 저으면 배가 한 칸(24칸이면 저 언덕).
 // 저장: 노별 날수·지금 바퀴에 저은 노·배 칸·고른 미션(목록 번호). 아이가 쓴 글 없음. 하루 한 노만 센다.
 var PARA=[
- {k:'bosi',n:'보시',h:'나누기',c:0xf07a9b,ad:'베풂이 아니라 바침 — 스승·선지식께 나를 올리는 기쁨'},
- {k:'jigye',n:'지계',h:'지키기',c:0x6cb8e6,ad:'좋고 싫음을 쫓던 마음을 근원으로 돌려세움'},
- {k:'inyok',n:'인욕',h:'참기',c:0x8fcf6b,ad:'업장이 건드려질 때 보고 견딤, 도망갔다 돌아오기도'},
- {k:'jeongjin',n:'정진',h:'꾸준히',c:0xf39a3d,ad:'근원을 향하는 힘이 업력보다 깊어지는 때'},
- {k:'seonjeong',n:'선정',h:'고요히',c:0x9b6fd0,ad:'나라는 경계가 사라진 텅 빈 알아차림'},
- {k:'jihye',n:'지혜',h:'바로 보기',c:0xf2c84b,ad:'근원이 근원을 알아봄 — 다시 관계 속으로'}
+ {k:'bosi',n:'보시',h:'나누기',c:0xf07a9b,kd:"내 것을 기쁘게 나누는 거예요. 물건만이 아니라 웃는 얼굴, 고운 말, 도와주는 손도 나눔이에요.",ke:"촛불 하나로 다른 초에 불을 붙여도 내 불은 줄지 않아요.",ad:'베풂이 아니라 바침 — 스승·선지식께 나를 올리는 기쁨'},
+ {k:'jigye',n:'지계',h:'지키기',c:0x6cb8e6,kd:"하기로 한 약속과 규칙을 스스로 지키는 거예요. 나도 친구도 다치지 않게 해 줘요.",ke:"길가의 울타리처럼, 약속은 우리를 지켜 줘요.",ad:'좋고 싫음을 쫓던 마음을 근원으로 돌려세움'},
+ {k:'inyok',n:'인욕',h:'참기',c:0x8fcf6b,kd:"화나거나 속상할 때 바로 터뜨리지 않고 잠깐 멈추는 거예요. 꾹 누르는 게 아니라 숨 쉬고 기다리는 거예요.",ke:"비가 와도 꺾이지 않는 풀처럼 부드럽게 견뎌요.",ad:'업장이 건드려질 때 보고 견딤, 도망갔다 돌아오기도'},
+ {k:'jeongjin',n:'정진',h:'꾸준히',c:0xf39a3d,kd:"좋은 일을 조금씩, 날마다 이어 가는 거예요. 한 번에 많이보다 날마다 조금이 더 세요.",ke:"물방울이 날마다 떨어져 바위에 길을 내요.",ad:'근원을 향하는 힘이 업력보다 깊어지는 때'},
+ {k:'seonjeong',n:'선정',h:'고요히',c:0x9b6fd0,kd:"흩어진 마음을 한곳에 모아 고요하게 하는 거예요.",ke:"흙탕물을 가만히 두면 맑아지는 것과 같아요.",ad:'나라는 경계가 사라진 텅 빈 알아차림'},
+ {k:'jihye',n:'지혜',h:'바로 보기',c:0xf2c84b,kd:"있는 그대로 바로 보고 아는 거예요. \"왜 그럴까?\" 묻고, 내 마음과 친구 마음을 살펴봐요.",ke:"어두운 방에 등불을 켜면 무엇이 있는지 보여요.",ad:'근원이 근원을 알아봄 — 다시 관계 속으로'}
 ];
-var PARA_M={ // [저학년, 고학년, 어른] 바라밀마다 네 개씩
- bosi:[['친구에게 지우개·색연필 빌려주기','가족에게 먼저 "고마워" 말하기','급식 당번 도와주기','내 간식 반 나누기'],
-       ['모둠에서 내 생각 먼저 나눠 주기','어려워하는 친구 문제 풀이 도와주기','집안일 하나 말없이 하기','먼저 웃으며 인사하기'],
+var PARA_M={ // [저학년, 고학년, 어른]. 아이는 바라밀마다 12개(집·학교·친구·법당에서 3개씩), 어른은 4개
+ bosi:[['가족에게 먼저 "고마워" 말하기','식구들 신발 가지런히 놓아 주기','동생·가족에게 내 간식 나눠 주기','친구에게 지우개·색연필 빌려주기','급식 당번 도와주기','선생님께 밝게 인사하기','혼자 있는 친구에게 "같이 놀자" 하기','친구가 잘한 것 칭찬 한 마디','넘어진 친구 일으켜 주기','법당에서 남을 위해 소원 연등 달기','부처님께 공양 올리기','오늘 만난 사람에게 웃는 얼굴 보여 주기'],
+       ['집안일 하나 말없이 하기','가족 이야기 끝까지 들어 주기','내 물건 하나 기쁘게 나누기','모둠에서 내 생각 먼저 나눠 주기','어려워하는 친구 문제 풀이 도와주기','아무도 안 봐도 교실 쓰레기 하나 줍기','먼저 웃으며 인사하기','친구 좋은 점 하나 찾아 말해 주기','후배·동생에게 아는 것 알려 주기','남을 위해 소원 연등 달기','오늘 한 좋은 일을 모두에게 돌리기(회향)','누가 했는지 모르게 좋은 일 하나'],
        ['무재칠시 하나: 따뜻한 눈길·밝은 얼굴·고운 말·몸으로 돕기·자리 양보','한 사람의 말을 끝까지 10분 들어 주기','누가 했는지 모르게 좋은 일 하나','스승·선지식께 마음 올리기(베풂이 아니라 바침)']],
- jigye:[['하루 동안 거짓말 안 하기','줄 설 때 차례 지키기','개미·벌레 밟지 않기','남의 물건은 묻고 쓰기'],
-       ['약속 시간 지키기','게임·휴대폰 시간 스스로 정하고 지키기','친구 흉 안 보기','참회실 「오늘의 약속 카드」 지키기'],
+ jigye:[['하루 동안 거짓말 안 하기','약속한 시간에 게임·영상 끄기','쓴 물건 제자리에 두기','줄 설 때 차례 지키기','복도에서 뛰지 않고 걷기','남의 물건은 묻고 쓰기','친구 놀리지 않기','놀이 규칙 지키기','친구 비밀 지켜 주기','개미·벌레 밟지 않기','참회실 「오늘의 약속 카드」 하나 지키기','법당 예절 다섯 가지 지키기'],
+       ['약속 시간 지키기','게임·휴대폰 시간 스스로 정하고 지키기','하기로 한 일 미루지 않고 먼저 하기','수업 시작 전에 자리에 앉기','빌린 것 제때 돌려주기','대화방에서 고운 말만 쓰기','친구 흉 안 보기','없는 말 지어내지 않기','친구와 한 약속 지키기','참회실 「오늘의 약속 카드」 지키기','오계 하나 골라 하루 지키기','작은 생명 해치지 않기'],
        ['오늘 「하지 않을 것」 하나 정해 지키기(험담·과한 스마트폰 등)','말하기 전에 세 번 생각하기','근원을 향하는 시간(새벽 10분 등) 지키기','오계 하나를 하루 깊이 지키기']],
- inyok:[['화날 때 숨 세 번 쉬고 말하기','줄·차례 기다리기','져도 "괜찮아" 하기','동생이 귀찮게 해도 한 번 참기'],
-       ['억울할 때 되갚지 않고 선생님께 말하기','하기 싫은 숙제 끝까지 하기','친구 말 끝까지 듣기','놀림 받을 때 "나는 ~해서 속상해" 말하기'],
+ inyok:[['동생이 귀찮게 해도 한 번 참기','양치·정리를 투덜대지 않고 하기','갖고 싶은 것 조르지 않고 기다리기','줄·차례 기다리기','발표하고 싶어도 손 들고 기다리기','틀려도 울지 않고 다시 해 보기','화날 때 숨 세 번 쉬고 말하기','져도 "괜찮아" 하기','친구가 실수해도 "괜찮아" 해 주기','방석에 1분 가만히 앉아 있기','화난 마음을 마음 쉼터에 말하기','먹고 싶은 간식 10분 기다렸다 먹기'],
+       ['잔소리 들을 때 대꾸 전에 숨 한 번','하기 싫은 숙제 끝까지 하기','형제자매와 다툴 때 먼저 멈추기','억울할 때 되갚지 않고 선생님께 말하기','어려운 문제 포기하지 않고 5분 더','모둠에서 내 뜻대로 안 돼도 따라 보기','친구 말 끝까지 듣기','놀림 받을 때 "나는 ~해서 속상해" 말하기','화나는 문자에 바로 답하지 않기','마음 쉼터에서 화 밑의 「바란 것」 찾기','참회실에서 숨 고르기','불편한 친구가 잘되길 한 번 빌어 주기'],
        ['마음이 훅 올라올 때 알아차리고 3초 멈추기','불편한 사람 한 명을 위해 축원하기','비판을 들었을 때 변명 대신 "고맙습니다"','내 업장이 건드려진 순간을 한 줄 적기']],
- jeongjin:[['법당에 오늘도 오기','책 10분 읽기','일기 한 줄 쓰기','목탁 10번 치기'],
-       ['좋은 습관 하나 7일 이어가기','108배를 나누어 하기(오늘 27배)','사경 한 줄','수첩 한 칸 채우기'],
+ jeongjin:[['책 10분 읽기','일기 한 줄 쓰기','스스로 일어나 준비하기','숙제 잊지 않고 하기','글씨 또박또박 쓰기','줄넘기·달리기 어제보다 하나 더','친구와 같이 끝까지 청소하기','놀이를 중간에 그만두지 않기','친구와 약속한 연습 하기','법당에 오늘도 오기','목탁 10번 치기','절 세 번 하기'],
+       ['좋은 습관 하나 7일 이어가기','정한 공부 시간 채우기','운동·악기 연습 15분','수업 시간에 한 번 손 들기','맡은 일(1인 1역) 끝까지 하기','틀린 문제 다시 풀기','모둠 일에서 내 몫 다 하기','친구와 함께 운동·연습하기','힘들어하는 친구 옆에서 끝까지 같이 하기','108배를 나누어 하기(오늘 27배)','사경 한 줄','법구경 한 구절 읽기'],
        ['21배 또는 108배','사경 한 구절','경전 한 쪽 읽기','오늘 수행 한 줄 기록']],
- seonjeong:[['방석에 앉아 숨 10번 세기','종소리 끝까지 듣기','밥 한 입 천천히 맛보기','눈 감고 법당 떠올리기'],
-       ['명상 3분','정원 디딤돌 걷기 명상','시험·발표 전에 숨 고르기','잠들기 전 몸 훑기'],
+ seonjeong:[['밥 한 입 천천히 맛보기','잠들기 전 숨 10번 세기','영상 끄고 5분 가만히 있기','수업 종이 치면 숨 한 번 쉬고 시작하기','창밖 하늘 1분 바라보기','글씨 쓸 때 글씨만 생각하기','친구가 말할 때 눈 보고 듣기','다투다가 잠깐 멈추고 숨 쉬기','친구와 조용히 같이 걷기','방석에 앉아 숨 10번 세기','종소리 끝까지 듣기','눈 감고 법당 떠올리기'],
+       ['잠들기 전 발끝부터 머리까지 몸 느껴 보기','휴대폰 없이 10분 있기','한 가지 일만 20분 하기','시험·발표 전에 숨 고르기','쉬는 시간에 1분 눈 감기','걸을 때 발바닥 느끼며 걷기','친구 말에 끼어들지 않고 듣기','다툼이 커지기 전에 잠깐 멈추기','친구와 1분 조용히 숨 쉬기','명상 3분','정원 디딤돌 걷기 명상','종소리가 사라질 때까지 듣기'],
        ['좌선 10~20분','한 가지 일만 30분(동시에 여러 일 하지 않기)','걷기 명상','마음 쉼터 「바란 것」 살피기']],
- jihye:[['"지금 내 마음은 ○○" 말해 보기','친구 마음 짐작해 보기','문수보살의 질문 생각하기','"왜 그럴까?" 한 번 묻기'],
-       ['내 생각과 다른 의견 하나 들어 보기','실수에서 배운 것 한 줄','법구경 구절을 내 말로 바꾸기','화 밑에 있는 「바란 것」 찾기'],
+ jihye:[['"지금 내 마음은 ○○" 말해 보기','가족이 왜 그랬을까 생각해 보기','오늘 고마운 것 하나 찾기','"왜 그럴까?" 한 번 묻기','모르는 것은 "몰라요" 하고 물어보기','실수한 것 숨기지 않고 말하기','친구 마음 짐작해 보기','친구와 다툰 까닭 생각해 보기','내가 잘못한 것 먼저 "미안해" 하기','오늘의 법구경 읽고 한 마디로 말하기','부처님 생애 그림책 한 장 보기','교리 퀴즈 하나 풀기'],
+       ['오늘 고마운 것 세 가지 찾기','화 밑에 있는 「바란 것」 찾기','내 말이 가족에게 어떻게 들렸을지 생각하기','내 생각과 다른 의견 하나 들어 보기','실수에서 배운 것 한 줄','소문을 듣고 "정말일까?" 따져 보기','친구 입장에서 한 번 생각해 보기','다툼에서 내 몫 찾아보기','겉모습 말고 마음 보기','법구경 구절을 내 말로 바꾸기','문수보살의 질문 생각하기','오늘 일이 무엇이 모여 생겼는지 살펴보기'],
        ['오늘 일어난 일을 연기(緣起)로 보기 — 무엇이 모여 이 일이 되었나','내 판단을 한 번 의심해 보기','경전 한 구절을 하루 품기','하루 회향: 오늘 받은 것과 드린 것']]
 };
+var PARA_G=['🏠 집에서','🏫 학교에서','👫 친구와','🪷 법당에서 · 혼자서']; // 아이 목록의 묶음 이름(3개씩)
 var PARA_ROWS=12,paraSt=store.get('para',null)||{days:{},cur:[],pend:null,last:'',v:2,prog:0,cross:0,lotus:0};
 if(!paraSt.v){var paraTot=0;for(var pk in paraSt.days)paraTot+=paraSt.days[pk]||0;paraSt.cross=Math.floor(paraTot/PARA_ROWS);paraSt.prog=paraTot%PARA_ROWS;paraSt.lotus=0;paraSt.cur=paraSt.cur||[];delete paraSt.laps;paraSt.v=2;store.set('para',paraSt);} // 11-07 「건네주는 배」로 바꿈: 지금까지 저은 날을 모두 세어 옮김
 // 저 언덕에 건네줄 이들(돌아가며): p 사람 · a 짐승 · b 새
@@ -3762,7 +3779,7 @@ function paraCredit(k){if(paraSt.last===todayKey)return false;paraSt.last=todayK
   if(paraSt.prog>=PARA_ROWS){paraSt.prog=0;paraSt.cross=(paraSt.cross||0)+1;r.arrive=true;r.all=paraSt.cur.length>=6;if(r.all)paraSt.lotus=(paraSt.lotus||0)+1;paraSt.cur=[];paraFx.hold=6;}
   paraSave();paintPara();paraFx.row=2.4;moktak(true);if(typeof questEvent==='function')questEvent('para');return r;}
 function paraSay(t){return '<div style="font-family:var(--font-display);font-size:19px;line-height:1.7;color:#3b2a55">'+t+'</div>';}
-function paraOarRow(){return '<div class="rank" style="margin-top:8px">'+PARA.map(function(p){var n=paraSt.days[p.k]||0,done=paraSt.cur.indexOf(p.k)>-1,t=paraTier(n),nx=PARA_TD[t+1];return '<div class="r" style="grid-template-columns:auto 1fr auto"><span style="color:#'+('000000'+p.c.toString(16)).slice(-6)+'">●</span><span><b>'+p.n+'</b> · '+p.h+(isAdult?'<br><span class="note">'+p.ad+'</span>':'')+'<br><span class="note">'+PARA_TN[t]+(nx?' · '+nx+'일에 '+PARA_TN[t+1]:'')+'</span></span><span class="note">'+(done?'✔ ':'')+n+'일</span></div>';}).join('')+'</div>';}
+function paraOarRow(){return '<div class="rank" style="margin-top:8px">'+PARA.map(function(p){var n=paraSt.days[p.k]||0,done=paraSt.cur.indexOf(p.k)>-1,t=paraTier(n),nx=PARA_TD[t+1];return '<div class="r" style="grid-template-columns:auto 1fr auto"><span style="color:#'+('000000'+p.c.toString(16)).slice(-6)+'">●</span><span><b>'+p.n+'</b> · '+p.h+'<br><span class="note">'+(isAdult?p.ad:p.kd)+'</span><br><span class="note">'+PARA_TN[t]+(nx?' · '+nx+'일에 '+PARA_TN[t+1]:'')+'</span></span><span class="note">'+(done?'✔ ':'')+n+'일</span></div>';}).join('')+'</div>';}
 function paraLapNote(){var c=paraSt.cross||0;return '<div class="note" style="margin-top:6px">이번 건너기 '+(paraSt.prog||0)+' / '+PARA_ROWS+'번 · 건넌 횟수 '+c+(c>=2?' · 함께 건넌 이 '+(c-1):'')+((paraSt.lotus||0)?' · 고루 저어 핀 연꽃 '+paraSt.lotus:'')+' · '+(c>=1?((paraSt.prog||0)?'지금 배에 탄 이: ':'나루에서 기다리는 이: ')+paraPass(c-1).n:'첫 건너기는 나 혼자')+'</div>';}
 function openPara(){var P=paraSt.pend;
   if(P&&P.d!==todayKey){var p=PARA.filter(function(x){return x.k===P.k})[0];
@@ -3774,14 +3791,17 @@ function openPara(){var P=paraSt.pend;
   if(paraSt.last===todayKey){showLearn('⛵ 반야용선',paraSay('오늘은 노를 저었어요.<br>내일 또 저어요.')+paraOarRow()+paraLapNote());return;}
   showLearn('⛵ 육바라밀 반야용선',paraSay(isAdult?'오늘은 어느 노를 저으시겠어요?':'오늘은 어떤 노를 저어 볼까요?')+'<div class="note" style="margin-top:4px">바라밀은 "저 언덕으로 건너가기". 하루에 노 하나를 저으면 배가 조금씩 나아가고, 12번이면 강을 건너요. 저 언덕에 닿으면 다시 돌아와 다른 이를 태워 건네줘요. 끝이 없는 배예요. 여섯 노를 고루 저으면 저 언덕에 연꽃이 더 피어요.</div>'+paraOarRow()+paraLapNote(),function(){
     var ch=el('<div class="choices" style="margin-top:10px"></div>');PARA.forEach(function(p){var b=el('<button class="choice">'+p.n+' · '+p.h+'</button>');b.addEventListener('click',function(){paraPick(p);});ch.appendChild(b);});sBody.appendChild(ch);});}
-function paraPick(p){var L=PARA_M[p.k][paraLevel()],opts=[];for(var i=0;i<3;i++)opts.push(L[(doy2+i)%L.length]);
-  showLearn('⛵ '+p.n+' 노',paraSay(p.n+' · '+p.h)+(isAdult?'<div class="note">'+p.ad+'</div>':'')+'<div class="note" style="margin-top:6px">오늘 할 일 하나를 골라요.</div>',function(){var ch=el('<div class="choices" style="margin-top:8px"></div>');
-    opts.forEach(function(m){var b=el('<button class="choice" style="white-space:normal;text-align:left">'+m+'</button>');b.addEventListener('click',function(){paraSt.pend={k:p.k,m:m,d:todayKey};paraSave();chime();
-      showLearn('⛵ '+p.n+' 노',paraSay('좋아요. 「'+m+'」')+'<div class="note" style="margin-top:6px">다음에 오면 했는지 물어볼게요. 지금 바로 할 수 있으면 하고 눌러요.</div>',function(){var r=el('<div class="row" style="margin-top:8px"><button class="btn pink sm">지금 했어요</button><button class="btn ghost sm">할게요</button></div>'),bs=r.querySelectorAll('button');
-        bs[0].addEventListener('click',function(){paraSt.pend=null;paraSave();paraDone(p,paraCredit(p.k),1);});bs[1].addEventListener('click',function(){closeSheet();toast(p.n+' 노를 잡았어요 · 다음에 알려 줘요');});sBody.appendChild(r);});});ch.appendChild(b);});sBody.appendChild(ch);});}
+function paraPick(p){var L=PARA_M[p.k][paraLevel()],kid=!isAdult,opts=[];if(kid)opts=L.slice();else for(var i=0;i<3;i++)opts.push(L[(doy2+i)%L.length]);
+  function chosen(m){paraSt.pend={k:p.k,m:m,d:todayKey};paraSave();chime();
+    showLearn('⛵ '+p.n+' 노',paraSay('좋아요. 「'+m+'」')+'<div class="note" style="margin-top:6px">다음에 오면 했는지 물어볼게요. 지금 바로 할 수 있으면 하고 눌러요.</div>',function(){var r=el('<div class="row" style="margin-top:8px"><button class="btn pink sm">지금 했어요</button><button class="btn ghost sm">할게요</button></div>'),bs=r.querySelectorAll('button');
+      bs[0].addEventListener('click',function(){paraSt.pend=null;paraSave();paraDone(p,paraCredit(p.k),1);});bs[1].addEventListener('click',function(){closeSheet();toast(p.n+' 노를 잡았어요 · 다음에 알려 줘요');});sBody.appendChild(r);});}
+  showLearn('⛵ '+p.n+' 노',paraSay(p.n+' · '+p.h)+(kid?'<div style="margin-top:6px;line-height:1.6"><b>'+p.n+'</b>'+josa(p.n,'은','는')+' '+p.kd+'</div><div class="note" style="margin-top:4px">'+p.ke+'</div>':'<div class="note">'+p.ad+'</div>')+'<div class="note" style="margin-top:8px">'+(kid?'아래에서 오늘 해 볼 것 하나를 골라요. 어디서 하든 다 '+p.n+josa(p.n,'이에요','예요')+'.':'오늘 할 일 하나를 골라요.')+'</div>',function(){var ch=el('<div class="choices" style="margin-top:8px"></div>');
+    opts.forEach(function(m,i){if(kid&&i%3===0)ch.appendChild(el('<div class="note" style="margin:'+(i?10:0)+'px 0 2px;font-weight:700">'+PARA_G[i/3]+'</div>'));var b=el('<button class="choice" style="white-space:normal;text-align:left">'+m+'</button>');b.addEventListener('click',function(){chosen(m);});ch.appendChild(b);});
+    if(kid){ch.appendChild(el('<div class="note" style="margin:10px 0 2px;font-weight:700">✨ 여기에 없어도 돼요</div>'));var bo=el('<button class="choice" style="white-space:normal;text-align:left">내가 스스로 정한 '+p.h+' (마음속으로 정해요)</button>');bo.addEventListener('click',function(){chosen('내가 스스로 정한 '+p.h);});ch.appendChild(bo);}
+    sBody.appendChild(ch);});}
 function paraDone(p,r,v){var msg;
   if(r===false)msg='오늘은 이미 노를 저었어요. 내일 또 저어요.';
-  else{msg=(v===1?'':'반도 한 걸음이에요. ')+p.n+' 노를 저었어요. 배가 저 언덕 쪽으로 나아가요.';if(r.tier)msg+='<br>'+p.n+' 노가 <b>'+r.tier+'</b>가 되었어요.';
+  else{msg=(v===1?'':'반도 한 걸음이에요. ')+p.n+' 노를 저었어요. 배가 저 언덕 쪽으로 나아가요.'+(isAdult?'':'<br><span style="font-size:15px">방금 한 일이 바로 <b>'+p.n+'</b>('+p.h+')예요.</span>');if(r.tier)msg+='<br>'+p.n+' 노가 <b>'+r.tier+'</b>가 되었어요.';
     if(r.arrive){bell();var c=paraSt.cross;
       if(c===1)msg='<b>저 언덕에 닿았어요!</b><br>그런데 부처님은 저 언덕에 머물지 않으셨어요. 다시 돌아가 다른 이를 태워 건네주셨지요.<br>배가 나루로 돌아가요. 다음엔 '+jo(paraPass(0).n,'이','가')+' 기다리고 있어요.';
       else msg='<b>'+jo(paraPass(c-2).n,'을','를')+' 저 언덕에 건네주었어요.</b><br>함께 건넌 이 '+(c-1)+'. 배가 다시 나루로 돌아가요.<br>다음엔 '+jo(paraPass(c-1).n,'이','가')+' 기다려요.';
