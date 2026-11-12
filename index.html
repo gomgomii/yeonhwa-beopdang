@@ -1150,10 +1150,13 @@ var keys={up:0,down:0,left:0,right:0}, target=null;
 var keyMap={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
 window.addEventListener('keydown',function(e){if(sheetOpen||!gate.classList.contains('gone'))return;if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){var tg=e.target;if(tg.closest&&tg.closest('#sheet')&&!sheetOpen){try{tg.blur();}catch(x){}}else return;}var k=keyMap[e.code];if(k){keys[k]=1;target=null;e.preventDefault();}if((e.code==='Enter'||e.code==='KeyE')&&nearSpot){openSpot(nearSpot);}});
 window.addEventListener('keyup',function(e){var k=keyMap[e.code];if(k)keys[k]=0;});
+function angDiff(a){a=(a+Math.PI)%(Math.PI*2);if(a<0)a+=Math.PI*2;return a-Math.PI;} // 11-12 두 방향의 차이를 늘 -180~180도로(여러 바퀴 헛도는 것 막기)
+function keysOff(){keys.up=keys.down=keys.left=keys.right=0;} // 11-12 창이 가려지거나 다른 곳을 누르면 눌린 키를 놓은 것으로
+window.addEventListener('blur',keysOff);document.addEventListener('visibilitychange',function(){if(document.hidden)keysOff();});
 [].forEach.call(document.querySelectorAll('.dpad button'),function(b){
   var k=b.dataset.k;
   b.addEventListener('pointerdown',function(e){e.preventDefault();keys[k]=1;stopWalk();b.setPointerCapture(e.pointerId);});
-  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){b.addEventListener(ev,function(){keys[k]=0;});});
+  ['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(function(ev){b.addEventListener(ev,function(){keys[k]=0;});});
 });
 var ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),downAt=null,dragLast=null,dragged=false;
 renderer.domElement.addEventListener('pointerdown',function(e){downAt=[e.clientX,e.clientY];dragLast=downAt;dragged=false;});
@@ -3008,13 +3011,13 @@ function loop(){
   var dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
   var moving=false;
   if(!sheetOpen&&!cer.on&&!sitOn&&!awakeLock()&&!(typeof playLock==='function'&&playLock())){var px0=pos.x,pz0=pos.z;
-    if(keys.left)heading+=1.2*dt;if(keys.right)heading-=1.2*dt; // 11-07 회전 천천히(어지럽지 않게)
+    if(keys.left)heading+=1.2*dt;if(keys.right)heading-=1.2*dt;if(heading>Math.PI*2||heading<-Math.PI*2)heading=angDiff(heading); // 11-07 회전 천천히(어지럽지 않게)
     var f=(keys.up?1:0)-(keys.down?1:0);
     var spd=(typeof walkSpd==="function")?walkSpd():4;if(f){pos.x+=Math.sin(heading)*f*spd*dt;pos.z+=Math.cos(heading)*f*spd*dt;moving=true;}
     if(target){var dx=target.x-pos.x,dz=target.z-pos.z,dist=Math.hypot(dx,dz);
       if(dist<.08){target=null;if(routeQ.length){target=routeQ.shift();}else{if(autoSit){autoSit=false;sitHere();}if(onArrive){var oa=onArrive;onArrive=null;oa();}else faceRoom();}}
-    else{var want=Math.atan2(dx,dz),diff=((want-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=diff*Math.min(1,4*dt);var sp=Math.min(dist,spd*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
-    else if(turnTo!==null){var tdiff=((turnTo-heading+Math.PI*3)%(Math.PI*2))-Math.PI;heading+=tdiff*Math.min(1,5*dt);if(Math.abs(tdiff)<.03)turnTo=null;} // 도착 뒤 벽을 보고 있으면 방 안쪽으로 돌아섬
+    else{var want=Math.atan2(dx,dz),diff=angDiff(want-heading);heading+=diff*Math.min(1,4*dt);var sp=Math.min(dist,spd*dt);pos.x+=dx/dist*sp;pos.z+=dz/dist*sp;moving=true;}}
+    else if(turnTo!==null){var tdiff=angDiff(turnTo-heading);heading+=tdiff*Math.min(1,5*dt);if(Math.abs(tdiff)<.03)turnTo=null;} // 도착 뒤 벽을 보고 있으면 방 안쪽으로 돌아섬
     clampPos(pos);
     if(target){if(Math.hypot(pos.x-px0,pos.z-pz0)<.004){stuckT+=dt;if(stuckT>.25){stopWalk();faceRoom();}}else stuckT=0;} // 벽에 막혀 제자리걸음이면 멈춤
   }
