@@ -1048,15 +1048,15 @@ var HAIR_OF={girl:['bob','twin'],boy:['short','crew'],adult:['bun','bob','short'
 var gender=store.get('gender','girl');if(gender!=='boy')gender='girl';if(isAdult)gender=(store.get('agender','f')==='m'?'adultM':'adult'); // 어른도 여/남
 var hairStyle=store.get('hair',HAIR_OF[gender][0]);if(HAIR_OF[gender].indexOf(hairStyle)<0)hairStyle=HAIR_OF[gender][0];
 var hair=new THREE.Group();head.add(hair);
-function doHair(){
+function doHair(){buildHair(hair,hairStyle,gender);dot.visible=gender==='girl';} // 연꽃 핀은 여자아이만
+function buildHair(hair,hairStyle,gender,lo){ // 11-23 친구 캐릭터도 같은 머리를 쓴다(lo: 가볍게)
   while(hair.children.length)hair.remove(hair.children[0]);
   function add(m,x,y,z){m.position.set(x,y,z);m.castShadow=true;hair.add(m);return m;}
-  var R=.335,P2=Math.PI*2,F=Math.PI/2; // 앞쪽이 phi=π/2
-  add(new THREE.Mesh(new THREE.SphereGeometry(R,28,16,0,P2,0,.62),hairMat),0,.01,0); // 정수리
-  dot.visible=gender==='girl'; // 연꽃 핀은 여자아이만
-  if(hairStyle!=='crew')add(new THREE.Mesh(new THREE.SphereGeometry(R,28,12,F-.95,1.9,.5,.78),hairMat),0,0,0); // 앞머리: 눈 위에서 끝남
+  var R=.335,P2=Math.PI*2,F=Math.PI/2,S=lo?14:28,S2=lo?8:16,S3=lo?6:12; // 앞쪽이 phi=π/2
+  add(new THREE.Mesh(new THREE.SphereGeometry(R,S,S2,0,P2,0,.62),hairMat),0,.01,0); // 정수리
+  if(hairStyle!=='crew')add(new THREE.Mesh(new THREE.SphereGeometry(R,S,S3,F-.95,1.9,.5,.78),hairMat),0,0,0); // 앞머리: 눈 위에서 끝남
   var backEnd=hairStyle==='bob'?2.25:(hairStyle==='crew'?1.45:1.8); // 단발은 귀 아래, 스포츠는 귀 위 높이, 나머지는 귀 위까지
-  add(new THREE.Mesh(new THREE.SphereGeometry(R,28,16,F+.8,P2-1.6,.5,backEnd-.5),hairMat),0,0,0); // 옆·뒷머리
+  add(new THREE.Mesh(new THREE.SphereGeometry(R,S,S2,F+.8,P2-1.6,.5,backEnd-.5),hairMat),0,0,0); // 옆·뒷머리
   if(hairStyle==='bun'){add(new THREE.Mesh(new THREE.SphereGeometry(.12,14,12),hairMat),0,.17,-.26);add(new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.16,6),new THREE.MeshStandardMaterial({color:0xe3b04a,metalness:.6,roughness:.4})),0,.2,-.26).rotation.z=Math.PI/2;} // 쪽진 머리와 비녀
   if(hairStyle==='twin'){[-1,1].forEach(function(sg){
     var t=add(new THREE.Mesh(new THREE.SphereGeometry(.1,14,12),hairMat),sg*.3,-.1,-.08);t.scale.set(1,1.6,1);
@@ -1185,6 +1185,7 @@ renderer.domElement.addEventListener('pointerup',function(e){
   if(awake&&awake.phase!=='stay')return;
   if(decoClick())return;
   if(learnClick())return;
+  if(friendClick())return;
   if(lanternFocus){lanternFocus=null;closeSheet();return;}
   var hl=ray.intersectObjects(lanternGroup.children,true);if(hl.length){var lo=hl[0].object;while(lo.parent&&lo.parent!==lanternGroup)lo=lo.parent;var li=lanternGroup.children.indexOf(lo);if(li>-1){focusLantern(li);return;}}
   if(ray.intersectObject(altar).length){openSpot('taeng');return;}
@@ -1334,7 +1335,7 @@ document.getElementById('aMok').addEventListener('click',function(){moks++;showC
 document.getElementById('aBell').addEventListener('click',function(){bell();toast('마음을 모아요');});
 var autoSit=false;
 document.getElementById('aDeco').addEventListener('click',function(){document.getElementById('decoBtn').click();});
-document.getElementById('aMed').addEventListener('click',function(){if(sitOn)return;if(nearestCushion()||pos.x<-hx){sitHere();return;}/* 마당·정원에서는 그 자리에 앉음 */var best=null,bd=1e9;cushionPos.forEach(function(c,ci){if(cushOff.indexOf(ci)>-1)return;var dd=Math.hypot(pos.x-c[0],pos.z-c[1]);if(dd<bd){bd=dd;best=c;}});decor.forEach(function(dc){if(dc.t!=='cushion')return;var dd=Math.hypot(pos.x-dc.x,pos.z-dc.z);if(dd<bd){bd=dd;best=[dc.x,dc.z];}});if(!best){toast('방석이 없어요');return;}stopWalk();navGo(new THREE.Vector3(best[0],0,best[1]));autoSit=true;toast('가까운 방석으로 가요');});
+document.getElementById('aMed').addEventListener('click',function(){if(sitOn)return;if(nearestCushion()||pos.x<-hx){sitHere();return;}/* 마당·정원에서는 그 자리에 앉음 */var best=null,bd=1e9;cushionPos.forEach(function(c,ci){if(cushOff.indexOf(ci)>-1||friendAt[ci])return;var dd=Math.hypot(pos.x-c[0],pos.z-c[1]);if(dd<bd){bd=dd;best=c;}});decor.forEach(function(dc){if(dc.t!=='cushion')return;var dd=Math.hypot(pos.x-dc.x,pos.z-dc.z);if(dd<bd){bd=dd;best=[dc.x,dc.z];}});if(!best){toast('방석이 없어요');return;}stopWalk();navGo(new THREE.Vector3(best[0],0,best[1]));autoSit=true;toast('가까운 방석으로 가요');});
 var sndBtn=document.getElementById('sndBtn');
 function paintSnd(){sndBtn.textContent=soundOn?'🔔 소리':'🔕 소리';sndBtn.setAttribute('aria-pressed',String(soundOn));}
 paintSnd();
@@ -1371,7 +1372,7 @@ var TEACHER_HASHES=['97bbbeaa3b13d8ebc1a7b469d564b76e5a8d880649fcce4329d1366d7e9
 var ADMIN_HASHES=['24f32f3238e6ef5fdde4ae184e43b587497c174e805c7910a48a7256ea7d2d36']; // 교법사(관리자) 코드
 var STUDENT_HASHES=['9bece57cd7fba40057bec29d8dd73dac9ce3f0527ebc24c4267c61902b03ed3a','30fd831c43ad5031cac56a1f714815d99bcc3feaacd2e2fbeef0652bd159dadc','ea342f12ed4628010783f2e953c17cc23a21b5c950a1c38b69b472d72ce7d599','f43197d77c0d9d3c2ceb759bad033615ecc9bf92a17c0dcb7d8ca68c62ae2dc9','c0d7f55a9c2262350b4afec478e543f76ab4396696ee2e490a147047ad4509c7','674e14000fa74b62c7a99938c6828f0b7729a8b2fda436f884426cda2ab9da7d','5492811bc45ccf10a542dce7cac814d60b495ffcf38bcc25366f2db6fb9c1bc1','f57f8d1245a1a85ab31ce09b116cab795870a0fe0e007ddbe4cb2fcd0ce81386','c9254fd67c5411d1618b4587f7fb80e8d1ceca5f28fcd298c54dd921fdb628c4','c170f158e2922237098d81a6c6b81cbdbd76ece84553534c3de51c2ab94b1549','1bd1e05016389985600020af7bff158144b6ca5b00fcb93ace121ff6ca463f05','99e40c4e07f46a19850125795ca2d0c3b5ebaf9ed6b2de9e5b6db5b5a5ca9849','b0dadd323f5e9b78049b802d663aacd12e2cb7c85b8205ea542b10a320a23e45','d49ce9bf7254180627bf96a77bf0901e1797566785c6bb77b61db3a0a91ad404','a741d25f2efe7fa573814372fa3dff725901d397f5beb1ecb22cc11c222aa1b9','4a4f06048c5e4f912f53c49aac71ea3d40f1a23d4c3689499e0da83c49922858','49fa34e3f297fa12f0aadb9c4467edf98d790d6003b1609cc6bbcdbf97767039','60238c37f3dbc2ef6a669b61ac4b4b508814064d8aabc25ebb24ba8008c4148e','94bdedb5297503e5e782ab210e70012f2014d06e9e310bd6b67ffb0bba10cbab','d9821a7751715d3a71f7957d32bdd5113da44b07ac9f8cb33e7969106e7df9a3','72ebb115a68de0d90301f1c87e9c4fee6b1740be8f0703bba1b0bb2e82618b2e','06d1626eb2515e81b6b027fe39df3008219275cdb19ab145c47d546ed738632a','6b7e82ea9cac26be144207371340a0e93d8807b5534f67814b611c1390938957','b5b75f6b8b7fce451352d232a7488fd5cdc052e149a52053577fcdd3cd480482','0d215b6a83d859636344f1c934a86c14accbea2f05383a828a8fc4c18dade4ca','cfb4c158ecd5a0e42b66f9c411d51bb2769935e55b566d4f6d38de2b7a989713','8d87c49c6bb4475e4eb709b849f5a4c5576d078ef619a94426f0af56612319b7','6522243e8d100743a875a7a2a0ecd7ecda9d5cb92d628f4011d6e9c8a0a0d77e','353c75f60e82d0b740e401961f08abb0bd24325e301a068df4763d8d3ce981fb','876fa99bed9d806a543ca0060f09c70f2d7619d9303230b1cf5bbbbae89082f5','d1fc9a48b16dbf31c8e1bcc3b784ca5c560fa94f22163dfa61b1a4b130a6f00f','40d9a7d3428b4241db85f676899c16b371226ff0f6ab8d8e72ae1b063645f7cb']; // 6학년 2반 시험 코드 32개(11-06), 번호 대응표는 교학부 폴더 CSV
 var STAFF_HASHES=['1881fc1dca6170c5fed649aca0b4cd1f8dfea8f2cc6410ad5d17916e6b53a855','47a5ca2d5d648c0091549a29204a05d6c2ad3f0bdbb578c7acba600fa3a41ecd','9133d18925919fdd5488756ab0f98290726e2871210745670a26ccc847b536c4','e906d4a8c5f0e72921b61e820ea9cf242ed4dc1b16c460d663ecee466edc0c6c','5ed628e58f3f021d8aa344c98cc6034d24fc05c4e63bc86de7844b19ea65adc4','828ee9bbd4689d0bb74e71a3e1f64510f73b8f9ac520b84ea62e5d50d3335c5a','817b8560df1131739d5f3289dac0469cce8aabb9478d921f0a9fdc4afe6ea52e','3c7d167be55744d42a342432a712c97ad0941e2dba3340216bf30849811b0010','591f34aa37db1def912811d85ae15d43b8903839549b5a451a3db0c258789d4d','e3573220f770d2d5ec9a41919403af7aebffb4d9c58514250ea6be557842e6ef','205dd540868d5660673b9286d3de950c77936e156cfd009530ce9c21eec4091f','78f105cbc6f360b5ce1a32b246e3c46036a4711fc1b2af7ff51427d9dc884b78','b4272d813f3aa28a0e27222a8ee155266dc79ecfbb5934ccdea5f4a3dfd5c4d8','8c0dce99e28d15afb677fd8001e22ef1cf0d1d934cadac11c406149b7bfa1ba9','8080fe54f7dba8c571e317cd5cb4c742571ecec2a36bebf6fecc9d9f254c7ca6','6e3ee91b645cc5940c9ca63320ae30f52158ebce1fa2b1843e6708255543fcd7','7b5c14ac9f9d130791bf0633a5838cce2d9d5588b4db5df0591c42ec6f08cbec','aee63a8a83429f1f2bfd44e65539d98e245675291532d8607b9bddf41af20663','18aa13d22b992ceb8b8a1ec9582fe9840c73597eb77af3d3c03b426b47780cfa','ec64c9b5aecd2c86e7f15031b605648435ef2d46175e5c6cb4c45788b76e6576','3c80fe977e7555fbb84df1a92547edaf8730e7f9bfbffac9dc9def52c8817c2b','69b62fd7661886a6f95589270ab68e91e936091a9de0641350f1366fda482277','25c9c457442a77eb3e876a2d22038302c586c8c56eff060c1c5d0b77b5d32e1d','79c291cf02d51bf114aeda52e678f5b2ad14af3be6268cba913dcb593659fd74','6ff1eaedf11ff96926a017737e677dcfbc78ca087b90473e0aeb5f95b05c7ed1']; // 교직원 시범 코드 25개(11-06), 이름 대응표는 교학부 폴더 CSV
-var VIP_HASHES=['b613cb67cf6bca806b35e88ac82f8b170ab2ab58f543bf22c6d0c42212c42e41','dda864603e5b863732fc41e87671f2570921c53a78067427cc6f35899577b5a5'];var VIP_NAMES=['교감','교장']; // 교감 검토용(11-09)·교장 선생님(11-23): 모든 잠금 열림 + 교법사 도구 + 어른 화면 + 서버 저장
+var VIP_HASHES=['b613cb67cf6bca806b35e88ac82f8b170ab2ab58f543bf22c6d0c42212c42e41','dda864603e5b863732fc41e87671f2570921c53a78067427cc6f35899577b5a5'];var VIP_NAMES=['교감','교장'];function vipName(){if(!VIP_HASHES)return null;var i=VIP_HASHES.indexOf(store.get('sid',null));return i>-1?VIP_NAMES[i]+' 선생님':null;}if(isAdmin&&typeof paintWho==='function')paintWho(); /* 이름표는 코드 목록보다 먼저 한 번 그려지므로 여기서 다시 */ // 교감 검토용(11-09)·교장 선생님(11-23): 모든 잠금 열림 + 교법사 도구 + 어른 화면 + 서버 저장
 var ALL_HASHES=MEMBER_HASHES.concat(ADULT_HASHES,TEACHER_HASHES,ADMIN_HASHES,STUDENT_HASHES,STAFF_HASHES,VIP_HASHES);
 function enterAs(h,r){store.set('member',h);var prev=store.get('role','child');store.set('role',r);if(prev!==r){location.reload();return;}gateMsg.textContent='';openGate(false);}
 var gate=document.getElementById('gate'),gateMsg=document.getElementById('gateMsg'),gateCode=document.getElementById('gateCode');
@@ -1762,6 +1763,7 @@ function panelGuide(){
     ab.querySelector('#gAwake').addEventListener('click',function(){startAwake();});ab.querySelector('#gGaze').addEventListener('click',function(){startGaze();});sBody.appendChild(ab);})();
   if(isAdmin){var fbx=el('<div class="box" style="background:#eef6ff"><h3>🧪 서버 시험 (6-3 코드 32개 · 교직원 코드 25개)</h3><div class="note">개인 코드로 들어온 기기의 기록이 서버(praise-stars-63)에 저장돼요. 코드표: 교학부 폴더 「연화법당 학생코드_6-3_시험.csv」·「연화법당 교직원코드_시범25.csv」. 연결 상태: '+(typeof fbState!=='undefined'?fbState:'-')+'</div><button class="btn ghost sm" style="margin-top:8px">반 현황 불러오기</button><div class="rank" style="margin-top:8px"></div></div>');
     fbx.querySelector('button').addEventListener('click',function(){if(!fbDb){toast('서버 연결이 안 됐어요');return;}fbDb.ref('beopdang/students').once('value').then(function(s){var v=s.val()||{},rk=fbx.querySelector('.rank');rk.innerHTML='';var keys=Object.keys(v);if(!keys.length)rk.innerHTML='<div class="note">아직 아무도 안 들어왔어요</div>';keys.sort(function(a,b){return STUDENT_HASHES.indexOf(a)-STUDENT_HASHES.indexOf(b)}).forEach(function(h){var d=v[h],n=STUDENT_HASHES.indexOf(h)+1,sn=STAFF_HASHES.indexOf(h)+1;rk.appendChild(el('<div class="r"><span>'+(n?n+'번':sn?'교사'+sn:VIP_HASHES.indexOf(h)>-1?VIP_NAMES[VIP_HASHES.indexOf(h)]:'?')+'</span><b>'+(d.days||0)+'일 · 절 '+(d.bows||0)+' · 사경 '+(d.sg||0)+' · 연등 '+(d.ln||0)+'</b></div>'));});}).catch(function(e){toast('불러오기 실패: '+e.message);});});
+    var fd=el('<button class="btn ghost sm" style="margin-top:8px">👥 친구 자리 미리 보기 (시범)</button>');fd.addEventListener('click',function(){friendsDemo();closeSheet();toast('시범 친구들이 앉았어요. 새로 열면 사라져요');});fbx.appendChild(fd);
     var mb=el('<button class="btn ghost sm" style="margin-top:8px">공유 글 보기 (연등·낙서, 누구 것인지)</button>');mb.addEventListener('click',function(){if(!fbDb){toast('서버 연결이 안 됐어요');return;}function who(s8){var i=-1;STUDENT_HASHES.forEach(function(h,k){if(h.indexOf(s8)===0)i=k;});if(i>-1)return (i+1)+'번';var j=-1;STAFF_HASHES.forEach(function(h,k){if(h.indexOf(s8)===0)j=k;});if(j>-1)return '교사'+(j+1);var vk=-1;VIP_HASHES.forEach(function(x,k){if(x.indexOf(s8)===0)vk=k;});if(vk>-1)return VIP_NAMES[vk];return s8||'?';}
       Promise.all([fbDb.ref('beopdang/lanterns').limitToLast(40).once('value'),fbDb.ref('beopdang/garden/notes').limitToLast(40).once('value'),fbLoadMod()]).then(function(rs){var rk=fbx.querySelector('.rank');rk.innerHTML='';var L=rs[0].val()||{},N=rs[1].val()||{};
         Object.keys(L).reverse().forEach(function(k){var x=L[k],hid=!!fbHidden.lanterns[k];var row=el('<div class="r" style="grid-template-columns:auto 1fr auto'+(hid?';opacity:.45':'')+'"><span style="color:#d9486f;white-space:nowrap">🏮 '+esc(who(x.s))+'</span><span>'+esc(x.w||'')+(x.to?' · '+esc(x.to):'')+'</span><button class="btn ghost sm">'+(hid?'숨김':'숨기기')+'</button></div>');row.querySelector('button').addEventListener('click',function(){var b=this;fbDb.ref('beopdang/mod/lanterns/'+k).set(!hid).then(function(){fbHidden.lanterns[k]=!hid;b.textContent=!hid?'숨김':'숨기기';row.style.opacity=!hid?.45:1;toast(!hid?'숨겼어요':'다시 보여요');}).catch(function(e){toast('안 돼요: 규칙에 mod를 아직 안 넣었어요');});});rk.appendChild(row);});
@@ -2162,7 +2164,7 @@ if(isAdult){var mrow=medEl.querySelector('[data-min]').parentNode;['10','20','30
   sitTimer=setInterval(function(){sitLeft--;paint();if(sitLeft<=0){clearInterval(sitTimer);sitTimer=null;bell();questEvent('sit');var n=store.get('mind',0)+1;store.set('mind',n);document.getElementById('medNote').textContent='잘했어요. 마음챙김 '+n+'번째예요. 오늘 '+sitReturns+'번 돌아왔어요 — 돌아온 만큼 알아차린 거예요. 일어나도 되고 더 앉아 있어도 돼요.';toast('마음챙김 '+n+'번째 · '+sitReturns+'번 돌아왔어요');}},1000);
 });});
 // 방석 자리(바닥에 깔린 40장 + 내가 놓은 방석)
-function nearestCushion(){var best=null,bd=.75;cushionPos.forEach(function(c,ci){if(cushOff.indexOf(ci)>-1)return;var d=Math.hypot(pos.x-c[0],pos.z-c[1]);if(d<bd){bd=d;best=c;}});decor.forEach(function(d){if(d.t!=='cushion')return;var dd=Math.hypot(pos.x-d.x,pos.z-d.z);if(dd<bd){bd=dd;best=[d.x,d.z];}});return best;}
+function nearestCushion(){var best=null,bd=.75;cushionPos.forEach(function(c,ci){if(cushOff.indexOf(ci)>-1||friendAt[ci])return;var d=Math.hypot(pos.x-c[0],pos.z-c[1]);if(d<bd){bd=d;best=c;}});decor.forEach(function(d){if(d.t!=='cushion')return;var dd=Math.hypot(pos.x-d.x,pos.z-d.z);if(dd<bd){bd=dd;best=[d.x,d.z];}});return best;}
 var sitCushion=false;
 function sitHere(){var c=nearestCushion();sitCushion=!!c;if(c){pos.set(c[0],0,c[1]);}startSit();}
 
@@ -2721,7 +2723,7 @@ function calendarBox(){var y=now0.getFullYear(),m=now0.getMonth();var first=new 
   for(var d=1;d<=days;d++){var on=visits.indexOf(y+'-'+(m+1)+'-'+d)>-1;html+='<div style="padding:5px 0;border-radius:8px;'+(on?'background:#f7b3c6;color:#7a1f38;font-weight:700':'background:#f4f1ea;color:#999')+'">'+(on?'🪷':d)+'</div>';}
   return el(html+'</div><div class="note" style="margin-top:6px">하루에 몇 번 와도 하루. 연꽃이 핀 날이 법당에 온 날이에요.</div></div>');}
 // --- 칭호 ---
-function myTitle(){if(isAdmin)return '교법사';if(isTeacher)return visitDays()>=dayN(30)?'꾸준한 선생님':'선생님';if(isAdult){return visitDays()>=dayN(30)?'꾸준한 보살님':((bow108>=1||bows>=108)?'백팔배 보살님':(stampDone.length>=8?'팔정도 보살님':'연화회 보살님'));}var lt=(typeof ladderTitle==='function')?ladderTitle():0;if(lt>=2)return TITLES[lt-1]+(lt<=8?' 어린이':''); // 11-07 열림표 칭호
+function myTitle(){if(isAdmin)return vipName()||'교법사';if(isTeacher)return visitDays()>=dayN(30)?'꾸준한 선생님':'선생님';if(isAdult){return visitDays()>=dayN(30)?'꾸준한 보살님':((bow108>=1||bows>=108)?'백팔배 보살님':(stampDone.length>=8?'팔정도 보살님':'연화회 보살님'));}var lt=(typeof ladderTitle==='function')?ladderTitle():0;if(lt>=2)return TITLES[lt-1]+(lt<=8?' 어린이':''); // 11-07 열림표 칭호
   if((bow108>=1||bows>=108))return '백팔배 수행자';if(gyeKept.slice(0,5).every(function(n){return n>=3}))return '오계 지킴이';if(stampDone.length>=8)return '팔정도 길잡이';if(questDays.length>=3)return '동자승의 친구';if(store.get('rest',0)>=3)return '마음을 아는 어린이';if(visitDays()>=7)return '일주일 연화 어린이';return '연화 어린이';}
 // --- 놀이터: 목탁 리듬 (짝 맞추기는 11-05 정리 때 뺌, pairGame 코드만 남김) ---
 var playRaf=null;
@@ -2762,7 +2764,7 @@ function buildPet(k){var g=new THREE.Group();function m(geo,col,x,y,z){var mm=ne
   return g;}
 function paintPet(){if(pet){scene.remove(pet);pet=null;}if(isAdult||petKey==='none'||!isOpen('pet:'+petKey))return;pet=buildPet(petKey);pet.position.copy(petPos);scene.add(pet);}
 paintPet();
-function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+(CN!=='연이'?CN+' · ':'')+(isAdmin?'교법사':isTeacher?'선생님':isAdult?'연화회 보살님':'연화 어린이')+'</b>'+((isAdult||isAdmin||isTeacher)?'':' · '+myClass+' · <span class="note">'+SEASON_NAME[uniSeason]+'</span>');}
+function paintWho(){document.getElementById('who').innerHTML='<b style="font-family:var(--font-display);font-weight:400;color:#2d7356">'+(CN!=='연이'?CN+' · ':'')+(isAdmin?(vipName()||'교법사'):isTeacher?'선생님':isAdult?'연화회 보살님':'연화 어린이')+'</b>'+((isAdult||isAdmin||isTeacher)?'':' · '+myClass+' · <span class="note">'+SEASON_NAME[uniSeason]+'</span>');}
 
 learnSpots.push({x:-5.9,z:-2,r:1.2,lock:'dhp',label:'오늘의 법구경 읽기',open:function(){var v=DHP[doy2%DHP.length];showLearn('오늘의 법구경','<div style="font-family:var(--font-display);font-size:20px;line-height:1.6">'+v[1]+'</div><div class="note" style="margin-top:8px">— 법구경 '+v[0]+' · 날마다 한 구절씩 바뀌어요</div>',function(){sBody.appendChild(pouchBtn(v[1],'법구경 '+v[0]));});questEvent('dhp');}});
 
@@ -3024,8 +3026,9 @@ function accPick(slot){var k=acc[slot]||'none';var a=ACC[slot].filter(function(x
 var accHead=new THREE.Group();head.add(accHead);var accBody=new THREE.Group();torsoG.add(accBody);
 function dressAcc(){
   while(accHead.children.length)accHead.remove(accHead.children[0]);while(accBody.children.length)accBody.remove(accBody.children[0]);
+  buildAcc(accHead,accBody,accPick('head').k,accPick('neck').k,accPick('back').k);}
+function buildAcc(accHead,accBody,h,nk,bk){ // 11-23 친구 캐릭터도 같은 꾸밈을 쓴다
   function m(geo,mat,g,x,y,z){var mm=new THREE.Mesh(geo,mat);mm.position.set(x,y,z);mm.castShadow=true;g.add(mm);return mm;}
-  var h=accPick('head').k,nk=accPick('neck').k,bk=accPick('back').k;
   var red=new THREE.MeshStandardMaterial({color:0xd9534f,roughness:.6}),gold=new THREE.MeshStandardMaterial({color:0xe3b04a,metalness:.7,roughness:.3});
   if(h==='ribbon'){[-1,1].forEach(function(s){var c=m(new THREE.ConeGeometry(.05,.11,8),red,accHead,-.2+s*.055,.22,.12);c.rotation.z=s*Math.PI/2;});m(new THREE.SphereGeometry(.03,8,6),red,accHead,-.2,.22,.12);}
   if(h==='wreath'){for(var i=0;i<12;i++){var a=i/12*Math.PI*2;m(new THREE.SphereGeometry(.035,8,6),new THREE.MeshStandardMaterial({color:[0xf7b3c6,0xf2c84b,0xfbfbf8][i%3]}),accHead,Math.sin(a)*.3,.17,Math.cos(a)*.3);}m(new THREE.TorusGeometry(.3,.015,6,24),new THREE.MeshStandardMaterial({color:0x3f8f4a}),accHead,0,.17,0).rotation.x=Math.PI/2;}
@@ -3038,6 +3041,87 @@ function dressAcc(){
   if(bk==='halo'){m(new THREE.TorusGeometry(.42,.03,8,32),new THREE.MeshStandardMaterial({color:0xffe9a0,emissive:0xffd060,emissiveIntensity:.9}),accBody,0,.66,-.2);for(var q=0;q<8;q++){var qa=q/8*Math.PI*2;var pt=m(new THREE.SphereGeometry(.05,8,6),new THREE.MeshStandardMaterial({color:0xf7b3c6,emissive:0xf7b3c6,emissiveIntensity:.5}),accBody,Math.sin(qa)*.42,.66+Math.cos(qa)*.42,-.2);pt.scale.set(.6,1.4,.4);pt.rotation.z=-qa;}}
 }
 dressAcc();
+// ===== 11-23 오늘 다녀간 친구: 개인 코드로 온 친구가 법당 자기 자리(번호 순서 방석)에 앉아 있다 =====
+// 서버에는 겉모습만 따로(students/<코드>/pub) 올리고, 오늘 온 친구 것만 한 명씩 받아 온다(기록 전체를 내려받지 않음).
+// 이름은 올리지 않고 번호만 보인다. 남이 올린 값은 우리 목록에 있는 것만 받아들인다. 뱃지는 날수(칭호)로만, 줄 세우기 없음.
+var FRIEND_MAX=36,friends={},friendAt={},friendG=new THREE.Group();scene.add(friendG);
+var FR_GEO={},FR_MAT={};
+function frGeo(k,mk){return FR_GEO[k]||(FR_GEO[k]=mk());}
+function frMat(c,glow){var k=c+(glow?'g':'');return FR_MAT[k]||(FR_MAT[k]=new THREE.MeshStandardMaterial(glow?{color:c,emissive:c,emissiveIntensity:.55,roughness:.4}:{color:c,roughness:.7}));}
+function myPub(){ // 내 겉모습(남에게 보이는 것만): 성별·머리·법복 색·염주 색·꾸밈·칭호·온 날수
+  var bc=BEADS.filter(function(b){return b.k===beadKey})[0],bOn=bc&&bc.k!=='none'&&beadOk(bc);
+  return {v:1,g:gender==='boy'?'boy':'girl',h:hairStyle,r:robeOn?robeHex():0,b:bOn?bc.c:0,a:[accPick('head').k,accPick('neck').k,accPick('back').k],ti:ladderTitle(),d:visitDays()};
+}
+function frClean(p){p=p||{};var g=p.g==='boy'?'boy':'girl',h=HAIR_OF[g].indexOf(p.h)>-1?p.h:HAIR_OF[g][0],a=p.a||{};
+  function ak(slot,k){return ACC[slot].some(function(x){return x.k===k})?k:'none';}
+  return {g:g,h:h,r:(p.r|0)&0xffffff,b:(p.b|0)&0xffffff,a:[ak('head',a[0]),ak('neck',a[1]),ak('back',a[2])],ti:Math.max(0,Math.min(TITLES.length,p.ti|0)),d:Math.max(0,Math.min(999,p.d|0)),has:!!p.v};}
+function frLabel(no,p){
+  var sub=p.ti?TITLES[p.ti-1]:'';
+  var t=canvasTex(384,150,function(g,w,h){g.clearRect(0,0,w,h);g.fillStyle='rgba(255,255,255,.93)';var r=34,x0=8,y0=8,x1=w-8,y1=h-8;g.beginPath();g.moveTo(x0+r,y0);g.arcTo(x1,y0,x1,y1,r);g.arcTo(x1,y1,x0,y1,r);g.arcTo(x0,y1,x0,y0,r);g.arcTo(x0,y0,x1,y0,r);g.fill();
+    g.textAlign='center';g.textBaseline='middle';g.fillStyle='#2d7356';g.font='700 62px "Gowun Batang", serif';g.fillText(no+'번',w/2,sub?56:h/2);
+    if(sub){g.fillStyle=p.ti>=10?'#b8860b':(p.ti>=5?'#c77a1a':'#d9486f');g.font='36px "Gowun Dodum", sans-serif';g.fillText('🪷 '+sub,w/2,112);}});
+  var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:true,transparent:true}));sp.scale.set(.74,.29,1);return sp;
+}
+var frBakeMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7});
+function frBake(g){ // 한 친구를 한 덩어리로 굽는다: 색은 꼭짓점에 담고, 빛나는 것(연꽃 빛·금 뱃지)만 따로 둔다 → 친구 한 명이 그리기 두세 번
+  g.updateMatrixWorld(true);var inv=new THREE.Matrix4().copy(g.matrixWorld).invert(),P=[],N=[],C=[],keep=[],v=new THREE.Vector3(),nm=new THREE.Matrix3(),mx=new THREE.Matrix4(),out=new THREE.Group();
+  g.traverse(function(o){if(!o.isMesh)return;var mt=o.material;if(mt.emissive&&mt.emissive.getHex()>0&&mt.emissiveIntensity>0){keep.push(o);return;}
+    var geo=o.geometry.index?o.geometry.toNonIndexed():o.geometry,pa=geo.attributes.position,na=geo.attributes.normal,c=mt.color;mx.multiplyMatrices(inv,o.matrixWorld);nm.getNormalMatrix(mx);
+    for(var i=0;i<pa.count;i++){v.fromBufferAttribute(pa,i).applyMatrix4(mx);P.push(v.x,v.y,v.z);v.fromBufferAttribute(na,i).applyMatrix3(nm).normalize();N.push(v.x,v.y,v.z);C.push(c.r,c.g,c.b);}});
+  var bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));bg.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));bg.setAttribute('color',new THREE.Float32BufferAttribute(C,3));
+  out.add(new THREE.Mesh(bg,frBakeMat));
+  keep.forEach(function(o){var m2=new THREE.Mesh(o.geometry,o.material);mx.multiplyMatrices(inv,o.matrixWorld);mx.decompose(m2.position,m2.quaternion,m2.scale);out.add(m2);});
+  return out;
+}
+function makeFriend(no,p){ // 가부좌로 앉은 친구. 그림자는 만들지 않고(크롬북), 모양·재질은 서로 나눠 쓴다
+  var g=new THREE.Group(),robe=p.r||UNI.navy;
+  function add(par,geo,mat,x,y,z){var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);par.add(m);return m;}
+  add(g,frGeo('cu',function(){return new THREE.CylinderGeometry(.4,.42,.1,14);}),frMat(0x6a4a8a),0,.14,0); // 자기 방석(내가 기본 방석을 치워도 앉아 있게)
+  add(g,frGeo('lap',function(){return new THREE.SphereGeometry(.3,14,8);}),frMat(p.r||0x39446a),0,.26,.05).scale.set(1.32,.4,1.08); // 가부좌 다리
+  var tg=new THREE.Group();tg.position.y=.16;g.add(tg);
+  add(tg,frGeo('torso',function(){return new THREE.SphereGeometry(.265,14,10);}),frMat(robe),0,.17,0).scale.set(1,.95,.82);
+  if(p.r){add(tg,frGeo('robe',function(){return new THREE.CylinderGeometry(.275,.335,.44,14);}),frMat(robe),0,.18,0);
+    add(tg,frGeo('dj',function(){return new THREE.TorusGeometry(.205,.028,6,14);}),frMat(0xf4f1ea),0,.395,0).rotation.x=Math.PI/2;
+    add(tg,frGeo('sash',function(){return new THREE.BoxGeometry(.09,.34,.012);}),frMat(0x8a6a3c),.13,.22,.265).rotation.z=.6;}
+  else add(tg,frGeo('col',function(){return new THREE.TorusGeometry(.17,.035,6,14);}),frMat(UNI.white),0,.4,0).rotation.x=Math.PI/2;
+  [-1,1].forEach(function(sd){var a=add(tg,frGeo('arm',function(){return new THREE.SphereGeometry(.075,8,6);}),frMat(robe),sd*.25,.17,.1);a.scale.set(1,2.3,1);a.rotation.set(-.55,0,sd*.28);});
+  add(tg,frGeo('hand',function(){return new THREE.SphereGeometry(.07,8,6);}),skin,0,.03,.27).scale.set(1.5,.75,1); // 무릎 위에 모은 손
+  if(p.b)add(tg,frGeo('bead',function(){return new THREE.TorusGeometry(.085,.02,6,12);}),frMat(p.b),0,.035,.275).rotation.x=1.25; // 손에 쥔 염주
+  if(p.ti)add(tg,frGeo('badge',function(){return new THREE.SphereGeometry(.04,10,8);}),frMat(p.ti>=10?0xffd24a:(p.ti>=5?0xe3b04a:0xf7b3c6),p.ti>=10),-.12,.3,.25).scale.set(1,1,.35); // 가슴 연꽃 뱃지: 칭호가 오를수록 분홍 → 금 → 빛
+  var hd=add(tg,frGeo('head',function(){return new THREE.SphereGeometry(.32,16,12);}),skin,0,.66,0);
+  [-.1,.1].forEach(function(x){add(tg,frGeo('eye',function(){return new THREE.SphereGeometry(.028,6,5);}),eyeMat,x,.66,.3).scale.set(1,1.2,.7);});
+  [-.17,.17].forEach(function(x){add(tg,frGeo('chk',function(){return new THREE.SphereGeometry(.04,6,5);}),cheekMat,x,.58,.265).scale.set(1.1,.8,.3);});
+  var hr=new THREE.Group();hd.add(hr);buildHair(hr,p.h,p.g,true);
+  var ah=new THREE.Group();hd.add(ah);var ab=new THREE.Group();tg.add(ab);buildAcc(ah,ab,p.a[0],p.a[1],p.a[2]);
+  var out=frBake(g);
+  var lb=frLabel(no,p);lb.position.y=1.42;out.add(lb);
+  out.userData={no:no,p:p,tg:out.children[0],lb:lb,ph:no*1.7,born:performance.now(),hop:0,tries:0};
+  return out;
+}
+function seatFriend(h,no,p){var c=cushionPos[no-1];if(!c)return;var old=friends[h];if(old&&old!==1)friendG.remove(old);
+  var g=makeFriend(no,p);g.position.set(c[0],0,c[1]);g.rotation.y=Math.PI; /* 부처님 쪽을 보고 앉는다 */ if(old&&old!==1){g.userData.born=0;g.userData.tries=old.userData.tries;}friendG.add(g);friends[h]=g;friendAt[no-1]=g;}
+function friendsFrom(list){ // list: 오늘 온 코드들. 6학년 3반 번호가 있는 친구만, 나는 빼고, FRIEND_MAX 명까지
+  if(!fbDb)return;var n=Object.keys(friends).length;
+  Object.keys(list||{}).forEach(function(h){var no=STUDENT_HASHES.indexOf(h)+1;if(!no||h===SID||no>cushionPos.length)return;var f=friends[h];
+    if(f===1)return;if(f){if(f.userData.p.has||f.userData.tries>=3)return;f.userData.tries++;} /* 겉모습이 아직 안 올라온 친구는 몇 번 더 물어본다 */ else{if(n>=FRIEND_MAX)return;n++;friends[h]=1;}
+    fbDb.ref('beopdang/students/'+h+'/pub').once('value').then(function(s){var p=frClean(s.val());if(friends[h]===1||p.has)seatFriend(h,no,p);}).catch(function(){if(friends[h]===1)delete friends[h];});});
+}
+function friendsPoll(){if(!fbDb||!fbUid||document.hidden)return;fbDb.ref('beopdang/today/'+todayKey).once('value').then(function(s){var v=s.val()||{};todayCount=Object.keys(v).length;friendsFrom(v);if(typeof drawBoard==='function')drawBoard();}).catch(function(){});}
+setInterval(friendsPoll,120000); // 2분마다 새로 온 친구만 확인
+function friendsTick(dt,t){var ch=friendG.children;if(!ch.length)return;var nowT=performance.now();
+  for(var i=0;i<ch.length;i++){var u=ch[i].userData;u.tg.scale.y=1+Math.sin(t*1.3+u.ph)*.012; // 숨
+    var fx=ch[i].position.x-pos.x,fz=ch[i].position.z-pos.z;u.lb.visible=fx*fx+fz*fz<30; // 이름표는 다섯 걸음 안쪽 친구만
+    if(u.born){var k=(nowT-u.born)/600;if(k>=1){ch[i].scale.setScalar(1);u.born=0;}else{var e=1-Math.pow(1-k,3);ch[i].scale.setScalar(.01+.99*e);}}
+    if(u.hop){var hk=(nowT-u.hop)/450;if(hk>=1){ch[i].position.y=0;u.hop=0;}else ch[i].position.y=Math.sin(hk*Math.PI)*.1;}}
+}
+function friendClick(){if(!friendG.children.length)return false;var hh=ray.intersectObjects(friendG.children,true);if(!hh.length||hh[0].distance>16)return false;
+  var o=hh[0].object;while(o.parent&&o.parent!==friendG)o=o.parent;var u=o.userData;if(!u||!u.no)return false;
+  u.hop=performance.now();toast(u.no+'번 친구 · '+(u.p.ti?'「'+TITLES[u.p.ti-1]+'」 · ':'')+'법당에 온 날 '+u.p.d+'일');return true;}
+function friendsDemo(n){ // 교법사 확인용: 서버 없이 시범 친구를 앉혀 본다(새로 열면 사라짐)
+  var hs=[0,3,7,10,15,20,30,2,5,12,40,60,90,1,25,8];n=n||STUDENT_HASHES.length;
+  for(var i=0;i<n&&i<cushionPos.length;i++){var g=i%2?'boy':'girl',d=hs[i%hs.length],ti=Math.min(TITLES.length,Math.floor(d/6));
+    seatFriend('demo'+i,i+1,frClean({v:1,g:g,h:HAIR_OF[g][i%2?(i%4===1?0:1):(i%4===0?0:1)],r:i%5===4?0:ROBE_C[i%ROBE_C.length].c,b:i%3?BEADS[1+i%(BEADS.length-1)].c:0,a:[ACC.head[i%7<ACC.head.length?i%7:0].k,ACC.neck[i%5<ACC.neck.length?i%5:0].k,ACC.back[i%6<ACC.back.length?i%6:0].k],ti:ti,d:d}));}
+}
 
 // ===== TV 모드: 선생님이 교실 TV에 크게. 열린 것만 =====
 function tvShow(kind){var b=document.getElementById('tvBody'),h='';
@@ -3157,6 +3241,7 @@ function loop(){
   if(first){camPos.copy(cp);camLook.copy(lk);first=false;}
   camPos.lerp(cp,Math.min(1,dt*4));camLook.lerp(lk,Math.min(1,dt*4));
   camera.position.copy(camPos);camera.lookAt(camLook);
+  friendsTick(dt,t);
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
 }
@@ -3500,19 +3585,19 @@ function fbOn(){return !!(fbDb&&fbUid&&SID);}
 var fbLoaded=false; // 11-12 서버 기록을 먼저 읽은 뒤에만 올린다(느린 와이파이에서 빈 기록이 서버를 덮어쓰는 것 막기)
 function collectStore(){var o={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k.indexOf('yeon3d-')!==0)continue;var s=k.slice(7);if(s==='sid'||s==='member'||s==='role'||s==='rev'||s==='lnSent'||s==='viewAs'||s==='moods'||s==='cname')continue;o[s]=localStorage.getItem(k);}return o;}
 function fbSave(){if(!fbOn()||!fbLoaded)return;var rev=Date.now();fbRev=rev;store.set('rev',rev);var L=store.get('lanterns',[])||[];if(fbLnSent===null){fbLnSent=L.length;store.set('lnSent',fbLnSent);} // 처음엔 지금 있는 연등(견본 포함)은 안 올림
-  fbDb.ref('beopdang/students/'+SID).set({rev:rev,store:collectStore(),days:visitDays(),bows:store.get('bows',0)+108*store.get('bow108',0),st:stampDone.length,sg:store.get('sagyeong',0),ln:L.length,t:firebase.database.ServerValue.TIMESTAMP}).then(function(){fbState='ok';}).catch(function(e){fbState='err';console.warn('fb save',e);});
+  fbDb.ref('beopdang/students/'+SID).set({rev:rev,store:collectStore(),pub:(STUDENT_HASHES.indexOf(SID)>-1?myPub():null),days:visitDays(),bows:store.get('bows',0)+108*store.get('bow108',0),st:stampDone.length,sg:store.get('sagyeong',0),ln:L.length,t:firebase.database.ServerValue.TIMESTAMP}).then(function(){fbState='ok';}).catch(function(e){fbState='err';console.warn('fb save',e);});
   if(L.length>fbLnSent){var n=L[0];if(n&&n.w){fbDb.ref('beopdang/lanterns').push({c:n.c|0,w:String(n.w).slice(0,40),g:String(n.g||'').slice(0,12),f:n.f||'self',to:String(n.to||'').slice(0,12),ts:Date.now(),s:SID.slice(0,8)}).catch(function(){});}fbLnSent=L.length;store.set('lnSent',fbLnSent);}}
 function fbSchedule(){if(!fbOn())return;clearTimeout(fbTimer);fbTimer=setTimeout(fbSave,6000);}
 var SHOW_SHARED_LANTERNS=false; // 11-06 결정: 각자 법당에는 각자 연등만(서버에는 올려 교법사 「공유 글 보기」로만 확인)
 function fbLoadLanterns(){if(!SHOW_SHARED_LANTERNS)return;var me=SID.slice(0,8),t0=Date.now();fbLoadMod().then(function(){fbDb.ref('beopdang/lanterns').orderByChild('ts').startAt(t0).on('child_added',function(s){var x=s.val();if(!x||x.s===me)return;x.k=s.key;if(fbHidden.lanterns[x.k])return;sharedLanterns.unshift(x);if(sharedLanterns.length>36)sharedLanterns.pop();if(typeof renderLanterns==='function')renderLanterns();chime();toast('친구가 연등을 달았어요 — '+x.w);}); // 지금부터 새로 달리는 연등은 바로 보임
   fbDb.ref('beopdang/lanterns').limitToLast(60).once('value').then(function(s){var v=s.val()||{};sharedLanterns=Object.keys(v).map(function(k){var x=v[k];if(x)x.k=k;return x;}).filter(function(x){return x&&x.s!==me&&x.ts>1793927000000&&!fbHidden.lanterns[x.k];}).sort(function(a,b){return b.ts-a.ts;}).slice(0,36);if(typeof renderLanterns==='function')renderLanterns();}).catch(function(){});}
   );}
-function fbToday(){var r=fbDb.ref('beopdang/today/'+todayKey);r.child(SID).set(true).then(function(){return r.once('value');}).then(function(s){todayCount=s.numChildren();if(typeof drawBoard==='function')drawBoard();}).catch(function(){});}
+function fbToday(){var r=fbDb.ref('beopdang/today/'+todayKey);r.child(SID).set(true).then(function(){return r.once('value');}).then(function(s){todayCount=s.numChildren();friendsFrom(s.val());if(typeof drawBoard==='function')drawBoard();}).catch(function(){});}
 function fbLoad(){fbDb.ref('beopdang/students/'+SID).once('value').then(function(s){var v=s.val();
   if(v&&v.rev>fbRev&&v.store){for(var k in v.store){try{localStorage.setItem('yeon3d-'+k,v.store[k]);}catch(e){}}store.set('rev',v.rev);toast('다른 기기에서 쌓은 기록을 가져왔어요');setTimeout(function(){location.reload();},1500);return;}
   fbLoaded=true;fbState='ok';fbToday();fbLoadLanterns();fbSchedule();}).catch(function(e){fbState='err';console.warn('fb load',e);});}
 (function(){if((!SID&&!isAdmin)||!window.firebase||!firebase.initializeApp)return;try{firebase.initializeApp(FB_CFG);fbDb=firebase.database();fbState='auth';
-  firebase.auth().signInAnonymously().then(function(u){fbUid=u.user.uid;if(SID)fbLoad();else fbState='ok';setTimeout(fbLoadClass,2500);}).catch(function(e){fbState='err';console.warn('fb auth',e);});
+  firebase.auth().signInAnonymously().then(function(u){fbUid=u.user.uid;if(SID)fbLoad();else{fbState='ok';friendsPoll();}setTimeout(fbLoadClass,2500);}).catch(function(e){fbState='err';console.warn('fb auth',e);});
   var _set=store.set;store.set=function(k,v){_set(k,v);if(k!=='rev'&&k!=='lnSent')fbSchedule();};
   window.addEventListener('pagehide',function(){if(fbTimer){clearTimeout(fbTimer);fbTimer=null;fbSave();}});
 }catch(e){fbState='err';console.warn('fb init',e);}})();
